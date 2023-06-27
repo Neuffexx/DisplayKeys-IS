@@ -51,7 +51,8 @@ When the Window/GUI is first created it takes as a argument an array of widgets,
 
 
 ### Image Splitting Logic
-This took some playing around with.
+This took some playing around with. But was also relatively easy to implement, as it was completely built on the functionality of the [PIL - Image Library](https://wiki.python.org/moin/PythonImagingLibrary).
+
 Although you think its pretty straight forward (as did I), you simply get the  rows and colums to slice the image(s) by and factor in the gap value for where to make the split.
 However, unfortunately I noticed an issue with this approach. Whenever I used an image that was for example an image was non-square in format it will cause squishing.
 This is really incosistent, but it happened to me a lot, so I decided to do something about it since software 'should' crop it anyways if the image is not in a square format.
