@@ -85,7 +85,7 @@ class ImageSplitterGUI:
     def __init__(self, entries):
         #GUI window
         self.window = tk.Tk()
-        self.window.title("Image Splitter for Mountain-Display-Keys")
+        self.window.title("DisplayKey-IS")
         self.window.geometry("300x500")
 
         # Configure grid to center horizontally
