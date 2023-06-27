@@ -24,6 +24,12 @@ The only thing anyone probably cares to read on here, so let me make this simple
 	- Click the 'Split Image' button.
 	- In the Base Camp software, when assigning images to your DisplayKeys, find wanted images in the provided Save Location
 
+## Whats Next?
+Well I plan to add/improve on the following
+- Create GIF support
+- Clean Up UI
+- Improve Image Splitting Logic
+
 ## How does it work?
 Oh wow someone actually reads this?
 
