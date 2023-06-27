@@ -294,7 +294,7 @@ def process_image(entries):
 # Define the parameters for each entry
 entries = [
     {
-        "label": "Image Splitter made by Neuffexx",
+        "label": "Made by Neuffexx",
     },
     {
         "label": "-------------------------------------",
