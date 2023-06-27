@@ -29,6 +29,7 @@ Well I plan to add/improve on the following
 - Create GIF support
 - Clean Up UI
 - Improve Image Splitting Logic
+- Saving/Loading presets (in case you find combos that work for you)
 
 ## How does it work?
 Oh wow someone actually reads this?
