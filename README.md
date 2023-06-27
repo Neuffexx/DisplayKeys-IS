@@ -2,7 +2,7 @@
 
 ## What is it?
 Simply said, a quick workaround tool for splitting images, in a way that lets users customize the spacing between the split image cells, to be used with display key pads.
-Dont get me wrong, there are PLENTY of image splitting tools out there hosted on plent of websites even so you dont have to download anything.
+Dont get me wrong, there are PLENTY of image splitting tools out there hosted on websites even, so you dont have to download anything.
 But none of them from what I found actually allow you to adjust anything other than  Rows/Columns.
 
 ## Why Make it?
