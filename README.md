@@ -16,8 +16,8 @@ The only thing anyone probably cares to read on here, so let me make this simple
 	- The tool functionally works, but I havent figured out how to share it yet so this section will be filled in later.
 - Usage Instructions / Or watch the [Usage Demonstration Video (Placeholder)](http://youtube.com/)
 	- Run ...
-	- Select an Image to split || either by entering the path into the text box or selecing it via the 'Browse' button.
-	- Select the Save Location || again, either by entering the path or selecting it
+	- Select an Image to split, either by entering the path into the text box or selecing it via the 'Browse' button.
+	- Select the Save Location, again, either by entering the path or selecting it
 	- (Optionally) Set Image Splitting Options
 		- Defaults: Will Split the image in a 2x6 grid, using Spacing horizontally and vertically by 40pixels
 		- User Defined: Will let you manually enter the amount of Rows/Columns, and both Horizontal and Vertical Spacing.
