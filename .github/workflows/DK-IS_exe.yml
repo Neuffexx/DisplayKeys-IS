@@ -4,7 +4,7 @@ name: DisplayKeys-IS
 # Trigger Build on:
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "Development" ]
   pull_request:
     branches: [ "main" ]
     
