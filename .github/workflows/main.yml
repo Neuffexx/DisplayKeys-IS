@@ -11,6 +11,10 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
     
+# Actions project permission
+permissions:
+  contents: read
+  pull-requests: write
 
 #Individual Tasks to fullfill to create artifact
 jobs:    
@@ -20,10 +24,10 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         
       - name: Setup Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: '3.11'
       
@@ -50,12 +54,10 @@ jobs:
           #list all in directory, sanity check that .exe was created 
           ls -a ${{ github.workspace }}/venv/dist/
           # Replace the line with the appropriate command to copy or move the .EXE file
-          cp ${{ github.workspace }}/venv/dist/DisplayKeys-IS.exe ${{ github.workspace }}/DisplayKeys-IS.exe
-
+          #cp ${{ github.workspace }}/venv/dist/DisplayKeys-IS.exe ${{ github.workspace }}/DisplayKeys-IS.exe
         
       - name: Upload Artifact
         uses: actions/upload-artifact@v2
         with:
           name: DisplayKeys-IS
-          path: ${{ github.workspace }}/DisplayKeys-IS.exe
-#
+          path: ${{ github.workspace }}/venv/dist/DisplayKeys-IS.exe
