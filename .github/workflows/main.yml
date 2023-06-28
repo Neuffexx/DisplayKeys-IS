@@ -37,7 +37,7 @@ jobs:
       - name: Create EXE file
         run: | 
           # Command parameters for creating the .EXE file
-          pyinstaller --onefile --noconsole --name "DisplayKeys-IS" --debug all --distpath ${{ github.workspace }}/venv/dist/  ${{ github.workspace }}/venv/DisplayKeys-IS.py
+          pyinstaller --onefile --noconsole --name "DisplayKeys-IS" --debug all --distpath ${{ github.workspace }}/venv/dist/ --version-file ${{ github.workspace }}/venv/version.txt  ${{ github.workspace }}/venv/DisplayKeys-IS.py
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
