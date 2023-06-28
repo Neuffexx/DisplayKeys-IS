@@ -37,7 +37,7 @@ jobs:
           # Command parameters for creating the .EXE file
           #pwd
           #ls -a ./venv
-          pyinstaller --onefile --noconsole --name "DisplayKeys-IS" --debug all ${{ github.workspace }}/venv/DisplayKeys-IS.py
+          pyinstaller --onefile --noconsole --name "DisplayKeys-IS" --debug all ${{ github.workspace }}/venv/DisplayKey-IS.py
   
   create_artifact:
     needs: build_exe
