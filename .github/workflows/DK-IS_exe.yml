@@ -49,7 +49,7 @@ jobs:
       - name: Make Artifact
         run: |
           # Replace the line with the appropriate command to copy or move the .EXE file
-          cp ./venv/dist/DisplayKeys-IS.exe ${{ github.workspace }}/DisplayKeys-IS.exe
+          cp ${{ github.workspace }}/venv/dist/DisplayKeys-IS.exe ${{ github.workspace }}/venv/DisplayKeys-IS.exe
 
         
       - name: Upload Artifact
