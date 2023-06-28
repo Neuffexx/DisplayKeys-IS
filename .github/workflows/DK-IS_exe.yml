@@ -49,7 +49,7 @@ jobs:
           #list all in directory, sanity check that .exe was created 
           ls -a ${{ github.workspace }}/venv/
           # Replace the line with the appropriate command to copy or move the .EXE file
-          cp ${{ github.workspace }}/venv/DisplayKeys-IS.exe ${{ github.workspace }}/DisplayKeys-IS.exe
+          cp ${{ github.workspace }}/venv/DisplayKeys-IS.exe ${{ github.workspace }}/venv/DisplayKeys-IS/DisplayKeys-IS.exe
 
         
       - name: Upload Artifact
