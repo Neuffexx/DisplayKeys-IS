@@ -35,9 +35,8 @@ jobs:
       - name: Create EXE file
         run: | 
           # Command parameters for creating the .EXE file
-          #pwd
-          #ls -a ./venv
           pyinstaller --onefile --noconsole --name "DisplayKeys-IS" --debug all ${{ github.workspace }}/venv/DisplayKeys-IS.py
+          ls -l ${{ github.workspace }}/venv/dist/
   
   create_artifact:
     needs: build_exe
