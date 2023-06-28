@@ -1,6 +1,6 @@
 # This workflow will install Python dependencies, run tests and lint with a single version of Python
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
-##### From: https://github.com/marketplace/actions/pyinstaller-windows #####
+##### Look into useing https://github.com/marketplace/actions/pyinstaller-action instead #####
 
 name: DisplayKeys-IS
 
@@ -14,19 +14,16 @@ permissions:
   contents: read
 
 jobs:
-  build:
-
-    runs-on: ubuntu-latest
-
+  pyinstaller-build:
+    runs-on: <windows-latest / ubuntu-latest >
     steps:
-    - uses: actions/checkout@v2
-
-    - name: Package Application
-      uses: JackMcKew/pyinstaller-action-windows@main
-      with:
-        path: src
-
-    - uses: actions/upload-artifact@v2
-      with:
-        name: name-of-artifact
-        path: src/dist/windows
+      - name: Create Executable
+        uses: sayyid5416/pyinstaller@v1
+        with:
+          python_ver: '3.11'
+          python arch: 'x64'
+          spec: 'src/venv/DisplayKey-IS.py' #Either .spec file or .py file location
+          exe_path: '-' #Save location of exe
+          #requirements: 'src/requirements.txt' #Dependencies to install
+          upload_exe_with_name: 'DisplayKeys-IS' #Uploads the exe as an artifact
+          options: --onefile, --name "DisplayKeys-IS", --windowed, --noconsole, #Options for PyInstaller command
