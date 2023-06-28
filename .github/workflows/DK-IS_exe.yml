@@ -30,12 +30,12 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ./venv/requirements.txt
+          pip install -r ./venv/requirements.txt
         
       - name: Create EXE file
         run: | 
           # Command parameters for creating the .EXE file
-          pyinstaller --onefile --noconsole --name "DisplayKeys-IS" ./venv/DisplayKeys-IS.py
+          pyinstaller --onefile --noconsole --name "DisplayKeys-IS" ./venv/DisplayKeys-IS.py --debug
   
   create_artifact:
     needs: build_exe
