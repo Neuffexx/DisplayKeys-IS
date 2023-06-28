@@ -25,4 +25,4 @@ jobs:
           exe_path: '-' #Save location of exe
           #requirements: 'src/requirements.txt' #Dependencies to install
           upload_exe_with_name: 'DisplayKeys-IS' #Uploads the exe as an artifact
-          options: --onefile, #Options for PyInstaller command
+          #options: --onefile, #Options for PyInstaller command
