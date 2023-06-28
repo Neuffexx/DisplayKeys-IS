@@ -30,7 +30,8 @@ Well I plan to add/improve on the following
 - Clean Up UI
 - Improve Image Splitting Logic
 - Saving/Loading presets (in case you find combos that work for you)
-- Automate Profile Assignment ! Base Camp Only ! ()
+- Automate Profile Assignment ! Base Camp Only ! (Need to look into how)
+- Create UI Representation of how the image will be cut/cropped
 
 ## How does it work?
 Oh wow someone actually reads this?
