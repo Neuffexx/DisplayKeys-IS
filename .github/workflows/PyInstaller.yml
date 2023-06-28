@@ -21,7 +21,7 @@ jobs:
         uses: sayyid5416/pyinstaller@v1.2.0
         with:
           python_ver: '3.11'
-          spec: 'src/venv/DisplayKey-IS.py' #Either .spec file or .py file location
+          spec: 'src/DisplayKeys.spec' #Either .spec file or .py file location
           exe_path: '-' #Save location of exe
           #requirements: 'src/requirements.txt' #Dependencies to install
           upload_exe_with_name: 'DisplayKeys-IS' #Uploads the exe as an artifact
