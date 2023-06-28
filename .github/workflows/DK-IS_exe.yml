@@ -36,7 +36,6 @@ jobs:
         run: | 
           # Command parameters for creating the .EXE file
           pyinstaller --onefile --noconsole --name "DisplayKeys-IS" --debug all --distpath ${{ github.workspace }}/venv/  ${{ github.workspace }}/venv/DisplayKeys-IS.py
-          ls -l ${{ github.workspace }}/venv/
   
   create_artifact:
     needs: build_exe
@@ -47,6 +46,8 @@ jobs:
         
       - name: Get Artifact
         run: |
+          #list all in directory, sanity check that .exe was created 
+          ls -a ${{ github.workspace }}/venv/
           # Replace the line with the appropriate command to copy or move the .EXE file
           cp ${{ github.workspace }}/venv/DisplayKeys-IS.exe ${{ github.workspace }}/DisplayKeys-IS.exe
 
