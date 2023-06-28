@@ -17,7 +17,7 @@ permissions: write-all
 #Individual Tasks to fullfill, to create artifact
 jobs:    
   
-  package_to_exe:
+  py_to_exe:
     runs-on: windows-latest
     
     steps:
