@@ -8,11 +8,12 @@ on:
   pull_request:
     branches: [ "main" ]
     
-# 
+# Actions project permission
 permissions:
-  contents: read, write
+  contents: read
+  pull-requests: write
   
-#
+#Individual Tasks to fullfill to create artifact
 jobs:    
   
   build_exe:
