@@ -40,7 +40,7 @@ jobs:
           pyinstaller --onefile --noconsole --name "DisplayKeys-IS" --debug all --distpath ${{ github.workspace }}/venv/dist/  ${{ github.workspace }}/venv/DisplayKeys-IS.py
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: DisplayKeys-IS
           path: ${{ github.workspace }}/venv/dist/DisplayKeys-IS.exe
