@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
     
 # Actions project permission
-permissions: read-all, write-all
+permissions: write-all
 
 #Individual Tasks to fullfill to create artifact
 jobs:    
