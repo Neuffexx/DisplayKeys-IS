@@ -14,10 +14,10 @@ on:
 # Actions project permission
 permissions: write-all
 
-#Individual Tasks to fullfill to create artifact
+#Individual Tasks to fullfill, to create artifact
 jobs:    
   
-  build_exe:
+  package_to_exe:
     runs-on: windows-latest
     
     steps:
@@ -38,22 +38,7 @@ jobs:
         run: | 
           # Command parameters for creating the .EXE file
           pyinstaller --onefile --noconsole --name "DisplayKeys-IS" --debug all --distpath ${{ github.workspace }}/venv/dist/  ${{ github.workspace }}/venv/DisplayKeys-IS.py
-      
-  
-  create_artifact:
-    needs: build_exe
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-        
-      - name: Get Artifact
-        run: |
-          #list all in directory, sanity check that .exe was created 
-          ls -a ${{ github.workspace }}/venv/dist/
-          # Replace the line with the appropriate command to copy or move the .EXE file
-          #cp ${{ github.workspace }}/venv/dist/DisplayKeys-IS.exe ${{ github.workspace }}/DisplayKeys-IS.exe
-        
+
       - name: Upload Artifact
         uses: actions/upload-artifact@v2
         with:
