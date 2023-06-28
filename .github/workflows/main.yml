@@ -1,0 +1,46 @@
+name: DisplayKeys-IS Main
+
+
+# Trigger Build on:
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+    
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+    
+# Actions project permission
+permissions: write-all
+
+#Individual Tasks to fullfill, to create artifact
+jobs:    
+  
+  py_to_exe:
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r ${{ github.workspace }}/venv/requirements.txt
+        
+      - name: Create EXE file
+        run: | 
+          # Command parameters for creating the .EXE file
+          pyinstaller --onefile --noconsole --name "DisplayKeys-IS" --debug all --distpath ${{ github.workspace }}/venv/dist/  ${{ github.workspace }}/venv/DisplayKeys-IS.py
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: DisplayKeys-IS
+          path: ${{ github.workspace }}/venv/dist/DisplayKeys-IS.exe
