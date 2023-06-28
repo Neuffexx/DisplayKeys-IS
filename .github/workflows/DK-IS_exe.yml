@@ -48,14 +48,14 @@ jobs:
       - name: Get Artifact
         run: |
           #list all in directory, sanity check that .exe was created 
-          #ls -a ${{ github.workspace }}/venv/
+          ls -a ${{ github.workspace }}/venv/
           # Replace the line with the appropriate command to copy or move the .EXE file
-          #cp ${{ github.workspace }}/venv/dist/DisplayKeys-IS.exe ${{ github.workspace }}/DisplayKeys-IS.exe
+          cp ${{ github.workspace }}/venv/dist/DisplayKeys-IS.exe ${{ github.workspace }}/DisplayKeys-IS.exe
 
         
       - name: Upload Artifact
         uses: actions/upload-artifact@v2
         with:
           name: DisplayKeys-IS
-          path: ${{ github.workspace }}/venv/dist/DisplayKeys-IS.exe
+          path: ${{ github.workspace }}/DisplayKeys-IS.exe
 #
