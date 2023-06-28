@@ -30,6 +30,7 @@ Well I plan to add/improve on the following
 - Clean Up UI
 - Improve Image Splitting Logic
 - Saving/Loading presets (in case you find combos that work for you)
+- Automate Profile Assignment ! Base Camp Only ! ()
 
 ## How does it work?
 Oh wow someone actually reads this?
