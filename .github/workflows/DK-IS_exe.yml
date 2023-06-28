@@ -49,7 +49,7 @@ jobs:
           script-name: ${{ github.workspace }}/venv/DisplayKeys-IS.py
           access-token: ${{ secrets.NUITKA_COMMERCIAL_ACCESS_TOKEN }}
           onefile: true
-          enable-plugins: tkinter
+          enable-plugins: tk-inter
           disable-console: true
   
   ############################################
