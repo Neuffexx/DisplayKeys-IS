@@ -1,2 +1,0 @@
-filevers=(0, 1, 0, 0),
-prodvers=(0, 1, 0, 0),
