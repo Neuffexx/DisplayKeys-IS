@@ -2,7 +2,10 @@ name: Create and Upload to Release
 
 # Trigger Build on:
 on:
-  # Allows you to run this workflow manually from the Actions tab
+  # Automatically add artifact when release is created
+  release:
+    types: [published]
+  # Manually add artifact after release published
   workflow_dispatch:
   
 # Actions project permission
@@ -10,7 +13,8 @@ permissions: write-all
 
 jobs:
 
-  create_release:
+  publish_release:
+    runs-on: windows-latest
     steps:
       - name: release
         uses: actions/create-release@v1
@@ -19,10 +23,30 @@ jobs:
           draft: false
           prerelease: false
           release_name: "DisplayKeys-IS | Initial Release | v0.1.0" 
-          tag_name: ${{ github.ref }}
+          tag_name: "v0.1.0"
           body_path: CHANGELOG.md
         env:
           GITHUB_TOKEN: ${{ github.token }}
-    
-  upload_to_release:
-    
+          
+  upload_artifact:
+    runs-on: windows-latest
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v3
+        
+      - name: get artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: DisplayKeys-IS
+          path: ${{ github.workspace }}/venv/dist/
+      
+      - name: upload windows artifact
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ jobs.publish_release.steps.create_release.outputs.upload_url }}
+          asset_path: ${{ github.workspace }}/venv/dist/DisplayKeys-IS.exe
+          asset_name: "DisplayKeys-IS v0.1.0.exe"
+          asset_content_type: application/vnd.microsoft.portable-executable
+      
