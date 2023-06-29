@@ -6,6 +6,7 @@
 
 from PIL import Image
 import os
+import sys
 import tkinter as tk
 from tkinter import filedialog, messagebox
 
@@ -85,6 +86,8 @@ class ImageSplitterGUI:
     def __init__(self, entries):
         #GUI window
         self.window = tk.Tk()
+        icon_path = sys._MEIPASS + "./CatScream.ico"
+        self.window.iconbitmap(icon_path)
         self.window.title("DisplayKeys-IS")
         self.window.geometry("300x500")
 
