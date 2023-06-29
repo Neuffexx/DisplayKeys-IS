@@ -32,17 +32,16 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r ${{ github.workspace }}/venv/requirements.txt
+          pip install -r ${{ github.workspace }}/ProjectFiles/config/requirements.txt
         
       - name: Create EXE file
         run: | 
           # Command parameters for creating the .EXE file
-          pyinstaller ${{ github.workspace }}/venv/DisplayKeys-IS.py --onefile --noconsole --name "DisplayKeys-IS" --debug all --distpath ${{ github.workspace }}/venv/dist/ --add-data "${{ github.workspace }}/venv/DisplayKeys-IS.ico;."
-          #--version-file ${{ github.workspace }}/venv/version.rc #temporarily disabled until confirmed working
-
+          pyinstaller ${{ github.workspace }}/ProjectFiles/DisplayKeys-IS.py --onefile --noconsole --name "DisplayKeys-IS" --debug all --distpath ${{ github.workspace }}/ProjectFiles/dist/ --add-data "${{ github.workspace }}/ProjectFiles/assets/DisplayKeys-IS.ico;."
+          #--version-file ${{ github.workspace }}/ProjectFiles/config/version.rc #temporarily disabled until confirmed working
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
           name: DisplayKeys-IS
-          path: ${{ github.workspace }}/venv/dist/DisplayKeys-IS.exe
+          path: ${{ github.workspace }}/ProjectFiles/dist/DisplayKeys-IS.exe
