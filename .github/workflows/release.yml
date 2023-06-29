@@ -1,4 +1,4 @@
-name: Create and Upload to Release
+name: DisplayKeys-IS Release
 
 # Trigger Build on:
 on:
