@@ -37,7 +37,7 @@ jobs:
       - name: Create EXE file
         run: | 
           # Command parameters for creating the .EXE file
-          pyinstaller ${{ github.workspace }}/venv/DisplayKeys-IS.py --onefile --noconsole --name "DisplayKeys-IS" --debug all --distpath ${{ github.workspace }}/venv/dist/ --add-data "${{ github.workspace }}/venv/DisplayKeys-IS.ico;." --icon os.path.join(sys._MEIPASS, 'CatScream.ico')
+          pyinstaller ${{ github.workspace }}/venv/DisplayKeys-IS.py --onefile --noconsole --name "DisplayKeys-IS" --debug all --distpath ${{ github.workspace }}/venv/dist/ --add-data "${{ github.workspace }}/venv/DisplayKeys-IS.ico;." --icon "$(python -c "import sys, os; print(os.path.join(sys._MEIPASS, 'DisplayKeys-IS.ico'))")"
           #--version-file ${{ github.workspace }}/venv/version.rc #temporarily disabled until confirmed working
 
 
