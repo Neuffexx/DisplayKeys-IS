@@ -1,0 +1,28 @@
+name: Create and Upload to Release
+
+# Trigger Build on:
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+  
+# Actions project permission
+permissions: write-all
+
+jobs:
+
+  create_release:
+    steps:
+      - name: release
+        uses: actions/create-release@v1
+        id: create_release
+        with:
+          draft: false
+          prerelease: false
+          release_name: "DisplayKeys-IS | Initial Release | v0.1.0" 
+          tag_name: ${{ github.ref }}
+          body_path: CHANGELOG.md
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+    
+  upload_to_release:
+    
