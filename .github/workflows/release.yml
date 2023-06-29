@@ -2,9 +2,6 @@ name: DisplayKeys-IS Release
 
 # Trigger Build on:
 on:
-  # Automatically add artifact when release is created
-  release:
-    types: [published]
   # Manually add artifact after release published
   workflow_dispatch:
   
