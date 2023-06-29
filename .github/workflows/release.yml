@@ -1,0 +1,48 @@
+name: DisplayKeys-IS Release
+
+# Trigger Build on:
+on:
+  # Manually create release and add artifact after release published
+  workflow_dispatch:
+  
+# Actions project permission
+permissions: write-all
+
+jobs:
+
+  publish_release:
+    runs-on: windows-latest
+    steps:
+      - name: release
+        uses: actions/create-release@v1
+        id: create_release
+        with:
+          draft: false
+          prerelease: false
+          release_name: "DisplayKeys-IS | Initial Release | v0.1.0" 
+          tag_name: "v0.1.0"
+          body_path: ${{ github.workspace }}\RELEASELOG.md
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          
+        ############## Add Artifact ############## 
+        
+      - name: checkout repository
+        uses: actions/checkout@v3
+        
+      - name: get artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: DisplayKeys-IS
+          path: ${{ github.workspace }}/venv/dist/
+      
+      - name: upload windows artifact
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ github.workspace }}/venv/dist/DisplayKeys-IS.exe
+          asset_name: "DisplayKeys-IS v0.1.0.exe"
+          asset_content_type: application/vnd.microsoft.portable-executable
+      

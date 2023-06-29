@@ -13,9 +13,9 @@ It certainly doesnt when you are actually using it, as of the time of writing th
 ## How do you use it?
 The only thing anyone probably cares to read on here, so let me make this simple:
 - Download / Setup Instructions
-	- The tool functionally works, but I havent figured out how to share it yet so this section will be filled in later.
+	- Download the DisplayKeys-IS_vX.X.X.zip file from the latest of the [Release](https://github.com/Neuffexx/DisplayKeys-IS/releases) page 
+	- Extract and Run
 - Usage Instructions / Or watch the [Usage Demonstration Video (Placeholder)](http://youtube.com/)
-	- Run ...
 	- Select an Image to split, either by entering the path into the text box or selecing it via the 'Browse' button.
 	- Select the Save Location, again, either by entering the path or selecting it
 	- (Optionally) Set Image Splitting Options

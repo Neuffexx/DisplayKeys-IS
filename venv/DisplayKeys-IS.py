@@ -86,7 +86,7 @@ class ImageSplitterGUI:
     def __init__(self, entries):
         #GUI window
         self.window = tk.Tk()
-        icon_path = sys._MEIPASS + "./CatScream.ico"
+        icon_path = sys._MEIPASS + "./DisplayKeys-IS.ico"
         self.window.iconbitmap(icon_path)
         self.window.title("DisplayKeys-IS")
         self.window.geometry("300x500")
