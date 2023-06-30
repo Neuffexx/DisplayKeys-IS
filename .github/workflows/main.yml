@@ -45,7 +45,7 @@ jobs:
       - name: Create EXE file
         run: | 
           # Command parameters for creating the .EXE file
-          pyinstaller ${{ github.workspace }}/ProjectFiles/DisplayKeys-IS.py --onefile --noconsole --name "DisplayKeys-IS" --debug all --distpath ${{ github.workspace }}/ProjectFiles/dist/ --add-data "${{ github.workspace }}/ProjectFiles/assets/DisplayKeys-IS.ico;." --icon ./assets/DisplayKeys-IS.ico
+          pyinstaller ${{ github.workspace }}/ProjectFiles/DisplayKeys-IS.py --onefile --noconsole --name "DisplayKeys-IS" --debug all --distpath ${{ github.workspace }}/ProjectFiles/dist/ --add-data "${{ github.workspace }}/ProjectFiles/assets/DisplayKeys-IS.ico;." --icon ${{ github.workspace }}/ProjectFiles/assets/DisplayKeys-IS.ico
           #--version-file ${{ github.workspace }}/ProjectFiles/config/version.rc #temporarily disabled until confirmed working
 
       - name: Upload Artifact
