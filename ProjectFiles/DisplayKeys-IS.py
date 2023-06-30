@@ -6,6 +6,7 @@
 
 from PIL import Image, ImageSequence
 import os
+import sys
 import tkinter as tk
 from tkinter import filedialog, messagebox
 
@@ -235,9 +236,9 @@ class ImageSplitterGUI:
     def __init__(self, entries):
         #GUI window
         self.window = tk.Tk()
-        #icon_path = sys._MEIPASS + "./DisplayKeys-IS.ico"
-        app_dir = os.path.dirname(os.path.abspath(__file__))
-        icon_path = os.path.join(app_dir, "./assets/DisplayKeys-IS.ico")
+        icon_path = sys._MEIPASS + "./DisplayKeys-IS.ico"
+        #app_dir = os.path.dirname(os.path.abspath(__file__))
+        #icon_path = os.path.join(app_dir, "./assets/DisplayKeys-IS.ico")
         self.window.iconbitmap(icon_path)
         self.window.title("DisplayKeys-IS")
         self.window.geometry("300x500")
