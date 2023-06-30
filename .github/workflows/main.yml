@@ -1,3 +1,11 @@
+####################################################################################################################
+# This Action exists solely for development and testing changes.
+# If you want to create a release build, use the "DisplayKeys-IS Release" action instead.
+#
+# It is still automated to create a build when changes are merged to 'main' however, in order to ensure
+# that any such changes are indeed working.
+####################################################################################################################
+
 name: DisplayKeys-IS Main
 
 
