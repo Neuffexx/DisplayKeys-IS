@@ -1,3 +1,10 @@
+####################################################################################################################
+# This Action exists solely for the purposes of Releasing a 'Final' State of a Version.
+# This action has to be triggered manually once all the parameters in this Action are 'Manuall' setup.
+#
+# For development purposes check the 'DisplayKeys-IS Main' Action, and its auto generated Artifacts.
+####################################################################################################################
+
 name: DisplayKeys-IS Release
 
 # Trigger Build on:
