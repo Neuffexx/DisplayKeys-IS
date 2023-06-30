@@ -22,8 +22,8 @@ jobs:
         with:
           draft: false
           prerelease: false
-          release_name: "DisplayKeys-IS | Initial Release | v0.1.0" 
-          tag_name: "v0.1.0"
+          release_name: "Testing" 
+          tag_name: "test"
           body_path: ${{ github.workspace }}/ProjectFiles/config/releaselog.md
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -43,6 +43,6 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ${{ github.workspace }}/ProjectFiles/dist/DisplayKeys-IS.exe
-          asset_name: "DisplayKeys-IS v0.1.0.exe"
+          asset_name: "DisplayKeys-IS-Test.exe"
           asset_content_type: application/vnd.microsoft.portable-executable
       
