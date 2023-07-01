@@ -15,6 +15,10 @@ The only thing anyone probably cares to read on here, so let me make this simple
 - Download / Setup Instructions
 	- Download the DisplayKeys-IS_vX.X.X.zip file from the latest of the [Release](https://github.com/Neuffexx/DisplayKeys-IS/releases) page 
 	- Extract and Run
+		> You may get a warning when first launching it, this is a False Positive, just click 'Run Anyway'.
+
+  		> _If you feel uncomfortable to download the .exe your free to go over the single code file that is the Application to ensure its safe (ProjectFiles/DisplayKeys-IS.py).
+    		 Or the action that builds & publishes it (.github/workflows/release.yml)_
 - Usage Instructions / Or watch the [Usage Demonstration Video (Placeholder)](http://youtube.com/)
 	- Select an Image to split, either by entering the path into the text box or selecing it via the 'Browse' button.
 	- Select the Save Location, again, either by entering the path or selecting it
@@ -55,7 +59,8 @@ The interface is composed of three things in the following structure:
 
 (I might accidentally refere to widget as entries at soem point due to my own lack of knowledge when making this)
 
-When the Window/GUI is first created it takes as a argument an array of widgets, that is then used to populate populate the grid.
+When the Window/GUI is first created it takes as a argument an array of widgets, that is then used to populate populate the grid column.
+This then continiously runs on a `mainloop()` function that constantly updates the UI allowing for changes as the user interacts with the application.
 
 
 
