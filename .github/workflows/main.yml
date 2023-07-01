@@ -12,7 +12,11 @@ name: DisplayKeys-IS Main
 # Trigger Build on:
 on:
   push:
-    branches: [ "main", "Development" ]
+    branches: [ "Development" ]
+    paths-ignore:
+      - "${{ github.workspace }}/README.md"
+      - "${{ github.workspace }}/.github/workflows/main.yml"
+      - "${{ github.workspace }}/.github/workflows/release.yml"
   pull_request:
     branches: [ "main" ]
     
