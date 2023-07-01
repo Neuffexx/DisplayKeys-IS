@@ -493,14 +493,14 @@ entries = [
         "label": "Image:",
         "has_textbox": True,
         "button_text": "Browse",
-        "button_command": browse_image,  # Replace with your function for browsing the image,
+        "button_command": browse_image,
         "tooltip": "Select the Image to Split.",
     },
     {
         "label": "Output Directory:",
         "has_textbox": True,
         "button_text": "Browse",
-        "button_command": browse_output,  # Replace with your function for browsing the output directory,
+        "button_command": browse_output,
         "tooltip": "Select the folder to save split images to.",
     },
     {
