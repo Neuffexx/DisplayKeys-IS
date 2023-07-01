@@ -258,7 +258,7 @@ class ImageSplitterGUI:
         self.process_button.grid(sticky="n")
 
         # Image Preview
-        self.image_preview = ImagePreview(self.window)
+        self.image_preview = ImagePreviewWidget(self.window)
         self.image_preview.grid(row=0, column=1, sticky="ns")
 
         # Hide the Horizontal/Vertical Gap entries initially
@@ -362,10 +362,10 @@ class EntryWithLabel:
             self.tooltip = Tooltip(self.button, tooltip_text)  # Add tooltip to the button
 
 
-class ImagePreview(tk.Label):
+class ImagePreviewWidget(tk.Label):
     def __init__(self, master):
         super().__init__(master)
-        self.image = None
+        self.image = "./Preview.png"
         self.photo = None
         self.config(width=200, height=200)
 
