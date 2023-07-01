@@ -375,7 +375,7 @@ class ImagePreviewer:
         
         # Image Preview
         self.image_label = tk.Label(self.window)
-        self.image_label.grid(column=1, sticky="n")
+        self.image_label.grid(row=0, column=1, sticky="n")
         # Set the maximum size of the image preview
         self.image_label.configure(
             width=500, height=300, padx=10, pady=10,
