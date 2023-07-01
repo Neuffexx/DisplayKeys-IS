@@ -31,7 +31,7 @@ VSVersionInfo(
           u'040904B0',
           [StringStruct(u'CompanyName', u'Neuffexx'),
           StringStruct(u'FileDescription', u'A quick workaround tool for splitting images to be used with DisplayKey Pads.'),
-          StringStruct(u'FileVersion', u'0.1.0'),
+          StringStruct(u'FileVersion', u'0.2.0'),
           StringStruct(u'InternalName', u'DisplayKeys-IS'),
           StringStruct(u'LegalCopyright', u'Copyright (c) Neuffexx'),
           StringStruct(u'OriginalFilename', u'DisplayKeys-IS.exe'),
