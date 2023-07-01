@@ -241,10 +241,11 @@ class ImageSplitterGUI:
         #icon_path = os.path.join(app_dir, "./assets/DisplayKeys-IS.ico")
         self.window.iconbitmap(icon_path)
         self.window.title("DisplayKeys-IS")
-        self.window.geometry("300x500")
+        self.window.geometry("600x500")
 
         # Configure grid to center horizontally
         self.window.grid_columnconfigure(0, weight=1)  # Set the weight of the first column to expand
+        self.window.grid_columnconfigure(1, weight=4)
 
         #User parameter entry widgets
         self.entries = []
@@ -255,6 +256,10 @@ class ImageSplitterGUI:
             self.window, text = "Split Image", command=lambda: process_image(self.entries)
         )
         self.process_button.grid(sticky="n")
+
+        # Image Preview widget
+        self.preview_image = ImagePreview(self.window, image_path=None)
+        self.preview_image.grid(row=0, column=1, sticky="ns")
 
         # Hide the Horizontal/Vertical Gap entries initially
         self.update_option_entries()
@@ -355,6 +360,29 @@ class EntryWithLabel:
             self.button = tk.Button(window, text=button_text, command=lambda: button_command(self.entry))
             self.button.grid(sticky="n")
             self.tooltip = Tooltip(self.button, tooltip_text)  # Add tooltip to the button
+
+
+class ImagePreview(tk.Label):
+    def __init__(self, parent, image_path):
+        super().__init__(parent)
+        self.image_path = image_path
+        self.image = None
+        self.photo = None
+        self.configure_image()
+
+    def display_image(self):
+        if self.image_path:
+            self.image = Image.open(self.image_path)
+            self.photo = ImageTk.PhotoImage(self.image)
+            self.config(image=self.photo)
+        else:
+            self.image = None
+            self.photo = None
+            self.config(image=None)
+
+    def update_image(self, image_path):
+        self.image_path = image_path
+        self.configure_image()
 
 
 class Tooltip:
