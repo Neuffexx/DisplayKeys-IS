@@ -260,7 +260,6 @@ class ImageSplitterGUI:
 
         # Image Preview
         self.image_previewer = ImagePreviewer(self.window)
-        self.image_previewer.grid(sticky="n")
         # Update Image Button
         self.update_image_button = tk.Button(
             self.window, text="Update Image", command=self.update_image_preview
