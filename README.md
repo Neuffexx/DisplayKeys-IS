@@ -13,7 +13,7 @@ It certainly doesnt when you are actually using it, as of the time of writing th
 ## How do you use it?
 The only thing anyone probably cares to read on here, so let me make this simple:
 - Download / Setup Instructions
-	- Download the DisplayKeys-IS_vX.X.X.zip file from the latest of the [Release](https://github.com/Neuffexx/DisplayKeys-IS/releases) page 
+	- Download the DisplayKeys-IS_vX.X.X file from the latest of the [Release](https://github.com/Neuffexx/DisplayKeys-IS/releases) page 
 	- Extract and Run
 		> You may get a warning when first launching it, this is a False Positive, just click 'Run Anyway'.
 
