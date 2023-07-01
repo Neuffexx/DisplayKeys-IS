@@ -259,7 +259,7 @@ class ImageSplitterGUI:
         self.process_button.grid(sticky="n")
 
         # Image Preview
-       img = ImageTk.PhotoImage(Image.open("./Preview.png"))
+        img = ImageTk.PhotoImage(Image.open("./Preview.png"))
         panel = tk.Label(self.window, image=img)
         panel.grid(column=1, row=0)
 
