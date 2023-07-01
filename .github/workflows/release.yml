@@ -75,6 +75,6 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ${{ github.workspace }}/ProjectFiles/dist/DisplayKeys-IS.exe
-          asset_name: "DisplayKeys-IS-Test.exe"
+          asset_name: "DisplayKeys-IS_v0.2.0.exe"
           asset_content_type: application/vnd.microsoft.portable-executable
       
