@@ -259,9 +259,13 @@ class ImageSplitterGUI:
         self.process_button.grid(sticky="n")
 
         # Image Preview
-        img = ImageTk.PhotoImage(Image.open(sys._MEIPASS + "./Preview.png"))
-        panel = tk.Label(self.window, image=img)
-        panel.grid(column=1, row=0)
+        self.image_previewer = ImagePreviewer(self.window)
+        # Update Image Button
+        self.update_image_button = tk.Button(
+            self.window, text="Update Image", command=self.update_image_preview
+        )
+        self.update_image_button.grid(sticky="n")
+        
 
         # Hide the Horizontal/Vertical Gap entries initially
         self.update_option_entries()
@@ -363,6 +367,42 @@ class EntryWithLabel:
             self.button.grid(sticky="n")
             self.tooltip = Tooltip(self.button, tooltip_text)  # Add tooltip to the button
 
+
+class ImagePreviewer:
+    def __init__(self, window):
+        self.window = window
+
+        # Image path variable
+        self.image_path = tk.StringVar()
+
+        # Image label
+        self.image_label = tk.Label(self.window)
+        self.image_label.grid(sticky="n")
+
+        # Browse button
+        self.browse_button = tk.Button(
+            self.window, text="Browse", command=self.browse_image
+        )
+        self.browse_button.grid(sticky="n")
+
+    def browse_image(self):
+        file_path = filedialog.askopenfilename(
+            filetypes=[("Image files", "*.jpg;*.jpeg;*.png;*.gif;*.bmp")]
+        )
+        if file_path:
+            self.image_path.set(file_path)
+            self.update_image()
+
+    def update_image(self):
+        image_path = self.image_path.get()
+        if image_path:
+            # Load the image
+            image = tk.PhotoImage(file=image_path)
+            self.image_label.configure(image=image)
+            self.image_label.image = image  # Keep a reference to avoid garbage collection
+        else:
+            self.image_label.configure(image="")
+            self.image_label.image = None
 
 class Tooltip:
     def __init__(self, widget, text):
