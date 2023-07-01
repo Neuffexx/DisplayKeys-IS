@@ -369,8 +369,6 @@ class ImagePreviewer:
         self.image_label = tk.Label(self.window)
         self.image_label.grid(sticky="n")
 
-        self.browse_button.grid(sticky="n")
-
     def update_image(self, image_path):
         image_path = tk.StringVar(image_path)
         
