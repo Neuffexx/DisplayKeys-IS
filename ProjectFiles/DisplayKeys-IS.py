@@ -1,10 +1,10 @@
 ## Image Splitter made by Neuffexx
 ## This image splitter was made to allow people to take images they want displayed across their Mountain DisplayPad keys.
-## Who asked for this? Me. I did. Because its a workaround to a problem that shouldnt exist in the first place.
+## Who asked for this? Me. I did. Because it's a workaround to a problem that shouldn't exist in the first place.
 ## And I was too lazy to do this to each image manually.
 ## Was this more effort? Yes. You are welcome.
 
-from PIL import Image
+from PIL import Image, ImageSequence
 import os
 import sys
 import tkinter as tk
@@ -15,12 +15,57 @@ from tkinter import filedialog, messagebox
 #                                                   Split Image
 ####################################################################################################################
 
+def get_supported_types():
+    # The supported file formats:
+    sup_image_formats = [".png", ".jpg", ".jpeg", ".bmp"]
+    sup_animated_formats = [".gif"]
+    return sup_image_formats, sup_animated_formats
+
+
+def determine_split_type(file_path, output_dir, rows, cols, gap_horizontal, gap_vertical):
+    print("Determening File Type")
+    # The supported file formats:
+    image_formats = get_supported_types()[0]
+    animated_formats = get_supported_types()[1]
+
+    print("File Types are: ")
+    print(get_supported_types()[0])
+    print(get_supported_types()[1])
+
+    try:
+        # Check if image format is supported
+        with Image.open(file_path) as image:
+            print("Image can be opened: " + ("True" if image else "False") + "\n   Image format is: " + "." + image.format.lower())
+            # Is Image
+            if "." + image.format.lower() in image_formats:
+                split_image(file_path, output_dir, rows, cols, gap_horizontal, gap_vertical)
+                return True
+            # Is Animated
+            elif "." + image.format.lower() in animated_formats:
+                split_gif(file_path, output_dir, rows, cols, gap_horizontal, gap_vertical)
+                return True
+            else:
+                print("No formats matched")
+
+    # Is not of a supported image format
+    except TypeError:
+        # In the future simply open a Pop-Up Window with an error message:
+        # |----------------------------------------|
+        # | File Format not supported \n           |
+        # | Currently supported formats are: \n    |
+        # | - Image     | get_supported_types()[0] |
+        # | - Animated  | get_supported_types()[1] |
+        # |----------------------------------------|
+        # Do nothing for now
+        print("Wrong File Type")
+        return None
+
 
 def split_image(image_path, output_dir, rows, cols, gap_horizontal, gap_vertical):
     # Open the image using PIL
     image = Image.open(image_path)
 
-    # Calculate the width and height of each sub-image
+    # Calculate the width and height of each image-cell
     width, height = image.size
     cell_width = (width - (cols - 1) * gap_horizontal) // cols
     cell_height = (height - (rows - 1) * gap_vertical) // rows
@@ -38,7 +83,7 @@ def split_image(image_path, output_dir, rows, cols, gap_horizontal, gap_vertical
     # Determine the longest dimension (width or height)
     longest_dimension = "width" if cell_width > cell_height else "height"
 
-    # Split the image and save each sub-image
+    # Split the image and save each image-cell
     for row in range(rows):
         for col in range(cols):
             # Calculate the coordinates for cropping
@@ -63,15 +108,120 @@ def split_image(image_path, output_dir, rows, cols, gap_horizontal, gap_vertical
                 right = left + cell_width
                 lower = upper + max_cell_size
 
-            # Crop the sub-image
-            sub_image = image.crop((left, upper, right, lower))
+            # Crop the image-cell
+            image_cell = image.crop((left, upper, right, lower))
 
             # Generate the output file path
-            output_path = os.path.join(output_dir, f"sub_image_{row}_{col}.png")
+            output_path = os.path.join(output_dir, f"image_cell_{row}_{col}.png")
 
-            # Save the sub-image
-            sub_image.save(output_path)
+            # Save the image-cell
+            image_cell.save(output_path)
 
+            print(f"Saved {output_path}")
+
+
+def split_gif(gif_path, output_dir, rows, cols, gap_horizontal, gap_vertical):
+    # Create the output directory if it doesn't exist
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Open the image using PIL
+    gif = Image.open(gif_path)
+    print("GIF Frame Count: " + str(gif.n_frames))
+    # Extract frames from .gif file
+    frames = []
+    for frame in ImageSequence.Iterator(gif):
+        frames.append(frame.copy())
+
+    # Get duration of each frame
+    frame_durations = []
+    for frame in range(0, gif.n_frames):
+        gif.seek(frame)
+        try:
+            duration = int(gif.info['duration'])
+            if duration > 0:
+                frame_durations.append(duration)
+            else:
+                frame_durations.append(0)
+        except(KeyError, TypeError):
+            print("No frame durations present")
+            # Add default time in case no frame duration is provided by .gif
+            frame_durations.append(0)
+    # Calculate average duration
+    non_zero_durations = [d for d in frame_durations if d > 0]
+    if len(non_zero_durations) > 0:
+        default_duration = sum(non_zero_durations) // len(non_zero_durations)
+    else:
+        default_duration = 100
+    # Replace missing values with average duration
+    for i in range(len(frame_durations)):
+        if frame_durations[i] == 0:
+            frame_durations[i] = default_duration
+    print("Frame Durations: \n" + frame_durations.__str__())
+
+    # Calculate the width and height of each image-cell
+    width, height = frames[0].size
+    cell_width = (width - (cols - 1) * gap_horizontal) // cols
+    cell_height = (height - (rows - 1) * gap_vertical) // rows
+    # Determine the maximum cell size (to maintain square format)
+    max_cell_size = min(cell_width, cell_height)
+    # Calculate the horizontal and vertical offsets for cropping
+    horizontal_offset = (cell_width - max_cell_size) // 2
+    vertical_offset = (cell_height - max_cell_size) // 2
+    # Determine the longest dimension (width or height)
+    longest_dimension = "width" if cell_width > cell_height else "height"
+    
+    # Split Frames
+    modified_frames = []
+    for row in range(rows):
+        for col in range(cols):
+            # Calculate the coordinates for cropping
+            left = col * (cell_width + gap_horizontal) + horizontal_offset
+            upper = row * (cell_height + gap_vertical) + vertical_offset
+
+            # Remove rows/columns only if they are the outermost rows/columns
+            if row == 0:
+                upper += vertical_offset
+            elif row == rows - 1:
+                upper -= vertical_offset
+
+            if col == 0:
+                left += horizontal_offset
+            elif col == cols - 1:
+                left -= horizontal_offset
+
+            if longest_dimension == "width":
+                right = left + max_cell_size
+                lower = upper + cell_height
+            else:
+                right = left + cell_width
+                lower = upper + max_cell_size
+
+            # Perform operation on each frame, for each row/column split image-cell
+            for frame in frames:
+
+                # Crop the current frame
+                image_cell = frame.crop((left, upper, right, lower))
+
+                # Hold onto cropped image-cell
+                modified_frames.append(image_cell)
+
+            # Generate the output file path
+            output_path = os.path.join(output_dir, f"gif_cell_{row}_{col}.gif")
+
+            print("Num of Modified Frames: " + str(modified_frames.__sizeof__()))
+
+            # Save all frames of the image-cell into a single .gif file
+            modified_frames[0].save(
+                output_path,
+                save_all=True,
+                append_images=modified_frames[1:],
+                duration=frame_durations, # Might make this a user definable variable in the future
+                loop=0
+            )
+
+            modified_frames = []
+
+            print(f"gif_cell_{row}_{col} has this many frames: " + str(Image.open(output_path).n_frames))
             print(f"Saved {output_path}")
 
 
@@ -87,6 +237,8 @@ class ImageSplitterGUI:
         #GUI window
         self.window = tk.Tk()
         icon_path = sys._MEIPASS + "./DisplayKeys-IS.ico"
+        #app_dir = os.path.dirname(os.path.abspath(__file__))
+        #icon_path = os.path.join(app_dir, "./assets/DisplayKeys-IS.ico")
         self.window.iconbitmap(icon_path)
         self.window.title("DisplayKeys-IS")
         self.window.geometry("300x500")
@@ -106,6 +258,7 @@ class ImageSplitterGUI:
 
         # Hide the Horizontal/Vertical Gap entries initially
         self.update_option_entries()
+
 
     def create_entries(self, entries):
         created_entries = []
@@ -133,6 +286,7 @@ class ImageSplitterGUI:
             created_entries.append(entry_params)
 
         self.entries.extend(created_entries)
+
 
     #Shows / hides the Gap Textboxes that let the user enter the Horizontal/Vertical Gap in pixels
     def update_option_entries(self, *args):
@@ -166,9 +320,11 @@ class ImageSplitterGUI:
                 cols_entry["entry"].label.grid()
                 cols_entry["entry"].entry.grid()
 
+
     def run(self):
         # Start the Tkinter event loop
         self.window.mainloop()
+
 
 class EntryWithLabel:
     def __init__(self, window, label_text, has_textbox=False, has_dropdown=False, dropdown_label=None, dropdown_options=None, default_dropdown_option=None, button_text=None, button_command=None, tooltip_text=""):
@@ -200,6 +356,7 @@ class EntryWithLabel:
             self.button.grid(sticky="n")
             self.tooltip = Tooltip(self.button, tooltip_text)  # Add tooltip to the button
 
+
 class Tooltip:
     def __init__(self, widget, text):
         self.widget = widget
@@ -207,6 +364,7 @@ class Tooltip:
         self.tooltip = None
         self.widget.bind("<Enter>", self.show_tooltip)
         self.widget.bind("<Leave>", self.hide_tooltip)
+
 
     def show_tooltip(self, event):
         x, y, _, _ = self.widget.bbox("insert")
@@ -221,6 +379,7 @@ class Tooltip:
             self.tooltip, text=self.text, background="#ffffe0", relief="solid", borderwidth=1
         )
         label.grid(sticky="n")
+
 
     def hide_tooltip(self, event):
         if self.tooltip:
@@ -285,9 +444,10 @@ def process_image(entries):
             gap_horizontal = 0
             gap_vertical = 0
 
-    # Call the split_image function
-    split_image(image_path, output_dir, rows, cols, gap_horizontal, gap_vertical)
+    # Call the image splitting function
+    determine_split_type(image_path, output_dir, rows, cols, gap_horizontal, gap_vertical)
 
+    print("Process Image Exit")
 
 ####################################################################################################################
 #                                                    Create GUI
