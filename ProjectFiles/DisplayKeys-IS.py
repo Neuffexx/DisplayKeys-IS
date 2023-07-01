@@ -257,9 +257,9 @@ class ImageSplitterGUI:
         )
         self.process_button.grid(sticky="n")
 
-        # Image Preview widget
-        self.preview_image = ImagePreview(self.window, image_path=None)
-        self.preview_image.grid(row=0, column=1, sticky="ns")
+        # Image Preview
+        self.image_preview = ImagePreview(self.window)
+        self.image_preview.grid(row=0, column=1, sticky="ns")
 
         # Hide the Horizontal/Vertical Gap entries initially
         self.update_option_entries()
@@ -363,26 +363,16 @@ class EntryWithLabel:
 
 
 class ImagePreview(tk.Label):
-    def __init__(self, master, image_path):
+    def __init__(self, master):
         super().__init__(master)
-        self.image_path = image_path
         self.image = None
         self.photo = None
-        self.display_image()
-
-    def display_image(self):
-        if self.image_path:
-            self.image = Image.open(self.image_path)
-            self.photo = ImageTk.PhotoImage(self.image)
-            self.config(image=self.photo)
-        else:
-            self.image = None
-            self.photo = None
-            self.config(image=None)
+        self.config(width=200, height=200)
 
     def update_image(self, image_path):
-        self.image_path = image_path
-        self.configure_image()
+        self.image = Image.open(image_path)
+        self.photo = ImageTk.PhotoImage(self.image)
+        self.config(image=self.photo)
 
 
 class Tooltip:
