@@ -248,7 +248,7 @@ class ImageSplitterGUI:
         
         # Configure grid to center horizontally
         self.window.grid_columnconfigure(0, weight=1)  # Set the weight of the first column to expand
-        self.window.grid_columnconfigure(1, weight=4)
+        self.window.grid_columnconfigure(1, weight=1)
        
         # User parameter entry widgets
         self.entries = []
@@ -371,22 +371,23 @@ class EntryWithLabel:
 class ImagePreviewer:
     def __init__(self, window):
         self.window = window
+        self.image_path = None  # Initialize the image path as None
         
         # Image label
         self.image_label = tk.Label(self.window)
         self.image_label.grid(sticky="n")
 
-    def update_image(self, image_path):
-        image_path = tk.StrVar(image_path)
+    def update_image(self, image_path=None):
+        self.image_path = image_path  # Update the image path
         
-        if image_path:
+        if self.image_path:
             # Load the image
-            image = tk.PhotoImage(file=image_path)
+            image = tk.PhotoImage(file=self.image_path)
             self.image_label.configure(image=image)
             self.image_label.image = image  # Keep a reference to avoid garbage collection
         else:
             self.image_label.configure(image="")
-            self.image_label.image = sys._MEIPASS + "./Preview.ico"
+            self.image_label.image = sys._MEIPASS + "./Preview.png"
 
 
 class Tooltip:
@@ -426,8 +427,7 @@ def browse_image(entry):
     if file_path:
         entry.delete(0, tk.END)
         entry.insert(tk.END, file_path)
-        gui.image_previewer.image_path.set(image_path)
-        gui.image_previewer.update_image()
+        gui.image_previewer.update_image(image_path=file_path)  # Pass the image path
 
     return file_path
 
