@@ -260,12 +260,6 @@ class ImageSplitterGUI:
 
         # Image Preview
         self.image_previewer = ImagePreviewer(self.window)
-        # Update Image Button
-        self.update_image_button = tk.Button(
-            self.window, text="Update Image", command=self.update_image_preview
-        )
-        self.update_image_button.grid(sticky="n")
-        
 
         # Hide the Horizontal/Vertical Gap entries initially
         self.update_option_entries()
@@ -330,14 +324,6 @@ class ImageSplitterGUI:
                 rows_entry["entry"].entry.grid()
                 cols_entry["entry"].label.grid()
                 cols_entry["entry"].entry.grid()
-
-
-    def update_image_preview(self):
-        image_path = browse_image()
-        if image_path:
-            self.image_previewer.image_path.set(image_path)
-            self.image_previewer.update_image()
-            
     
     def run(self):
         # Start the Tkinter event loop
@@ -392,14 +378,6 @@ class ImagePreviewer:
         )
         self.browse_button.grid(sticky="n")
 
-    def browse_image(self):
-        file_path = filedialog.askopenfilename(
-            filetypes=[("Image files", "*.jpg;*.jpeg;*.png;*.gif;*.bmp")]
-        )
-        if file_path:
-            self.image_path.set(file_path)
-            self.update_image()
-
     def update_image(self):
         image_path = self.image_path.get()
         if image_path:
@@ -451,6 +429,8 @@ def browse_image(entry):
     if file_path:
         entry.delete(0, tk.END)
         entry.insert(tk.END, file_path)
+        gui.image_previewer.image_path.set(image_path)
+        gui.image_previewer.update_image()
 
     return file_path
 
