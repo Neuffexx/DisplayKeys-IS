@@ -36,7 +36,7 @@ VSVersionInfo(
           StringStruct(u'LegalCopyright', u'Copyright (c) Neuffexx'),
           StringStruct(u'OriginalFilename', u'DisplayKeys-IS.exe'),
           StringStruct(u'ProductName', u'DisplayKeys-IS'),
-          StringStruct(u'ProductVersion', u'0.1.0')])
+          StringStruct(u'ProductVersion', u'0.2.0')])
     ]),
     VarFileInfo([VarStruct(u'Translation', [1033, 1200])])
   ]
