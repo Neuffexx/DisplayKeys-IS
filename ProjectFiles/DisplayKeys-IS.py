@@ -333,6 +333,13 @@ class ImageSplitterGUI:
                 cols_entry["entry"].entry.grid()
 
 
+    def update_image_preview(self):
+        image_path = browse_image()
+        if image_path:
+            self.image_previewer.image_path.set(image_path)
+            self.image_previewer.update_image()
+            
+    
     def run(self):
         # Start the Tkinter event loop
         self.window.mainloop()
