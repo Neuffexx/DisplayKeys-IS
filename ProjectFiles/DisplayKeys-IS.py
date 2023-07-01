@@ -378,18 +378,30 @@ class ImagePreviewer:
         self.image_label.grid(sticky="n")
 
         # Set the maximum size of the image preview
-        self.image_label.configure(
-            width=300, height=300, padx=10, pady=10,
-        )
+        self.max_width = 500
+        self.max_height = 300
 
     def update_image(self, image_path=None):
         self.image_path = image_path  # Update the image path
-        
+
         if self.image_path:
             # Load the image
-            image = tk.PhotoImage(file=self.image_path)
-            self.image_label.configure(image=image)
-            self.image_label.image = image  # Keep a reference to avoid garbage collection
+            image = Image.open(self.image_path)
+
+            # Calculate the scaled dimensions to fit within the maximum size
+            width, height = image.size
+            scale = min(self.max_width / width, self.max_height / height)
+            new_width = int(width * scale)
+            new_height = int(height * scale)
+
+            # Resize the image
+            resized_image = image.resize((new_width, new_height), Image.ANTIALIAS)
+
+            # Convert the resized image to PhotoImage
+            photo_image = ImageTk.PhotoImage(resized_image)
+
+            self.image_label.configure(image=photo_image)
+            self.image_label.image = photo_image  # Keep a reference to avoid garbage collection
         else:
             self.image_label.configure(image="")
             self.image_label.image = sys._MEIPASS + "./Preview.png"
