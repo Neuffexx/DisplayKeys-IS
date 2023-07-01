@@ -29,8 +29,8 @@ jobs:
         with:
           draft: false
           prerelease: false
-          release_name: "Testing" 
-          tag_name: "test"
+          release_name: "DisplayKeys-IS | GIF Support | v0.2.0" 
+          tag_name: "v0.2.0"
           body_path: ${{ github.workspace }}/ProjectFiles/config/releaselog.md
         env:
           GITHUB_TOKEN: ${{ github.token }}
