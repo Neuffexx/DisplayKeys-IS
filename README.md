@@ -97,10 +97,9 @@ The logic can be summed up to this:
 ![Image showing a 3x8 cell division, highlighting both the outlier and core cells](https://i.imgur.com/zcCL5YL.jpg)
 
 - For the Outlier's: I simply make sure to crop from the outside inwards if the Image-Cell proportions allow it (relative to the original image).
-  If it doesnt, then it will choose the Single-Outer Side of the larger dimension, to crop from there.
 ![Image showing a 3x8 cell division, showing the direction of cropping for outlier cells](https://i.imgur.com/lsvQmNl.png)
 
-- For the Core's: on the other hand dont have the benefit of this type of cropping.
+- The Core's: on the other hand dont have the benefit of this type of cropping.
   Instead, it crops from both sides of the largest dimension equal amounts of rows of pixels.
 ![Image showing a 3x8 cell division, showing the direction of cropping for core cells](https://i.imgur.com/yOKNQKl.png)
 
