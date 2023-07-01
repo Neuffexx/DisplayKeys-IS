@@ -363,12 +363,12 @@ class EntryWithLabel:
 
 
 class ImagePreview(tk.Label):
-    def __init__(self, parent, image_path):
-        super().__init__(parent)
+    def __init__(self, master, image_path):
+        super().__init__(master)
         self.image_path = image_path
         self.image = None
         self.photo = None
-        self.configure_image()
+        self.display_image()
 
     def display_image(self):
         if self.image_path:
