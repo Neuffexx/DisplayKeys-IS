@@ -365,21 +365,15 @@ class ImagePreviewer:
     def __init__(self, window):
         self.window = window
 
-        # Image path variable
-        self.image_path = tk.StringVar()
-
         # Image label
         self.image_label = tk.Label(self.window)
         self.image_label.grid(sticky="n")
 
-        # Browse button
-        self.browse_button = tk.Button(
-            self.window, text="Browse", command=self.browse_image
-        )
         self.browse_button.grid(sticky="n")
 
-    def update_image(self):
-        image_path = self.image_path.get()
+    def update_image(self, image_path):
+        image_path = tk.StringVar(image_path)
+        
         if image_path:
             # Load the image
             image = tk.PhotoImage(file=image_path)
@@ -387,7 +381,7 @@ class ImagePreviewer:
             self.image_label.image = image  # Keep a reference to avoid garbage collection
         else:
             self.image_label.configure(image="")
-            self.image_label.image = None
+            self.image_label.image = sys._MEIPASS + "./Preview.png"
 
 class Tooltip:
     def __init__(self, widget, text):
@@ -429,8 +423,7 @@ def browse_image(entry):
     if file_path:
         entry.delete(0, tk.END)
         entry.insert(tk.END, file_path)
-        gui.image_previewer.image_path.set(image_path)
-        gui.image_previewer.update_image()
+        gui.image_previewer.update_image(image_path)
 
     return file_path
 
