@@ -425,6 +425,9 @@ def browse_image(entry):
     if file_path:
         entry.delete(0, tk.END)
         entry.insert(tk.END, file_path)
+        # Update the image preview widget with the selected image
+        if gui.image_preview:
+            gui.image_preview.update_image(file_path)
 
     return file_path
 
