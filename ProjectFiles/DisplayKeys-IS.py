@@ -5,11 +5,12 @@
 ## Was this more effort? Yes. You are welcome.
 
 
-from PIL import Image, ImageSequence, ImageTk
+from PIL import Image, ImageSequence
 import os
 import sys
 import tkinter as tk
 from tkinter import filedialog, messagebox
+from PIL import ImageTk
 
 
 ####################################################################################################################
@@ -244,11 +245,10 @@ class ImageSplitterGUI:
         self.window.iconbitmap(icon_path)
         self.window.title("DisplayKeys-IS")
         self.window.geometry("600x500")
-        self.window.resizable(False, False)
         
-        # Configure grid to center layout for widgets/entries
-        self.window.grid_columnconfigure(0, weight=1) 
-        self.window.grid_columnconfigure(1, weight=2)
+        # Configure grid to center horizontally
+        self.window.grid_columnconfigure(0, weight=1)  # Set the weight of the first column to expand
+        self.window.grid_columnconfigure(1, weight=1)
        
         # User parameter entry widgets
         self.entries = []
@@ -375,7 +375,8 @@ class ImagePreviewer:
         
         # Image Preview
         self.image_label = tk.Label(self.window)
-        self.image_label.grid(row=0, column=1, sticky="n")
+        self.image_label.grid(sticky="n")
+
         # Set the maximum size of the image preview
         self.image_label.configure(
             width=300, height=300, padx=10, pady=10,
@@ -383,7 +384,7 @@ class ImagePreviewer:
 
     def update_image(self, image_path=None):
         self.image_path = image_path  # Update the image path
-
+        
         if self.image_path:
             # Load the image
             image = tk.PhotoImage(file=self.image_path)
