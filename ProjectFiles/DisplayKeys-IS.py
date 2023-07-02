@@ -258,7 +258,7 @@ class ImageSplitterGUI:
         self.process_button = tk.Button(
             self.window, text = "Split Image", command=lambda: process_image(self.entries)
         )
-        self.process_button.grid(sticky="n")
+        self.process_button.grid(column=0, sticky="n")
 
         # Image Preview
         self.image_previewer = ImagePreviewer(self.window)
@@ -289,7 +289,9 @@ class ImageSplitterGUI:
                 dropdown_options = entry_params.get("dropdown_options")
                 if dropdown_options:
                     entry.dropdown_var.trace("w", self.update_option_entries)
+            
             created_entries.append(entry_params)
+        
         self.entries.extend(created_entries)
     
     #Shows / hides the Gap Textboxes that let the user enter the Horizontal/Vertical Gap in pixels
@@ -340,11 +342,11 @@ class ImageSplitterGUI:
 class EntryWithLabel:
     def __init__(self, window, label_text, has_textbox=False, has_dropdown=False, dropdown_label=None, dropdown_options=None, default_dropdown_option=None, button_text=None, button_command=None, tooltip_text=""):
         self.label = tk.Label(window, text=label_text)
-        self.label.grid(sticky="n")
+        self.label.grid(column=0, sticky="n")
         
         if has_textbox:
             self.entry = tk.Entry(window)
-            self.entry.grid(sticky="n")
+            self.entry.grid(column=0, sticky="n")
         
         if has_dropdown and dropdown_label and dropdown_options:
             self.dropdown_var = tk.StringVar()
@@ -354,17 +356,17 @@ class EntryWithLabel:
                 self.dropdown_var.set(default_dropdown_option)
             else:
                 self.dropdown_var.set(dropdown_options[0])
-            self.dropdown.grid(sticky="n")
+            self.dropdown.grid(column=0, sticky="n")
             self.tooltip = Tooltip(self.dropdown, tooltip_text)  # Add tooltip to the dropdown button
         elif has_dropdown and not dropdown_options:
             self.dropdown_var = tk.StringVar()
             self.dropdown_var.set("Dropdown Undefined!")
             self.dropdown = tk.OptionMenu(window, self.dropdown_var, "Dropdown Options Undefined!")
-            self.dropdown.grid(sticky="n")
+            self.dropdown.grid(column=0, sticky="n")
         
         if button_text and button_command:
             self.button = tk.Button(window, text=button_text, command=lambda: button_command(self.entry))
-            self.button.grid(sticky="n")
+            self.button.grid(column=0, sticky="n")
             self.tooltip = Tooltip(self.button, tooltip_text)  # Add tooltip to the button
 
 
@@ -375,7 +377,7 @@ class ImagePreviewer:
         
         # Image Preview
         self.image_label = tk.Label(self.window)
-        self.image_label.grid(sticky="n")
+        self.image_label.grid(column=1, sticky="n")
 
         # Set the maximum size of the image preview
         self.image_label.configure(
