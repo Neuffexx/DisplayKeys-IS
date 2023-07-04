@@ -13,29 +13,44 @@ It certainly doesnt when you are actually using it, as of the time of writing th
 ## How do you use it?
 The only thing anyone probably cares to read on here, so let me make this simple:
 - Download / Setup Instructions
-	- Download the DisplayKeys-IS_vX.X.X file from the latest of the [Release](https://github.com/Neuffexx/DisplayKeys-IS/releases) page 
-	- Extract and Run
+	- Download the DisplayKeys-IS_vX.X.X file, from the latest of the [Release](https://github.com/Neuffexx/DisplayKeys-IS/releases) page 
+	- Run
 		> You may get a warning when first launching it, this is a False Positive, just click 'Run Anyway'.
 
   		> _If you feel uncomfortable to download the .exe your free to go over the single code file that is the Application to ensure its safe (ProjectFiles/DisplayKeys-IS.py).
     		 Or the action that builds & publishes it (.github/workflows/release.yml)_
 - Usage Instructions / Or watch the [Usage Demonstration Video (Placeholder)](http://youtube.com/)
 	- Select an Image to split, either by entering the path into the text box or selecing it via the 'Browse' button.
-	- Select the Save Location, again, either by entering the path or selecting it
-	- (Optionally) Set Image Splitting Options
-		- Defaults: Will Split the image in a 2x6 grid, using Spacing horizontally and vertically by 40pixels
+	- Select the Save Location, again, either by entering the path or selecting it. (defualt save location if none is entered: _Desktop_)
+	- (Optionally) Set Image Splitting Parameters
+		- Defaults: Will Split the image in a 2x6 grid, using Spacing horizontally and vertically by 40pixels.
 		- User Defined: Will let you manually enter the amount of Rows/Columns, and both Horizontal and Vertical Spacing.
-	- Click the 'Split Image' button.
-	- In the Base Camp software, when assigning images to your DisplayKeys, find wanted images in the provided Save Location
+	- (Optionally) Click the 'Update Preview' button to the right to see a preview representation of what is will be split/cut.
+ 	- Click the 'Split Image' button.
+	- In the Base Camp software, when assigning images to your DisplayKeys, find wanted images in your provided Save Location.
 
 ## Whats Next?
 Well I plan to add/improve on the following
-- Create GIF support
 - Clean Up UI
 - Improve Image Splitting Logic
-- Saving/Loading presets (in case you find combos that work for you)
+- Saving/Loading presets aka. profiles (in case you find combos that work for you)
 - Automate Profile Assignment ! Base Camp Only ! (Need to look into how)
-- Create UI Representation of how the image will be cut/cropped
+- Add Grid Offset input, that can be adjusted and seen in the previewer
+- Add GIF support for the previewer
+- Add Popup Windows in case of an error, required user confirmation, or the notify the user of any action
+
+<pre>
+
+
+
+
+
+
+	
+
+</pre>
+
+# Extra Stuff
 
 ## How does it work?
 Oh wow someone actually reads this?
@@ -54,8 +69,10 @@ Its completely built using the [TkInter Library](https://wiki.python.org/moin/Tk
 
 The interface is composed of three things in the following structure: 
 - The Window
-  - A Grid (composed of a single column)
-    - Widgets (Of custom widget class: EntryWithLabel)
+  - Frame A
+    - List of Widgets (Custom widget class: DisplayKeys_Widget)
+  - Frame B
+    - Preview Widget (Custom widget Class: DisplayKeys_Previewer)
 
 (I might accidentally refere to widget as entries at soem point due to my own lack of knowledge when making this)
 
