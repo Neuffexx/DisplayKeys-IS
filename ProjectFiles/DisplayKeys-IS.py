@@ -68,7 +68,7 @@ class DisplayKeys_Previewer:
         self.image_path = sys._MEIPASS + "./Preview.png"
 
         # Initialize canvas
-        self.canvas = tk.Canvas(parent, width=self.width, height=self.height)
+        self.canvas = tk.Canvas(parent, width=self.width, height=self.height, bg="black")
         self.canvas.grid()
 
         # Load and show the initial placeholder image
