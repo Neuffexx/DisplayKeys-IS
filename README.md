@@ -17,8 +17,8 @@ The only thing anyone probably cares to read on here, so let me make this simple
 	- Run
 		> You may get a warning when first launching it, this is a False Positive, just click 'Run Anyway'.
 
-  		> _If you feel uncomfortable to download the .exe your free to go over the single code file that is the Application to ensure its safe (ProjectFiles/DisplayKeys-IS.py).
-    		 Or the action that builds & publishes it (.github/workflows/release.yml)_
+  		> _If you feel uncomfortable to download the .exe your free to go over the single code file that is the Application to ensure its safe (ProjectFiles/DisplayKeys-IS.py).  
+  		  Or the action that builds & publishes it (.github/workflows/release.yml)_
 - Usage Instructions / Or watch the [Usage Demonstration Video (Placeholder)](http://youtube.com/)
 	- Select an Image to split, either by entering the path into the text box or selecing it via the 'Browse' button.
 	- Select the Save Location, again, either by entering the path or selecting it. (defualt save location if none is entered: _Desktop_)
