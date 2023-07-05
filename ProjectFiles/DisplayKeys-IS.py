@@ -15,7 +15,7 @@ class DisplayKeys_GUI:
         print("---Creating Window---")
         self.window = tk.Tk()
         self.window.title("DisplayKeys-IS")
-        icon_path = "./Preview.png" #sys._MEIPASS + "./DisplayKeys-IS.ico"
+        icon_path = sys._MEIPASS + "./DisplayKeys-IS.ico"
         self.window.iconbitmap(icon_path)
         self.window.geometry("600x500")
         self.window.resizable(False, False)
@@ -69,7 +69,7 @@ class DisplayKeys_Previewer:
     def __init__(self, parent, width, height):
         self.width = width
         self.height = height
-        self.image_path = "./Preview.png" #sys._MEIPASS + "./Preview.png"
+        self.image_path = sys._MEIPASS + "./Preview.png"
 
         # Initialize canvas
         self.canvas = tk.Canvas(parent, width=self.width, height=self.height, background="#151515", highlightthickness=3, highlightbackground="#343A40")
@@ -369,7 +369,7 @@ class ButtonFunctions:
             if get_params_type_widget.dropdown_var.get() == "Defaults":
                 image_path = get_image_widget.textbox.get()
                 if not image_path:
-                    image_path = "./Preview.png" #sys._MEIPASS + "./Preview.png"
+                    image_path = sys._MEIPASS + "./Preview.png"
                 output_dir = get_output_widget.textbox.get() if get_output_widget.textbox.get() else None
                 if not output_dir:
                     output_dir = os.path.join(os.path.expanduser("~"), "Desktop")
@@ -386,7 +386,7 @@ class ButtonFunctions:
                 gap = int(get_gap_widget.spinbox.get()) if get_gap_widget.spinbox.get().isnumeric() else None
 
                 if not image_path:
-                    image_path = "./Preview.png" #sys._MEIPASS + "./Preview.png"
+                    image_path = sys._MEIPASS + "./Preview.png"
                 if not output_dir:
                     output_dir = os.path.join(os.path.expanduser("~"), "Desktop")
                 if not rows:
@@ -429,7 +429,7 @@ class ButtonFunctions:
             if get_params_type_widget.dropdown_var.get() == "Defaults":
                 image_path = get_image_widget.textbox.get()
                 if not image_path:
-                    image_path = "./Preview.png" #sys._MEIPASS + "./Preview.png"
+                    image_path = sys._MEIPASS + "./Preview.png"
                 rows = int(get_rows_widget.spinbox_default)
                 columns = int(get_columns_widget.spinbox_default)
                 gap = int(get_gap_widget.spinbox_default)
@@ -442,7 +442,7 @@ class ButtonFunctions:
                 gap = int(get_gap_widget.spinbox.get()) if get_gap_widget.spinbox.get().isnumeric() else None
 
                 if not image_path:
-                    image_path = "./Preview.png" #sys._MEIPASS + "./Preview.png"
+                    image_path = sys._MEIPASS + "./Preview.png"
                 if not rows:
                     rows = int(get_rows_widget.spinbox_default)
                 if not columns:
