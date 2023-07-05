@@ -29,8 +29,8 @@ jobs:
         with:
           draft: false
           prerelease: false
-          release_name: "DisplayKeys-IS | GIF Support | v0.2.0" 
-          tag_name: "v0.2.0"
+          release_name: "DisplayKeys-IS | Previewer | v0.3.0" 
+          tag_name: "v0.3.0"
           body_path: ${{ github.workspace }}/ProjectFiles/config/releaselog.md
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -51,14 +51,14 @@ jobs:
       - name: Create EXE file
         run: | 
           # Command parameters for creating the .EXE file
-          pyinstaller ${{ github.workspace }}/ProjectFiles/DisplayKeys-IS.py --onefile --noconsole --name "DisplayKeys-IS" --debug all --distpath ${{ github.workspace }}/ProjectFiles/dist/ --add-data "${{ github.workspace }}/ProjectFiles/assets/DisplayKeys-IS.ico;." --icon ${{ github.workspace }}/ProjectFiles/assets/DisplayKeys-IS.ico --version-file ${{ github.workspace }}/ProjectFiles/config/version.txt
-
+          pyinstaller ${{ github.workspace }}/ProjectFiles/DisplayKeys-IS.py --onefile --noconsole --name "DisplayKeys-IS" --debug all --distpath ${{ github.workspace }}/ProjectFiles/dist/ --add-data "${{ github.workspace }}/ProjectFiles/assets/DisplayKeys-IS.ico;." --add-data "${{ github.workspace }}/ProjectFiles/assets/Preview.png;." --icon ${{ github.workspace }}/ProjectFiles/assets/DisplayKeys-IS.ico --version-file ${{ github.workspace }}/ProjectFiles/config/version.txt
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
           name: DisplayKeys-IS
           path: ${{ github.workspace }}/ProjectFiles/dist/DisplayKeys-IS.exe
+        
         
         ############## Upload Artifact ############## 
         
@@ -75,6 +75,6 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ${{ github.workspace }}/ProjectFiles/dist/DisplayKeys-IS.exe
-          asset_name: "DisplayKeys-IS_v0.2.0.exe"
+          asset_name: "DisplayKeys-IS_v0.3.0.exe"
           asset_content_type: application/vnd.microsoft.portable-executable
       

@@ -1,18 +1,21 @@
-## Now you can see it `move it move it`
-A small but functional update, was going to wait a bit longer to add more to the tool before creating another release.
-But this felt 'core' enough of a needed functionality that I wanted to get it out there as soon as possible.
+## Look at allll those pixels... beforehand!
+I would say this is another small update, and honestly, feature wise it is.  
+But this took me quite some time to do, at some point I said 'screw it' threw out the ENTIRE existing interface, and started over.  
+I restructured everything to make my future life easier, and make it more readable for myself (and potentially others).
 
-> Just a heads up, community reports + some of my own testing, showed that the more gives you .gif files are assigned to as single
-> scene/layer of buttons, the slower these .gif files will play.
+Now whats new, well simply said a way to see your changes before you actually split the image.  
+May not seem major, but that does significantly improve how fast you can adjust your image to the desired cuts,
+so that it fits as well as possible onto your DisplayPad.
 
-> Addtionally, I noticed that sometimes the timeings are off between when they start playing.
-> This is expected when first assigning it, but should be resolved when you switch to a different scene and back.
 
 ### Changes:
-- Added Support for .gif files
-   - Now when an image or gif is selected it will automatically determine which type it is
-   - supported formats are: `.png, .jpg, .jpeg, .bmp, .gif`
-      - In comparison to static image files, BaseCamp does not save `.gif` files on the profile.
-        Instead, it saved the path to that file. So be warned, do not delete the files after you added them.
-- Also added file information to the .exe (description, version, copyright, etc.)
+- Added Previewer (cant miss it)
+   - Whenever you want to you can press the 'Update Preview' button beneath the Preview Window.  
+     (Ok that one you might miss)
+   - When you press it, it will recalculate based on your inputs and show you:
+      - How/where it would split your image into image-cells
+      - What of the remaining image-cells will be cropped to create a square aspect ratio  
+        (Remember the Mountain DisplayPad only supports 'square' images)
+> For now you need to press the button and manually update the preveiw every time you make changes.  
+> Dont worry this will be automated in the future.
  

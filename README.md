@@ -17,9 +17,9 @@ The only thing anyone probably cares to read on here, so let me make this simple
 	- Run
 		> You may get a warning when first launching it, this is a False Positive, just click 'Run Anyway'.
 
-  		> _If you feel uncomfortable to download the .exe your free to go over the single code file that is the Application to ensure its safe (ProjectFiles/DisplayKeys-IS.py).
-    		 Or the action that builds & publishes it (.github/workflows/release.yml)_
-- Usage Instructions / Or watch the [Usage Demonstration Video (Placeholder)](http://youtube.com/)
+  		> _If you feel uncomfortable to download the .exe your free to go over the single code file that is the Application to ensure its safe (ProjectFiles/DisplayKeys-IS.py).  
+  		  Or the action that builds & publishes it (.github/workflows/release.yml)_
+- Usage Instructions / Or watch the [Usage Demonstration Video](https://youtu.be/D6juk_5pe5Q)
 	- Select an Image to split, either by entering the path into the text box or selecing it via the 'Browse' button.
 	- Select the Save Location, again, either by entering the path or selecting it. (defualt save location if none is entered: _Desktop_)
 	- (Optionally) Set Image Splitting Parameters
@@ -52,7 +52,7 @@ Well I plan to add/improve on the following
 
 # Extra Stuff
 
-## How does it work?
+## How does the Application work?
 Oh wow someone actually reads this?
 
 Quite simple honestly.
@@ -63,7 +63,7 @@ The app can be split into 2 parts:
 - The Graphical User Interface (GUI)
 - The Image Splitting Logic
 
-### The GUI
+### The GUI `NEEDS UPDATING`
 By far the hardest part about this project, for me at least, as I had never done anything like this before.
 Its completely built using the [TkInter Library](https://wiki.python.org/moin/TkInter).
 
@@ -120,3 +120,16 @@ The logic can be summed up to this:
   Instead, it crops from both sides of the largest dimension equal amounts of rows of pixels.
 ![Image showing a 3x8 cell division, showing the direction of cropping for core cells](https://i.imgur.com/yOKNQKl.png)
 
+## How to make an actual Application out of the Code?
+Short answer: I dont know.  
+The best and easiest way for me was to use [PyInstaller](https://pyinstaller.org/en/stable/#), that takes my code file along with anything I want packaged based on some parameters and creates an `.exe` file for me.  
+As someone once said:   
+> _You dont have to know how a tool works to use it._
+
+Dont remember who said it, but im sure someone did...
+
+
+On GitHub at the very least I use `GitHub Actions` to simplify the process of packaging the code into an application.  
+It can run it in a fresh new and clean environment without any of my dumb interfierance, run the PyInstaller command and upload the successful result to the repository.  
+And hey, if something doesnt work it has a detailed console of log text of pretty much every step it takes making it quite easy to debug, even shows you errors causes by your own code.
+Although learning `Actions` was a bit annoying at the beginning, I would say its worthwhile.
