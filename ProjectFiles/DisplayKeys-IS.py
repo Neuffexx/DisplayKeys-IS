@@ -15,7 +15,7 @@ class DisplayKeys_GUI:
         print("---Creating Window---")
         self.window = tk.Tk()
         self.window.title("DisplayKeys-IS")
-        icon_path = sys._MEIPASS + "./DisplayKeys-IS.ico"
+        icon_path = "./Preview.png" #sys._MEIPASS + "./DisplayKeys-IS.ico"
         self.window.iconbitmap(icon_path)
         self.window.geometry("600x500")
         self.window.resizable(False, False)
@@ -24,7 +24,7 @@ class DisplayKeys_GUI:
 
         print("---Creating Left Column---")
         # Create the Properties Frame
-        self.properties_frame = tk.Frame(self.window, width=200, height=500)
+        self.properties_frame = tk.Frame(self.window, width=200, height=500, background="#343A40")
         self.properties_frame.pack(side=tk.LEFT, fill=tk.BOTH)
         self.properties_frame.grid_columnconfigure(0, weight=1)
         # Populate the properties frame with widgets
@@ -33,13 +33,17 @@ class DisplayKeys_GUI:
 
         print("---Creating Right Column---")
         # Create the Preview Frame
-        self.preview_frame = tk.Frame(self.window, height=500)
+        self.preview_frame = tk.Frame(self.window, height=500, background="#212529")
         self.preview_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
         self.preview_frame.grid_columnconfigure(0, weight=1)
         # Create the Preview widget and place it in the right column
         # preview = PreviewPlaceholder(self.preview_frame)
         self.preview = DisplayKeys_Previewer(self.preview_frame, width=350, height=350)
-        self.update_preview_button = DisplayKeys_Widget(self.preview_frame, 'UpdatePreview', button_label="Update Preview", button_command=ButtonFunctions.process_preview, button_tooltip="Update the Preview")
+        self.update_preview_button = DisplayKeys_Widget(self.preview_frame, 'UpdatePreview',
+                                                        button_label="Update Preview",
+                                                        label_colour="#E9ECEF",
+                                                        button_command=ButtonFunctions.process_preview,
+                                                        button_tooltip="Update the Preview\n-- Not 100% Accurate! --")
         self.update_preview_button.grid(sticky="n")
 
         #########################
@@ -65,15 +69,16 @@ class DisplayKeys_Previewer:
     def __init__(self, parent, width, height):
         self.width = width
         self.height = height
-        self.image_path = sys._MEIPASS + "./Preview.png"
+        self.image_path = "./Preview.png" #sys._MEIPASS + "./Preview.png"
 
         # Initialize canvas
-        self.canvas = tk.Canvas(parent, width=self.width, height=self.height)
+        self.canvas = tk.Canvas(parent, width=self.width, height=self.height, background="#151515", highlightthickness=3, highlightbackground="#343A40")
         self.canvas.grid()
 
         # Load and show the initial placeholder image
         self.display_preview_image(self.image_path)
 
+    # Simply gets the image, rescales it and renders it onto the canvas.
     def display_preview_image(self, image_path):
         image = Image.open(image_path)
 
@@ -100,64 +105,92 @@ class DisplayKeys_Previewer:
         self.x_offset = x_offset
         self.y_offset = y_offset
 
-    def update(self, image_path, rows, columns, gap):
-        # Clear the canvas of anything drawn on it from before
+    # This calculates an approximate version of the split_image function,
+    # to preview the Splitting and Cropping of an image provided.
+    # Also calls the 'display_preview_image' to refresh the image.
+    def update(self, image_path, num_rows, num_columns, gap):
+        # Clear the canvas to prepare for new content
         self.canvas.delete("all")
 
-        # Load new image
+        # Display the image after rescaling
         self.display_preview_image(image_path)
 
-        # Calculate dimensions of each image-cell
+        # Calculate the dimensions of each image cell
         image_width, image_height = self.resized_image.size
-        cell_width = image_width / columns
-        cell_height = image_height / rows
+        cell_width = image_width / num_columns
+        cell_height = image_height / num_rows
         scaled_gap = gap * self.scale_factor
 
-        # Calculate and Draw Cropping Overlay
+        # Define the size of the square to be cropped from each cell
         square_size = min(cell_width, cell_height) - scaled_gap
-        for i in range(columns):
-            for j in range(rows):
-                # Calculating cropping area
-                x1 = i * cell_width + (cell_width - square_size) / 2 + self.x_offset
-                y1 = j * cell_height + (cell_height - square_size) / 2 + self.y_offset
-                x2 = x1 + square_size
-                y2 = y1 + square_size
 
-                # Drawing the cropping overlay
-                self.canvas.create_rectangle(x1, y1, x2, y2, outline="blue")
+        # Loop through each cell in the grid
+        for column_index in range(num_columns):
+            for row_index in range(num_rows):
 
-                # Drawing cropping overlays for inner cells
-                if cell_width > square_size:
-                    self.canvas.create_rectangle(x1, y1, i * cell_width + self.x_offset, y2, fill="gray",
-                                                 stipple="gray25")
-                    self.canvas.create_rectangle(x2, y1, (i + 1) * cell_width + self.x_offset, y2, fill="gray",
-                                                 stipple="gray25")
-                if cell_height > square_size:
-                    self.canvas.create_rectangle(x1, y1, x2, j * cell_height + self.y_offset, fill="gray",
-                                                 stipple="gray25")
-                    self.canvas.create_rectangle(x1, y2, x2, (j + 1) * cell_height + self.y_offset, fill="gray",
-                                                 stipple="gray25")
+                # Initial position for cropping rectangle (centered in cell)
+                crop_left = column_index * cell_width + (cell_width - square_size) / 2 + self.x_offset
+                crop_top = row_index * cell_height + (cell_height - square_size) / 2 + self.y_offset
+                crop_right = crop_left + square_size
+                crop_bottom = crop_top + square_size
 
-        # Draw Grid Lines with adjusted width to factor in Gap.
-        # Grid is drawn after Cropping Overlay so that its more clear
-        # what is removed by either cropping or the gap.
-        for i in range(1, columns):
-            x = i * cell_width + self.x_offset
-            self.canvas.create_line(x, self.y_offset, x, image_height + self.y_offset, fill="red",
+                # Position adjustments for Outlier Image-Cells
+                if row_index == 0:  # First Row
+                    crop_bottom = (row_index + 1) * cell_height - scaled_gap / 2 + self.y_offset
+                    crop_top = crop_bottom - square_size
+                elif row_index == num_rows - 1:  # Last Row
+                    crop_top = row_index * cell_height + scaled_gap / 2 + self.y_offset
+                    crop_bottom = crop_top + square_size
+
+                if column_index == 0:  # First Column
+                    crop_right = (column_index + 1) * cell_width - scaled_gap / 2 + self.x_offset
+                    crop_left = crop_right - square_size
+                elif column_index == num_columns - 1:  # Last Column
+                    crop_left = column_index * cell_width + scaled_gap / 2 + self.x_offset
+                    crop_right = crop_left + square_size
+
+                # Draw the adjusted Cropping Overlay
+                self.canvas.create_rectangle(crop_left, crop_top, crop_right, crop_bottom, outline="blue")
+
+                # Draw Cropping Overlays with stipple effect, adjusted for Outlier Image-Cells
+                stipple_pattern = "gray25"
+                overlay_left = self.x_offset if column_index == 0 else column_index * cell_width + self.x_offset
+                overlay_right = self.x_offset + image_width if column_index == num_columns - 1 else (
+                                                                                                                column_index + 1) * cell_width + self.x_offset
+                overlay_top = self.y_offset if row_index == 0 else row_index * cell_height + self.y_offset
+                overlay_bottom = self.y_offset + image_height if row_index == num_rows - 1 else (
+                                                                                                            row_index + 1) * cell_height + self.y_offset
+
+                self.canvas.create_rectangle(overlay_left, crop_top, crop_right, overlay_top, fill="gray",
+                                             stipple=stipple_pattern)
+                self.canvas.create_rectangle(overlay_left, crop_bottom, crop_right, overlay_bottom, fill="gray",
+                                             stipple=stipple_pattern)
+                self.canvas.create_rectangle(crop_left, overlay_top, overlay_left, overlay_bottom, fill="gray",
+                                             stipple=stipple_pattern)
+                self.canvas.create_rectangle(crop_right, overlay_top, overlay_right, overlay_bottom, fill="gray",
+                                             stipple=stipple_pattern)
+
+        # Draw the grid lines
+        for column_index in range(1, num_columns):
+            grid_x = column_index * cell_width + self.x_offset
+            self.canvas.create_line(grid_x, self.y_offset, grid_x, image_height + self.y_offset, fill="#CC0000",
                                     width=scaled_gap)
-        for i in range(1, rows):
-            y = i * cell_height + self.y_offset
-            self.canvas.create_line(self.x_offset, y, image_width + self.x_offset, y, fill="red",
+
+        for row_index in range(1, num_rows):
+            grid_y = row_index * cell_height + self.y_offset
+            self.canvas.create_line(self.x_offset, grid_y, image_width + self.x_offset, grid_y, fill="#CC0000",
                                     width=scaled_gap)
 
 
 # Generic Widgets used throughout the Applications UI (ie. Textboxes, Buttons, etc.)
 class DisplayKeys_Widget(tk.Frame):
-    def __init__(self, parent, widget_id, label_text=None, label_tooltip=None, dropdown_options=None, dropdown_tooltip=None, dropdown_command=None,
-                 has_textbox=False, textbox_state="normal", default_value=None, button_label=None, button_command=None,
-                 button_tooltip=None):
-        super().__init__(parent)
-        self.grid(sticky="n")
+    def __init__(self, parent, widget_id, label_text=None, label_tooltip=None, dropdown_options=None,
+                 dropdown_tooltip=None, dropdown_command=None,
+                 has_textbox=False, textbox_state="normal", textbox_default_value=None, has_spinbox=False, spinbox_default_value=None, button_label=None, button_command=None,
+                 button_tooltip=None, label_colour="white", textbox_colour="white", spinbox_colour="white"):
+        super().__init__(parent, bg="#343A40")
+        self.grid(sticky="nsew", padx=5, pady=5)
+        self.columnconfigure(0, weight=1)
 
         # The reference name by which button functions will find this widget
         self.id = widget_id
@@ -165,8 +198,8 @@ class DisplayKeys_Widget(tk.Frame):
         # Text Label - Text that is non-interactive (ie. A Tittle)
         # Takes: Label Text, Label Tooltip
         if label_text:
-            self.label = tk.Label(self, text=label_text)
-            self.label.grid(sticky="n")
+            self.label = tk.Label(self, text=label_text, background=label_colour)
+            self.label.grid(sticky="nsew", column=0)
 
             if label_tooltip:
                 self.l_tooltip = DisplayKeys_Tooltip(self.label, label_tooltip)
@@ -177,8 +210,9 @@ class DisplayKeys_Widget(tk.Frame):
         if dropdown_options and dropdown_command:
             self.dropdown_var = tk.StringVar()
             self.dropdown_var.set(dropdown_options[0])  # Set default value
-            self.dropdown = ttk.Combobox(self, textvariable=self.dropdown_var, values=dropdown_options, state="readonly", justify="left")
-            self.dropdown.grid(sticky="n")
+            self.dropdown = ttk.Combobox(self, textvariable=self.dropdown_var, values=dropdown_options,
+                                         state="readonly", justify="left")
+            self.dropdown.grid(sticky="nsew", column=0)
             # Bind the selection change event to the dropdown command
             self.dropdown.bind("<<ComboboxSelected>>", lambda event: dropdown_command(app.properties))
 
@@ -186,20 +220,30 @@ class DisplayKeys_Widget(tk.Frame):
                 self.d_tooltip = DisplayKeys_Tooltip(self.dropdown, dropdown_tooltip)
 
         # Textbox - Mainly used for getting user input, but can also be used as a good place to dynamically show text
-        # Takes: Default Text Value, Tooltip Text, State 
+        # Takes: Default Text Value, Tooltip Text, State
         if has_textbox:
-            self.textbox = tk.Entry(self, state=textbox_state)
-            if default_value:
-                self.textbox_default = default_value
+            self.textbox = tk.Entry(self, state=textbox_state, background=textbox_colour,readonlybackground=textbox_colour, disabledbackground=textbox_colour, insertbackground=textbox_colour, selectbackground=textbox_colour)
+            if textbox_default_value:
+                self.textbox_default = textbox_default_value
+                self.textbox.insert(tk.END, textbox_default_value)
 
-            self.textbox.grid(sticky="n")
+            self.textbox.grid(sticky="nsew", column=0)
+
+        if has_spinbox:
+            self.spinbox = tk.Spinbox(self, from_=1, to=spinbox_default_value * 100, background=spinbox_colour, readonlybackground=spinbox_colour, disabledbackground=spinbox_colour, insertbackground=spinbox_colour, selectbackground=spinbox_colour)
+            if spinbox_default_value:
+                self.spinbox_default = spinbox_default_value
+                self.spinbox.delete(0, tk.END)
+                self.spinbox.insert(tk.END, spinbox_default_value)
+
+            self.spinbox.grid(sticky="nsew", column=0)
 
         # Button - Used specifically to call any function in the Application
         # Provides the function with its own ID in case the function needs to access its parents.
         # Takes: Label Text, Command, Tooltip Text
         if button_label and button_command:
-            self.button = tk.Button(self, text=button_label, command= lambda: button_command(self.id))
-            self.button.grid(sticky="n")
+            self.button = tk.Button(self, text=button_label, background=label_colour, command=lambda: button_command(self.id))
+            self.button.grid(sticky="nsew", column=0, pady=3)
 
             if button_tooltip:
                 self.b_tooltip = DisplayKeys_Tooltip(self.button, button_tooltip)
@@ -215,7 +259,7 @@ class DisplayKeys_Tooltip:
         self.widget.bind("<Leave>", self.hide_tooltip)
 
     # Tooltip Position is always to the right of the widget,
-    # in case the widget has click functionality so that it get in the way.
+    # in case the widget has click functionality so that it won't get in the way.
     def show_tooltip(self, event):
         x, y, _, _ = self.widget.bbox("insert")
         x += self.widget.winfo_rootx() + self.widget.winfo_width() + 5
@@ -250,7 +294,7 @@ class ButtonFunctions:
         print("Columns: " + columns)
         print("Gap: " + gap)
         return
-    
+
     # Main Window Functions:
     # Buttons
     # Grabs the Path to an Image, and if possible adds this into a widgets textbox
@@ -282,11 +326,11 @@ class ButtonFunctions:
         print("---Browsing for Output Dir---")
         print("Widget ID: " + widget_id)
         widget = next((widget for widget in app.properties if widget.id == widget_id), None)
-        
+
         if widget:
             # Request the user to select a Directory
             output_path = filedialog.askdirectory()
-            # Put Directory Path into textbox if widget has a textbox 
+            # Put Directory Path into textbox if widget has a textbox
             if output_path and widget.textbox:
                 widget_original_state = widget.textbox.__getitem__('state')
                 print("Original Textbox State: " + widget_original_state)
@@ -318,44 +362,46 @@ class ButtonFunctions:
         get_gap_widget = next((widget for widget in widgets if widget.id == "GetGap"), None)
 
         if all(widget is not None for widget in [
-            get_image_widget, get_output_widget, get_rows_widget, get_columns_widget, get_gap_widget, get_params_type_widget
+            get_image_widget, get_output_widget, get_rows_widget, get_columns_widget, get_gap_widget,
+            get_params_type_widget
         ]):
             # Determine if the default or user defined values should be used
             if get_params_type_widget.dropdown_var.get() == "Defaults":
                 image_path = get_image_widget.textbox.get()
                 if not image_path:
-                    image_path = sys._MEIPASS + "./Preview.png"
+                    image_path = "./Preview.png" #sys._MEIPASS + "./Preview.png"
                 output_dir = get_output_widget.textbox.get() if get_output_widget.textbox.get() else None
                 if not output_dir:
                     output_dir = os.path.join(os.path.expanduser("~"), "Desktop")
-                rows = int(get_rows_widget.textbox_default)
-                columns = int(get_columns_widget.textbox_default)
-                gap = int(get_gap_widget.textbox_default)
+                rows = int(get_rows_widget.spinbox_default)
+                columns = int(get_columns_widget.spinbox_default)
+                gap = int(get_gap_widget.spinbox_default)
             # Get the text from the required textboxes
             elif get_params_type_widget.dropdown_var.get() == "User Defined":
                 image_path = get_image_widget.textbox.get() if get_image_widget.textbox.get() else None
                 output_dir = get_output_widget.textbox.get() if get_output_widget.textbox.get() else None
-                rows = int(get_rows_widget.textbox.get()) if get_rows_widget.textbox.get().isnumeric() else None
-                columns = int(get_columns_widget.textbox.get()) if get_columns_widget.textbox.get().isnumeric() else None
-                gap = int(get_gap_widget.textbox.get()) if get_gap_widget.textbox.get().isnumeric() else None
+                rows = int(get_rows_widget.spinbox.get()) if get_rows_widget.spinbox.get().isnumeric() else None
+                columns = int(
+                    get_columns_widget.spinbox.get()) if get_columns_widget.spinbox.get().isnumeric() else None
+                gap = int(get_gap_widget.spinbox.get()) if get_gap_widget.spinbox.get().isnumeric() else None
 
                 if not image_path:
-                    image_path = sys._MEIPASS + "./Preview.png"
+                    image_path = "./Preview.png" #sys._MEIPASS + "./Preview.png"
                 if not output_dir:
                     output_dir = os.path.join(os.path.expanduser("~"), "Desktop")
                 if not rows:
-                    rows = int(get_rows_widget.textbox_default)
+                    rows = int(get_rows_widget.spinbox_default)
                 if not columns:
-                    columns = int(get_columns_widget.textbox_default)
+                    columns = int(get_columns_widget.spinbox_default)
                 if not gap:
-                    gap = int(get_gap_widget.textbox_default)
+                    gap = int(get_gap_widget.spinbox_default)
             else:
                 return
 
             # Pass onto Determine_Split_Type function, that then passes it onto the appropriate Splitting funcion
             determine_split_type(image_path, output_dir, rows, columns, gap)
             # For testing purposes, prints the received textbox values and prints them.
-            #placeholder_process(image_path, output_dir, rows, columns, gap)
+            # placeholder_process(image_path, output_dir, rows, columns, gap)
 
         else:
             print("One or more required widgets are missing.")
@@ -383,25 +429,26 @@ class ButtonFunctions:
             if get_params_type_widget.dropdown_var.get() == "Defaults":
                 image_path = get_image_widget.textbox.get()
                 if not image_path:
-                    image_path = sys._MEIPASS + "./Preview.png"
-                rows = int(get_rows_widget.textbox_default)
-                columns = int(get_columns_widget.textbox_default)
-                gap = int(get_gap_widget.textbox_default)
+                    image_path = "./Preview.png" #sys._MEIPASS + "./Preview.png"
+                rows = int(get_rows_widget.spinbox_default)
+                columns = int(get_columns_widget.spinbox_default)
+                gap = int(get_gap_widget.spinbox_default)
 
             elif get_params_type_widget.dropdown_var.get() == "User Defined":
                 image_path = get_image_widget.textbox.get() if get_image_widget.textbox.get() else None
-                rows = int(get_rows_widget.textbox.get()) if get_rows_widget.textbox.get().isnumeric() else None
-                columns = int(get_columns_widget.textbox.get()) if get_columns_widget.textbox.get().isnumeric() else None
-                gap = int(get_gap_widget.textbox.get()) if get_gap_widget.textbox.get().isnumeric() else None
+                rows = int(get_rows_widget.spinbox.get()) if get_rows_widget.spinbox.get().isnumeric() else None
+                columns = int(
+                    get_columns_widget.spinbox.get()) if get_columns_widget.spinbox.get().isnumeric() else None
+                gap = int(get_gap_widget.spinbox.get()) if get_gap_widget.spinbox.get().isnumeric() else None
 
                 if not image_path:
-                    image_path = sys._MEIPASS + "./Preview.png"
+                    image_path = "./Preview.png" #sys._MEIPASS + "./Preview.png"
                 if not rows:
-                    rows = int(get_rows_widget.textbox_default)
+                    rows = int(get_rows_widget.spinbox_default)
                 if not columns:
-                    columns = int(get_columns_widget.textbox_default)
+                    columns = int(get_columns_widget.spinbox_default)
                 if not gap:
-                    gap = int(get_gap_widget.textbox_default)
+                    gap = int(get_gap_widget.spinbox_default)
             else:
                 return
 
@@ -420,7 +467,7 @@ class ButtonFunctions:
     # Dropdowns:
     # Hides / Unhides specific DisplayKeys_Widgets
     # TODO: Make generic so that dropdown button provides the list of WidgetID's its responsible for.
-    # TODO: Will make life easier for future dropdown functions as well.
+    # TODO: Will make life easier for future dropdown functions as well (namely profiles etc.).
     def property_options_visibility(properties):
         widgets = properties
 
@@ -442,7 +489,7 @@ class ButtonFunctions:
                 for widget in (get_rows_widget, get_columns_widget, get_gap_widget):
                     if widget:
                         widget.grid(sticky="n")
-                        
+
     # Popup Window Functions:
     # Placeholder for the future...
 
@@ -503,6 +550,14 @@ def determine_split_type(file_path, output_dir, rows, cols, gap):
         print(TypeError)
         print("Wrong File Type: ", type(error_message).__name__, str(error_message))
         return None
+
+# TODO: Separate the Splitting/Cropping functionality into a separate function, to be called by others
+# TODO: Others will provide the Image, function will return Coordinates that will be used to Split/Crop the Image.
+# TODO: NOTE: .gif will work the same, but needs to call this as a loop for each Frame.
+#def calculate_FUNCTIONALNAME(image_path, rows, cols, gap)
+#    return [splitting_grid, cropping_cells]
+# TODO: Additionally this could be used to show the Preview version of teh Splitting/Cropping.
+# TODO: Meaning the the Previewer class doesnt have to calculate this anymore.
 
 
 # Splits the provided Image into Image-Cell's based on provided parameters.
@@ -692,18 +747,21 @@ def split_gif(gif_path, output_dir, rows, cols, gap):
 if __name__ == "__main__":
     # For flow debugging
     print("---Code Start---")
-    
+
     # Create DisplayKeys_Widget's
     ToolProperties = [
         {
             "widget_id": "Credits",
             "label_text": "Image Splitter made by Neuffexx",
+            "label_colour": "#E9ECEF",
         },
         {
             "widget_id": "GetImage",
             "label_text": "Choose Image:",
+            "label_colour": "#E9ECEF",
             "has_textbox": True,
             "textbox_state": "readonly",
+            "textbox_colour": "#ADB5BD",
             "button_label": "Browse Image",
             "button_command": ButtonFunctions.browse_image,
             "button_tooltip": "Select the Image you want to be split.",
@@ -711,8 +769,10 @@ if __name__ == "__main__":
         {
             "widget_id": "GetOutput",
             "label_text": "Choose Output Location:",
+            "label_colour": "#E9ECEF",
             "has_textbox": True,
             "textbox_state": "readonly",
+            "textbox_colour": "#ADB5BD",
             "button_label": "Browse Folder",
             "button_command": ButtonFunctions.browse_directory,
             "button_tooltip": "Select the Folder to save the split Image to.",
@@ -720,10 +780,12 @@ if __name__ == "__main__":
         {
             "widget_id": "TopDivider",
             "label_text": "-------------------------------------",
+            "label_colour": "#343A40",
         },
         {
             "widget_id": "GetParamsType",
             "label_text": "Set Splitting Parameters:",
+            "label_colour": "#E9ECEF",
             "dropdown_options": ["Defaults", "User Defined"],  # "Profile"], for future implementation
             "dropdown_command": ButtonFunctions.property_options_visibility,
             "dropdown_tooltip": "Default Values are: \n Rows         | 2 \nColumns   | 6 \n Gap            | 40",
@@ -732,28 +794,36 @@ if __name__ == "__main__":
         {
             "widget_id": "GetRows",
             "label_text": "Rows:",
-            "has_textbox": True,
-            "default_value": "2",
+            "label_colour": "#E9ECEF",
+            "has_spinbox": True,
+            "spinbox_colour": "#CED4DA",
+            "spinbox_default_value": "2",
         },
         {
             "widget_id": "GetColumns",
             "label_text": "Columns:",
-            "has_textbox": True,
-            "default_value": "6",
+            "label_colour": "#E9ECEF",
+            "has_spinbox": True,
+            "spinbox_colour": "#CED4DA",
+            "spinbox_default_value": "6",
         },
         {
             "widget_id": "GetGap",
             "label_text": "Gap (in Pixels):",
-            "has_textbox": True,
-            "default_value": "40",
+            "label_colour": "#E9ECEF",
+            "has_spinbox": True,
+            "spinbox_colour": "#CED4DA",
+            "spinbox_default_value": "40",
         },
         {
             "widget_id": "BottomDivider",
             "label_text": "-------------------------------------",
+            "label_colour": "#343A40",
         },
         {
             "widget_id": "SplitImage",
             "button_label": "Split Image",
+            "label_colour": "#E9ECEF",
             "button_command": ButtonFunctions.process_image,
         },
     ]
