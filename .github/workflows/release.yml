@@ -46,7 +46,7 @@ jobs:
         with:
           draft: false
           prerelease: false
-          release_name: $env:Release_Title
+          release_name: ${{ env.Release_Title }}
           tag_name: ${{ env.Tag }}
           body_path: ${{ env.Release_Body }}
         env:
