@@ -37,21 +37,6 @@ jobs:
       Packaging_Add_Versioning: ${{ github.workspace }}/ProjectFiles/config/version.txt
       
     steps:
-      - name: checkout repository
-        uses: actions/checkout@v3
-    
-      - name: release
-        uses: actions/create-release@v1
-        id: create_release
-        with:
-          draft: false
-          prerelease: false
-          release_name: ${{ env.Release_Title }}
-          tag_name: ${{ env.Tag }}
-          body_path: ${{ env.Release_Body }}
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          
           
         ############## Create Artifact ############## 
         
@@ -75,6 +60,24 @@ jobs:
         with:
           name: DisplayKeys-IS
           path: ${{ env.Full_Artifact_Save_Path }}
+          
+          
+        ############## Create Release ############## 
+        
+      - name: checkout repository
+        uses: actions/checkout@v3
+    
+      - name: release
+        uses: actions/create-release@v1
+        id: create_release
+        with:
+          draft: false
+          prerelease: false
+          release_name: ${{ env.Release_Title }}
+          tag_name: ${{ env.Tag }}
+          body_path: ${{ env.Release_Body }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}    
         
         
         ############## Upload Artifact ############## 
@@ -94,4 +97,3 @@ jobs:
           asset_path: ${{ env.Full_Artifact_Save_Path }}
           asset_name: ${{ env.Artifact_Title }}
           asset_content_type: application/vnd.microsoft.portable-executable
-      
