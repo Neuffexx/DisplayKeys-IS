@@ -21,10 +21,10 @@ jobs:
     runs-on: windows-latest
     env:
       # Release Variables
-      Release_Title: "DisplayKeys-IS | Previewer | v0.3.0"
+      Release_Title: "DisplayKeys-IS | Patch | v0.3.1"
       Release_Body: ${{ github.workspace }}/ProjectFiles/config/releaselog.md
-      Tag: "v0.3.0"
-      Artifact_Title: "DisplayKeys-IS_v0.3.0.exe"
+      Tag: "v0.3.1"
+      Artifact_Title: "DisplayKeys-IS_v0.3.1.exe"
       
       # Packaging Command Variables
       Application_File_Path: ${{ github.workspace }}/ProjectFiles/DisplayKeys-IS.py
