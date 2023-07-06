@@ -31,7 +31,17 @@ jobs:
   
   py_to_exe:
     runs-on: windows-latest
-    
+    env:
+      # Packaging Command Variables
+      Application_File_Path: ${{ github.workspace }}/ProjectFiles/DisplayKeys-IS.py
+      Application_Title: "DisplayKeys-IS"
+      Application_Icon_Path: ${{ github.workspace }}/ProjectFiles/assets/DisplayKeys-IS.ico
+      Artifact_Save_Dir: ${{ github.workspace }}/ProjectFiles/dist/
+      Full_Artifact_Save_Path: "${{ github.workspace }}/ProjectFiles/dist/DisplayKeys-IS.exe"
+      Packaging_Add_Icon: "${{ github.workspace }}/ProjectFiles/assets/DisplayKeys-IS.ico;."
+      Packaging_Add_Preview: "${{ github.workspace }}/ProjectFiles/assets/Preview.png;."
+      Packaging_Add_Versioning: ${{ github.workspace }}/ProjectFiles/config/version.txt
+      
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -49,10 +59,10 @@ jobs:
       - name: Create EXE file
         run: | 
           # Command parameters for creating the .EXE file
-          pyinstaller ${{ github.workspace }}/ProjectFiles/DisplayKeys-IS.py --onefile --noconsole --name "DisplayKeys-IS" --debug all --distpath ${{ github.workspace }}/ProjectFiles/dist/ --add-data "${{ github.workspace }}/ProjectFiles/assets/DisplayKeys-IS.ico;." --add-data "${{ github.workspace }}/ProjectFiles/assets/Preview.png;." --icon ${{ github.workspace }}/ProjectFiles/assets/DisplayKeys-IS.ico --version-file ${{ github.workspace }}/ProjectFiles/config/version.txt
+          pyinstaller $env:Application_File_Path --onefile --noconsole --debug all --name $env:Application_Title --distpath $env:Artifact_Save_Dir --icon $env:Application_Icon_Path --add-data $env:Packaging_Add_Icon --add-data $env:Packaging_Add_Preview --version-file $env:Packaging_Add_Versioning
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
           name: DisplayKeys-IS
-          path: ${{ github.workspace }}/ProjectFiles/dist/DisplayKeys-IS.exe
+          path: ${{ env.Full_Artifact_Save_path }}
