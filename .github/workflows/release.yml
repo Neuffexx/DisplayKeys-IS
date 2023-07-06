@@ -74,7 +74,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: DisplayKeys-IS
-          path: $env:Full_Artifact_Save_Path
+          path: ${{ env.Full_Artifact_Save_Path }}
         
         
         ############## Upload Artifact ############## 
@@ -83,7 +83,7 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: DisplayKeys-IS
-          path: $env:Artifact_Save_Dir
+          path: ${{ env.Artifact_Save_Dir }}
       
       - name: upload windows artifact
         uses: actions/upload-release-asset@v1
@@ -91,7 +91,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: $env:Full_Artifact_Save_Path
+          asset_path: ${{ env.Full_Artifact_Save_Path }}
           asset_name: $env:Artifact_Title
           asset_content_type: application/vnd.microsoft.portable-executable
       
