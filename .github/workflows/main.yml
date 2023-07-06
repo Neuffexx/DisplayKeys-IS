@@ -59,10 +59,10 @@ jobs:
       - name: Create EXE file
         run: | 
           # Command parameters for creating the .EXE file
-          pyinstaller env:Application_File_Path --onefile --noconsole --debug all --name env:Application_Title --distpath env:Artifact_Save_Dir --icon env:Application_Icon_Path --add-data env:Packaging_Add_Icon --add-data env:Packaging_Add_Preview --version-file env:Packaging_Add_Versioning
+          pyinstaller $env:Application_File_Path --onefile --noconsole --debug all --name $env:Application_Title --distpath $env:Artifact_Save_Dir --icon $env:Application_Icon_Path --add-data $env:Packaging_Add_Icon --add-data $env:Packaging_Add_Preview --version-file $env:Packaging_Add_Versioning
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
           name: DisplayKeys-IS
-          path: env:Full_Artifact_Save_path
+          path: $env:Full_Artifact_Save_path
