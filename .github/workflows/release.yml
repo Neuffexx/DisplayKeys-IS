@@ -48,7 +48,7 @@ jobs:
           prerelease: false
           release_name: $env:Release_Title
           tag_name: $env:Tag
-          body_path: $env:Release_Body
+          body_path: ${{ env.Release_Body }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
           
