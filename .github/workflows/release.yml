@@ -19,6 +19,23 @@ jobs:
 
   publish_release:
     runs-on: windows-latest
+    env:
+      # Release Variables
+      Release_Title: "DisplayKeys-IS | Previewer | v0.3.0"
+      Release_Body: ${{ github.workspace }}/ProjectFiles/config/releaselog.md
+      Tag: "v0.3.0"
+      Artifact_Title: "DisplayKeys-IS_v0.3.0.exe"
+      
+      # Packaging Command Variables
+      Application_File_Path: ${{ github.workspace }}/ProjectFiles/DisplayKeys-IS.py
+      Application_Title: "DisplayKeys-IS"
+      Application_Icon_Path: ${{ github.workspace }}/ProjectFiles/assets/DisplayKeys-IS.ico
+      Artifact_Save_Dir: ${{ github.workspace }}/ProjectFiles/dist/
+      Full_Artifact_Save_Path: Artifact_Save_Dir + "DisplayKeys-IS.exe"
+      Packaging_Add_Icon: "${{ github.workspace }}/ProjectFiles/assets/DisplayKeys-IS.ico;."
+      Packaging_Add_Preview: "${{ github.workspace }}/ProjectFiles/assets/Preview.png;."
+      Packaging_Add_Versioning: ${{ github.workspace }}/ProjectFiles/config/version.txt
+      
     steps:
       - name: checkout repository
         uses: actions/checkout@v3
@@ -29,9 +46,9 @@ jobs:
         with:
           draft: false
           prerelease: false
-          release_name: "DisplayKeys-IS | ... | v0.3.1" 
-          tag_name: "v0.3.1"
-          body_path: ${{ github.workspace }}/ProjectFiles/config/releaselog.md
+          release_name: $env:Release_Title
+          tag_name: $env:Tag
+          body_path: $env:Release_Body
         env:
           GITHUB_TOKEN: ${{ github.token }}
           
@@ -51,13 +68,13 @@ jobs:
       - name: Create EXE file
         run: | 
           # Command parameters for creating the .EXE file
-          pyinstaller ${{ github.workspace }}/ProjectFiles/DisplayKeys-IS.py --onefile --noconsole --name "DisplayKeys-IS" --debug all --distpath ${{ github.workspace }}/ProjectFiles/dist/ --add-data "${{ github.workspace }}/ProjectFiles/assets/DisplayKeys-IS.ico;." --add-data "${{ github.workspace }}/ProjectFiles/assets/Preview.png;." --icon ${{ github.workspace }}/ProjectFiles/assets/DisplayKeys-IS.ico --version-file ${{ github.workspace }}/ProjectFiles/config/version.txt
+          pyinstaller $env:Application_File_Path --onefile --noconsole --debug all --name $env:Application_Title --distpath $env:Artifact_Save_Dir --icon $env:Application_Icon_Path --add-data $env:Packaging_Add_Icon --add-data $env:Packaging_Add_Preview --version-file $env:Packaging_Add_Versioning
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
           name: DisplayKeys-IS
-          path: ${{ github.workspace }}/ProjectFiles/dist/DisplayKeys-IS.exe
+          path: $env:Full_Artifact_Save_Path
         
         
         ############## Upload Artifact ############## 
@@ -66,7 +83,7 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: DisplayKeys-IS
-          path: ${{ github.workspace }}/ProjectFiles/dist/
+          path: $env:Artifact_Save_Dir
       
       - name: upload windows artifact
         uses: actions/upload-release-asset@v1
@@ -74,7 +91,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ github.workspace }}/ProjectFiles/dist/DisplayKeys-IS.exe
-          asset_name: "DisplayKeys-IS_v0.3.1.exe"
+          asset_path: $env:Full_Artifact_Save_Path
+          asset_name: $env:Artifact_Title
           asset_content_type: application/vnd.microsoft.portable-executable
       
