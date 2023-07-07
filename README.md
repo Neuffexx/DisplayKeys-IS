@@ -15,29 +15,34 @@ The only thing anyone probably cares to read on here, so let me make this simple
 - Download / Setup Instructions
 	- Download the DisplayKeys-IS_vX.X.X file, from the latest of the [Release](https://github.com/Neuffexx/DisplayKeys-IS/releases) page 
 	- Run
-		> You may get a warning when first launching it, this is a False Positive, just click 'Run Anyway'.
+		> You may get a warning when first launching it, just click 'Run Anyway'.
 
   		> _If you feel uncomfortable to download the .exe your free to go over the single code file that is the Application to ensure its safe (ProjectFiles/DisplayKeys-IS.py).  
   		  Or the action that builds & publishes it (.github/workflows/release.yml)_
 - Usage Instructions / Or watch the [Usage Demonstration Video](https://youtu.be/D6juk_5pe5Q)
-	- Select an Image to split, either by entering the path into the text box or selecing it via the 'Browse' button.
-	- Select the Save Location, again, either by entering the path or selecting it. (defualt save location if none is entered: _Desktop_)
+	- Select an Image to split, by selecing it via the 'Browse' button.
+	- Select the Save Location, again, by selecting it. (defualt save location if none is entered: _Desktop_)
 	- (Optionally) Set Image Splitting Parameters
-		- Defaults: Will Split the image in a 2x6 grid, using Spacing horizontally and vertically by 40pixels.
-		- User Defined: Will let you manually enter the amount of Rows/Columns, and both Horizontal and Vertical Spacing.
-	- (Optionally) Click the 'Update Preview' button to the right to see a preview representation of what is will be split/cut.
- 	- Click the 'Split Image' button.
-	- In the Base Camp software, when assigning images to your DisplayKeys, find wanted images in your provided Save Location.
+		- `Defaults:` Will Split the image in a 2x6 grid, using Spacing of **_40 (pixels)_**.
+		- `User Defined:` Will let you manually enter the amount of Rows/Columns, and the Spacing between Image-Cells.
+	- (Optionally) Click the '`Update Preview`' button to the right to see a preview representation of what is will be split/cut.
+ 	- Click the '`Split Image`' button.
+  		- Settings will use defaults for any input not given.
+	- Just assign them in your DisplayPad Provider's software.  
+	  And your done :D
 
 ## Whats Next?
-Well I plan to add/improve on the following
+Well I plan to add/improve on the following (in no particular order):
 - Clean Up UI
 - Improve Image Splitting Logic
-- Saving/Loading presets aka. profiles (in case you find combos that work for you)
-- Automate Profile Assignment ! Base Camp Only ! (Need to look into how)
-- Add Grid Offset input, that can be adjusted and seen in the previewer
-- Add GIF support for the previewer
-- Add Popup Windows in case of an error, required user confirmation, or the notify the user of any action
+- Automate Image Assignment to Profiles ! BaseCamp Software ! (Need to look into how)
+- Add Saving/Loading presets aka. profiles  
+  (in case you find combos that work for you, ie. for specific resolutions/aspect ratios)
+- Add Grid Offset input, that can be seen and adjusted in the Previewer
+- Add GIF support, for the Previewer  
+  (Splitting functionality already supports it)
+- Add Pop-up Windows in case of an error, required user confirmation, or the notify the user of any action
+- Add Drag & Drop support, will let you drag your Image straight into the App if of a supported format
 
 <pre>
 
@@ -63,7 +68,7 @@ The app can be split into 2 parts:
 - The Graphical User Interface (GUI)
 - The Image Splitting Logic
 
-### The GUI `NEEDS UPDATING`
+### The GUI (`SECTION NEEDS UPDATING`)
 By far the hardest part about this project, for me at least, as I had never done anything like this before.
 Its completely built using the [TkInter Library](https://wiki.python.org/moin/TkInter).
 
@@ -104,14 +109,15 @@ And although I could statically say, if at Top row then crop at top of image, an
 This approach falls appart the moment more than 2 rows are used. *Of course also if less than 2 rows, but the inital implementation of this tool was `not` made with handeling such situations in mind.
 As for example, someone may need to add a third row in the splitting process, due to the subject of the image that the user wants to see potentionally only being in the top or bottom 2/3rds of the image.
 
-So I went about it by seperately setting up the cropping for cells that I seperate into 'Outliers' (Orange) and 'Core' (Purple) cells.
+So I went about it by seperately setting up the cropping for cells that I seperate into `Outliers` (Orange) and `Core` (Purple) cells.
 The logic can be summed up to this:
 - Determine which image cells are outlier cells or core cells
 - If its an outlier cell, check the longest_dimension to determine whether to crop away only at the sides or top/bottom. But only the one that is facing outwards.
 - If its a core cell, check the longest_dimension to determine whether to crop away only at the sides or top/bottom. But either 'both sides' or 'both bottom and top'.
 
 (This image is divided by an extra row / column for demonstration purposes)
-![Image showing a 3x8 cell division, highlighting both the outlier and core cells](https://i.imgur.com/zcCL5YL.jpg)
+![Image showing a 3x8 cell division, highlighting both the outlier and core cells](https://i.imgur.com/zcCL5YL.jpg)  
+`Orange = Outlier Cells  |  Purple = Core Cells`
 
 - For the Outlier's: I simply make sure to crop from the outside inwards if the Image-Cell proportions allow it (relative to the original image).
 ![Image showing a 3x8 cell division, showing the direction of cropping for outlier cells](https://i.imgur.com/lsvQmNl.png)
