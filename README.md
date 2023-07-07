@@ -4,10 +4,10 @@
 Simply said, a quick workaround tool for splitting images, in a way that lets users customize the spacing between the split image cells, to be used with display key pads.
 
 ## Why Make it?
-Well I needed a way be able to quickly setup images across different Display Keys.
-Dont get me wrong, there are PLENTY of image splitting tools out there hosted on websites even, so you dont have to download anything.
-But none of them from what I found actually allow you to adjust anything other than  Rows/Columns.
-And although the Mountain Everest addition, the Display Pad, does come with functionallity to make use of the whole screen to display a single image continiously.
+Well I needed a way be able to quickly setup images across different Display Keys.  
+Dont get me wrong, there are PLENTY of image splitting tools out there hosted on websites even, so you dont have to download anything.  
+But none of them from what I found actually allow you to adjust anything other than  Rows/Columns.  
+And although the Mountain Everest addition, the Display Pad, does come with functionallity to make use of the whole screen to display a single image continiously.  
 It certainly doesnt when you are actually using it, as of the time of writing this (27/6/2023) it only supports this functionality when using a 'lockscreen' image.
 
 ## How do you use it?
