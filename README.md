@@ -1,12 +1,14 @@
 # DisplayKeys-IS
 
 ## What is it?
-Simply said, a quick workaround tool for splitting images, in a way that lets users customize the spacing between the split image cells, to be used with display key pads.
+Simply said, a quick workaround tool for splitting images, in a way that lets users customize the spacing between the split image cells, to be used with display key pads.  
+_Should work for any Display Pad, as it currently doesnt interface with any of them directly._
 
 ## Why Make it?
 Well I needed a way be able to quickly setup images across different Display Keys.  
 Dont get me wrong, there are PLENTY of image splitting tools out there hosted on websites even, so you dont have to download anything.  
 But none of them from what I found actually allow you to adjust anything other than  Rows/Columns.  
+
 And although the Mountain Everest addition, the Display Pad, does come with functionallity to make use of the whole screen to display a single image continiously.  
 It certainly doesnt when you are actually using it, as of the time of writing this (27/6/2023) it only supports this functionality when using a 'lockscreen' image.
 
@@ -25,8 +27,8 @@ The only thing anyone probably cares to read on here, so let me make this simple
 	- (Optionally) Set Image Splitting Parameters
 		- `Defaults:` Will Split the image in a 2x6 grid, using Spacing of **_40 (pixels)_**.
 		- `User Defined:` Will let you manually enter the amount of Rows/Columns, and the Spacing between Image-Cells.
-	- (Optionally) Click the '`Update Preview`' button to the right to see a preview representation of what is will be split/cut.
- 	- Click the '`Split Image`' button.
+	- (Optionally) Click the `Update Preview` button to the right to see a preview representation of what is will be split/cut.
+ 	- Click the `Split Image` button.
   		- Settings will use defaults for any input not given.
 	- Just assign them in your DisplayPad Provider's software.  
 	  And your done :D
