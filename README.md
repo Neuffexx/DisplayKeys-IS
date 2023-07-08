@@ -133,3 +133,5 @@ On GitHub at the very least I use `GitHub Actions` to simplify the process of pa
 It can run it in a fresh new and clean environment without any of my dumb interfierance, run the PyInstaller command and upload the successful result to the repository.  
 And hey, if something doesnt work it has a detailed console of log text of pretty much every step it takes making it quite easy to debug, even shows you errors causes by your own code.
 Although learning `Actions` was a bit annoying at the beginning, I would say its worthwhile.
+
+![Alt Text](image.png)

@@ -15,7 +15,7 @@ class DisplayKeys_GUI:
         print("---Creating Window---")
         self.window = tk.Tk()
         self.window.title("DisplayKeys-IS")
-        icon_path = sys._MEIPASS + "./DisplayKeys-IS.ico"
+        icon_path = "ProjectFiles/assets/DisplayKeys-IS.ico"
         self.window.iconbitmap(icon_path)
         self.window.geometry("600x500")
         self.window.resizable(False, False)
@@ -69,7 +69,7 @@ class DisplayKeys_Previewer:
     def __init__(self, parent, width, height):
         self.width = width
         self.height = height
-        self.image_path = sys._MEIPASS + "./Preview.png"
+        self.image_path = "ProjectFiles/assets/Preview.png"
 
         # Initialize canvas
         self.canvas = tk.Canvas(parent, width=self.width, height=self.height, background="#151515", highlightthickness=3, highlightbackground="#343A40")
