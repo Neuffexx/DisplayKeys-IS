@@ -136,7 +136,7 @@ border-bottom: 2px solid grey
              </font>
             </property>
             <property name="text">
-             <string>path</string>
+             <string/>
             </property>
             <property name="alignment">
              <set>Qt::AlignCenter</set>
@@ -205,7 +205,7 @@ border-bottom: 2px solid grey
              </font>
             </property>
             <property name="text">
-             <string>path</string>
+             <string/>
             </property>
             <property name="alignment">
              <set>Qt::AlignCenter</set>
@@ -313,7 +313,7 @@ QComboBox::drop-down {
 }
 
 QComboBox::down-arrow {
-    image: url(ProjectFiles/assets/chevron-down.svg)
+    image: url(assets/chevron-down.svg)
 }
 
 QComboBox:hover {
@@ -344,7 +344,7 @@ QComboBox::drop-down:hover {
            </widget>
           </item>
           <item>
-           <widget class="QWidget" name="widget" native="true">
+           <widget class="QWidget" name="settings_wrapper" native="true">
             <property name="font">
              <font>
               <pointsize>15</pointsize>
@@ -380,13 +380,13 @@ QSpinBox::down-button {
 }
 
 QSpinBox::up-arrow {
-    image: url(up_arrow.png);
+    image: url(assets/chevron-up.svg);
     width: 10px;
     height: 10px;
 }
 
 QSpinBox::down-arrow {
-    image: url(down_arrow.png);
+    image: url(assets/chevron-up.svg);
     width: 10px;
     height: 10px;
 }</string>
@@ -554,60 +554,7 @@ QSpinBox::down-arrow {
         <number>150</number>
        </property>
        <item>
-        <widget class="QLabel" name="preview_frame">
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>16777215</height>
-          </size>
-         </property>
-         <property name="text">
-          <string/>
-         </property>
-         <property name="pixmap">
-          <pixmap>ProjectFiles/assets/Preview.png</pixmap>
-         </property>
-         <property name="scaledContents">
-          <bool>false</bool>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="update_preview_btn">
-         <property name="minimumSize">
-          <size>
-           <width>0</width>
-           <height>40</height>
-          </size>
-         </property>
-         <property name="font">
-          <font>
-           <pointsize>15</pointsize>
-           <italic>false</italic>
-           <bold>false</bold>
-          </font>
-         </property>
-         <property name="cursor">
-          <cursorShape>PointingHandCursor</cursorShape>
-         </property>
-         <property name="styleSheet">
-          <string notr="true">margin-left: 100px;
-margin-right: 100px</string>
-         </property>
-         <property name="text">
-          <string>Update Preview</string>
-         </property>
-         <property name="icon">
-          <iconset>
-           <normaloff>ProjectFiles/assets/refresh_icon.svg</normaloff>ProjectFiles/assets/refresh_icon.svg</iconset>
-         </property>
-         <property name="iconSize">
-          <size>
-           <width>30</width>
-           <height>30</height>
-          </size>
-         </property>
-        </widget>
+        <widget class="QWidget" name="preview_widget" native="true"/>
        </item>
       </layout>
      </widget>
