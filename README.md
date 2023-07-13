@@ -36,7 +36,7 @@ The only thing anyone probably cares to read on here, so let me make this simple
 ## Whats Next?
 Well I plan to add/improve on the following (in no particular order):
 - Clean Up UI
-  - Make preview more accurate to final result
+  - +Make Preview more accurate to final result
 - Improve Image Splitting Logic
 - Automate Image Assignment to Profiles ! BaseCamp Software ! (Need to look into how)
 - Add Saving/Loading presets aka. profiles  
@@ -142,5 +142,3 @@ On GitHub at the very least I use `GitHub Actions` to simplify the process of pa
 It can run it in a fresh new and clean environment without any of my dumb interfierance, run the PyInstaller command and upload the successful result to the repository.  
 And hey, if something doesnt work it has a detailed console of log text of pretty much every step it takes making it quite easy to debug, even shows you errors causes by your own code.
 Although learning `Actions` was a bit annoying at the beginning, I would say its worthwhile.
-
-![Alt Text](image.png)
