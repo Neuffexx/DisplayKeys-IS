@@ -1,3 +1,9 @@
+## Image Splitter made by Neuffexx
+## This image splitter was made to allow people to take images they want displayed across their Mountain DisplayPad keys.
+## Who asked for this? Me. I did. Because it's a workaround to a problem that shouldn't exist in the first place.
+## And I was too lazy to do this to each image manually.
+## Was this more effort? Yes. You are welcome.
+
 import os, sys
 from PIL import Image, ImageTk, ImageSequence, ImageDraw
 import tkinter as tk
