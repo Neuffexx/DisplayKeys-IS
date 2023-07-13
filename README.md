@@ -32,6 +32,7 @@ The only thing anyone probably cares to read on here, so let me make this simple
 ## Whats Next?
 Well I plan to add/improve on the following
 - Clean Up UI
+  - Make preview more accurate to final result
 - Improve Image Splitting Logic
 - Saving/Loading presets aka. profiles (in case you find combos that work for you)
 - Automate Profile Assignment ! Base Camp Only ! (Need to look into how)
