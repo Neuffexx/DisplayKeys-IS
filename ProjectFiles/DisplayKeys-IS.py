@@ -1,8 +1,8 @@
-## Image Splitter made by Neuffexx
-## This image splitter was made to allow people to take images they want displayed across their Mountain DisplayPad keys.
-## Who asked for this? Me. I did. Because it's a workaround to a problem that shouldn't exist in the first place.
-## And I was too lazy to do this to each image manually.
-## Was this more effort? Yes. You are welcome.
+# Image Splitter made by Neuffexx
+# This image splitter was made to allow people to take images they want displayed across their Mountain DisplayPad keys.
+# Who asked for this? Me. I did. Because it's a workaround to a problem that shouldn't exist in the first place.
+# And I was too lazy to do this to each image manually.
+# Was this more effort? Yes. You are welcome.
 
 import os, sys
 from PIL import Image, ImageTk, ImageSequence, ImageDraw
@@ -17,13 +17,13 @@ from tkinter import ttk, filedialog, messagebox
 
 # The Main Application Window
 class DisplayKeys_GUI:
-    def __init__(self, widgets):
+    def __init__(self):
         print("---Creating Window---")
         self.window = tk.Tk()
         self.window.title("DisplayKeys-IS")
-        icon_path = "ProjectFiles/assets/DisplayKeys-IS.ico"
+        icon_path = "./Preview.png" #sys._MEIPASS + "./DisplayKeys-IS.ico"
         self.window.iconbitmap(icon_path)
-        self.window.geometry("600x500")
+        self.window.geometry("600x600")
         self.window.resizable(False, False)
 
         #########################
@@ -35,7 +35,7 @@ class DisplayKeys_GUI:
         self.properties_frame.grid_columnconfigure(0, weight=1)
         # Populate the properties frame with widgets
         self.properties = []
-        self.properties = self.populate_column(self.properties_frame, widgets)
+        self.properties = self.populate_column(self.properties_frame, self.get_properties_widgets())
 
         print("---Creating Right Column---")
         # Create the Preview Frame
@@ -45,12 +45,7 @@ class DisplayKeys_GUI:
         # Create the Preview widget and place it in the right column
         # preview = PreviewPlaceholder(self.preview_frame)
         self.preview = DisplayKeys_Previewer(self.preview_frame, width=350, height=350)
-        self.update_preview_button = DisplayKeys_Widget(self.preview_frame, 'UpdatePreview',
-                                                        button_label="Update Preview",
-                                                        label_colour="#E9ECEF",
-                                                        button_command=ButtonFunctions.process_preview,
-                                                        button_tooltip="Update the Preview\n-- Not 100% Accurate! --")
-        self.update_preview_button.grid(sticky="n")
+        self.preview_info = self.populate_column(self.preview_frame, self.get_preview_widgets())
 
         #########################
 
@@ -65,6 +60,137 @@ class DisplayKeys_GUI:
 
         return created_widgets
 
+    def get_properties_widgets(self):
+        # Create DisplayKeys_Widget's
+        ToolProperties = [
+            {
+                "widget_id": "Credits",
+                "label_text": "Image Splitter made by Neuffexx",
+                "label_colour": "#E9ECEF",
+            },
+            {
+                "widget_id": "GetImage",
+                "label_text": "Choose Image:",
+                "label_colour": "#E9ECEF",
+                "has_textbox": True,
+                "textbox_state": "readonly",
+                "textbox_colour": "#ADB5BD",
+                "button_label": "Browse Image",
+                "button_command": ButtonFunctions.browse_image,
+                "button_tooltip": "Select the Image you want to be split.",
+                "updates_previewer": True,
+            },
+            {
+                "widget_id": "GetOutput",
+                "label_text": "Choose Output Location:",
+                "label_colour": "#E9ECEF",
+                "has_textbox": True,
+                "textbox_state": "readonly",
+                "textbox_colour": "#ADB5BD",
+                "button_label": "Browse Folder",
+                "button_command": ButtonFunctions.browse_directory,
+                "button_tooltip": "Select the Folder to save the split Image to.",
+            },
+            {
+                "widget_id": "TopDivider",
+                "label_text": "-------------------------------------",
+                "label_colour": "#343A40",
+            },
+            {
+                "widget_id": "GetParamsType",
+                "label_text": "Set Splitting Parameters:",
+                "label_colour": "#E9ECEF",
+                "dropdown_options": ["Defaults", "User Defined"],  # "Profile"], for future implementation
+                "dropdown_command": ButtonFunctions.property_options_visibility,
+                "dropdown_tooltip": "Default Values are: \n Rows         | 2 \nColumns   | 6 \n Gap            | 40",
+                "has_textbox": False,
+            },
+            {
+                "widget_id": "GetRows",
+                "label_text": "Rows:",
+                "label_colour": "#E9ECEF",
+                "has_spinbox": True,
+                "spinbox_colour": "#CED4DA",
+                "spinbox_default_value": "2",
+                "updates_previewer": True,
+            },
+            {
+                "widget_id": "GetColumns",
+                "label_text": "Columns:",
+                "label_colour": "#E9ECEF",
+                "has_spinbox": True,
+                "spinbox_colour": "#CED4DA",
+                "spinbox_default_value": "6",
+                "updates_previewer": True,
+            },
+            {
+                "widget_id": "GetGap",
+                "label_text": "Gap (in Pixels):",
+                "label_colour": "#E9ECEF",
+                "has_spinbox": True,
+                "spinbox_colour": "#CED4DA",
+                "spinbox_default_value": "40",
+                "updates_previewer": True,
+            },
+            {
+                "widget_id": "XOffset",
+                "label_text": "X Offset (in Pixels):",
+                "label_colour": "#E9ECEF",
+                "has_spinbox": True,
+                "spinbox_colour": "#CED4DA",
+                "spinbox_default_value": 0,
+                "updates_previewer": True,
+            },
+            {
+                "widget_id": "YOffset",
+                "label_text": "Y Offset (in Pixels):",
+                "label_colour": "#E9ECEF",
+                "has_spinbox": True,
+                "spinbox_colour": "#CED4DA",
+                "spinbox_default_value": 0,
+                "updates_previewer": True,
+            },
+            {
+                "widget_id": "BottomDivider",
+                "label_text": "-------------------------------------",
+                "label_colour": "#343A40",
+            },
+            {
+                "widget_id": "SplitImage",
+                "button_label": "Split Image",
+                "label_colour": "#E9ECEF",
+                "button_command": ButtonFunctions.process_image,
+            },
+        ]
+
+        return ToolProperties
+
+    def get_preview_widgets(self):
+        PreviewWidgets = [
+            {
+                "widget_id": "PreviewDivider",
+                "label_text": "",
+                "label_colour": "#E9ECEF",
+             },
+            {
+                "widget_id": "OutputDetails",
+                "label_text": "Results :",
+                "label_colour": "#E9ECEF",
+            },
+            {
+                "widget_id": "",
+                "label_text": "",
+                "label_colour": "#E9ECEF",
+            },
+            {
+                "widget_id": "",
+                "label_text": "",
+                "label_colour": "#E9ECEF",
+            },
+        ]
+
+        return PreviewWidgets
+
     # Starts the Window loop
     def run(self):
         self.window.mainloop()
@@ -75,7 +201,7 @@ class DisplayKeys_Previewer:
     def __init__(self, parent, width, height):
         self.width = width
         self.height = height
-        self.image_path = "ProjectFiles/assets/Preview.png"
+        self.image_path = "./Preview.png" #sys._MEIPASS + "./Preview.png"
 
         # Initialize canvas
         self.canvas = tk.Canvas(parent, width=self.width, height=self.height, background="#151515", highlightthickness=3, highlightbackground="#343A40")
@@ -192,8 +318,8 @@ class DisplayKeys_Previewer:
 class DisplayKeys_Widget(tk.Frame):
     def __init__(self, parent, widget_id, label_text=None, label_tooltip=None, dropdown_options=None,
                  dropdown_tooltip=None, dropdown_command=None,
-                 has_textbox=False, textbox_state="normal", textbox_default_value=None, has_spinbox=False, spinbox_default_value=None, button_label=None, button_command=None,
-                 button_tooltip=None, label_colour="white", textbox_colour="white", spinbox_colour="white"):
+                 has_textbox=False, textbox_state="normal", textbox_default_value=None, has_spinbox=False, spinbox_default_value=0, button_label=None, button_command=None,
+                 button_tooltip=None, updates_previewer=False, label_colour="white", textbox_colour="white", spinbox_colour="white"):
         super().__init__(parent, bg="#343A40")
         self.grid(sticky="nsew", padx=5, pady=5)
         self.columnconfigure(0, weight=1)
@@ -225,22 +351,42 @@ class DisplayKeys_Widget(tk.Frame):
             if dropdown_tooltip:
                 self.d_tooltip = DisplayKeys_Tooltip(self.dropdown, dropdown_tooltip)
 
+            # TODO: Make dropdown update previewer when changing selections.
+            # TODO: Simply make dropdown selections change the values in the textboxes that will be taken anyways.
+            # TODO: Instead of manually checking for the dropdown selection in the Process_Image Function.
+            # TODO: You just take whatever is in the textboxes at all times, and have all dropdown selections only,
+            # TODO: update the textboxes based on 'saved' values from them (this will tie in nicely with presets)!
+
         # Textbox - Mainly used for getting user input, but can also be used as a good place to dynamically show text
         # Takes: Default Text Value, Tooltip Text, State
         if has_textbox:
-            self.textbox = tk.Entry(self, state=textbox_state, background=textbox_colour,readonlybackground=textbox_colour, disabledbackground=textbox_colour, insertbackground=textbox_colour, selectbackground=textbox_colour)
+            self.textbox_var = tk.StringVar()
+            self.textbox = tk.Entry(self, textvariable=self.textbox_var, state=textbox_state, background=textbox_colour,readonlybackground=textbox_colour, disabledbackground=textbox_colour, insertbackground=textbox_colour, selectbackground=textbox_colour)
             if textbox_default_value:
-                self.textbox_default = textbox_default_value
+                self.textbox_var.set(textbox_default_value)
                 self.textbox.insert(tk.END, textbox_default_value)
+
+            # Calls the DisplayKeys_Previewer Update function when any of the Image Splitting Properties are changed
+            if updates_previewer:
+                self.textbox_var.trace('w', lambda *args: ButtonFunctions.process_preview(self.id))
 
             self.textbox.grid(sticky="nsew", column=0)
 
+        # Spinbox - Only added for the functionality of incremental user input buttons
+        # spinbox_default_value + 1, to avoid 'from=0, to=0' cases
+        # Takes: Default Spinbox Value, Tooltip Text
         if has_spinbox:
-            self.spinbox = tk.Spinbox(self, from_=1, to=spinbox_default_value * 100, background=spinbox_colour, readonlybackground=spinbox_colour, disabledbackground=spinbox_colour, insertbackground=spinbox_colour, selectbackground=spinbox_colour)
+            self.spinbox_var = tk.IntVar()
+            self.spinbox = tk.Spinbox(self, from_=0, to=(int(spinbox_default_value) + 1) * 100, textvariable=self.spinbox_var, background=spinbox_colour, readonlybackground=spinbox_colour, disabledbackground=spinbox_colour, insertbackground=spinbox_colour, selectbackground=spinbox_colour)
+            self.spinbox_default = spinbox_default_value
             if spinbox_default_value:
-                self.spinbox_default = spinbox_default_value
+                self.spinbox_var.set(spinbox_default_value)
                 self.spinbox.delete(0, tk.END)
                 self.spinbox.insert(tk.END, spinbox_default_value)
+
+            # Calls the DisplayKeys_Previewer Update function when any of the Image Splitting Properties are changed
+            if updates_previewer:
+                self.spinbox_var.trace('w', lambda *args: ButtonFunctions.process_preview(self.id))
 
             self.spinbox.grid(sticky="nsew", column=0)
 
@@ -349,6 +495,9 @@ class ButtonFunctions:
             # Just in case its ever needed
             return output_path
 
+    # TODO: Update process_image/preview functions to use newly added 'Offset' inputs
+
+
     # Grabs all available parameters and passes it along, to split the provided image.
     # Currently, defaults are provided for any of the required inputs that are missing.
     def process_image(widget_id):
@@ -367,15 +516,23 @@ class ButtonFunctions:
         get_columns_widget = next((widget for widget in widgets if widget.id == "GetColumns"), None)
         get_gap_widget = next((widget for widget in widgets if widget.id == "GetGap"), None)
 
+        # TODO: Change to directly getting values from the TextBoxes rather than deciding what it should be based on
+        # TODO: the dropdown selection. Use a 'for loop' to iterate through the widgets just in case to make sure
+        # TODO: they exist, and only if they dont exist will it return 'defaults'. (Once it is a profile?)
+        # TODO: Otherwise will directly get value, and if value is 'NONE' then return, and show pop-up error message.
+
+
         if all(widget is not None for widget in [
             get_image_widget, get_output_widget, get_rows_widget, get_columns_widget, get_gap_widget,
             get_params_type_widget
         ]):
+
+
             # Determine if the default or user defined values should be used
             if get_params_type_widget.dropdown_var.get() == "Defaults":
                 image_path = get_image_widget.textbox.get()
                 if not image_path:
-                    image_path = sys._MEIPASS + "./Preview.png"
+                    image_path = "./Preview.png" #sys._MEIPASS + "./Preview.png"
                 output_dir = get_output_widget.textbox.get() if get_output_widget.textbox.get() else None
                 if not output_dir:
                     output_dir = os.path.join(os.path.expanduser("~"), "Desktop")
@@ -392,7 +549,7 @@ class ButtonFunctions:
                 gap = int(get_gap_widget.spinbox.get()) if get_gap_widget.spinbox.get().isnumeric() else None
 
                 if not image_path:
-                    image_path = sys._MEIPASS + "./Preview.png"
+                    image_path = "./Preview.png" #sys._MEIPASS + "./Preview.png"
                 if not output_dir:
                     output_dir = os.path.join(os.path.expanduser("~"), "Desktop")
                 if not rows:
@@ -429,13 +586,18 @@ class ButtonFunctions:
         get_columns_widget = next((widget for widget in widgets if widget.id == "GetColumns"), None)
         get_gap_widget = next((widget for widget in widgets if widget.id == "GetGap"), None)
 
+        # TODO: Change to directly getting values from the TextBoxes rather than deciding what it should be based on
+        # TODO: the dropdown selection. Use a 'for loop' to iterate through the widgets just in case to make sure
+        # TODO: they exist, and only if they dont exist will it return 'defaults'. (Once it is a profile?)
+        # TODO: Otherwise will directly get value, and if value is 'NONE' then return, and show pop-up error message.
+
         if all(widget is not None for widget in
                [get_image_widget, get_rows_widget, get_columns_widget, get_gap_widget, get_params_type_widget]):
             # Determine if the default or user-defined values should be used
             if get_params_type_widget.dropdown_var.get() == "Defaults":
                 image_path = get_image_widget.textbox.get()
                 if not image_path:
-                    image_path = sys._MEIPASS + "./Preview.png"
+                    image_path = "./Preview.png" #sys._MEIPASS + "./Preview.png"
                 rows = int(get_rows_widget.spinbox_default)
                 columns = int(get_columns_widget.spinbox_default)
                 gap = int(get_gap_widget.spinbox_default)
@@ -448,7 +610,13 @@ class ButtonFunctions:
                 gap = int(get_gap_widget.spinbox.get()) if get_gap_widget.spinbox.get().isnumeric() else None
 
                 if not image_path:
-                    image_path = sys._MEIPASS + "./Preview.png"
+                    image_path = "./Preview.png" #sys._MEIPASS + "./Preview.png"
+                else:
+                    # Temporarily set the text entry widget to normal state to update its value
+                    get_image_widget.textbox.configure(state="normal")
+                    get_image_widget.textbox.delete(0, tk.END)
+                    get_image_widget.textbox.insert(tk.END, image_path)
+                    get_image_widget.textbox.configure(state="readonly")
                 if not rows:
                     rows = int(get_rows_widget.spinbox_default)
                 if not columns:
@@ -457,12 +625,6 @@ class ButtonFunctions:
                     gap = int(get_gap_widget.spinbox_default)
             else:
                 return
-
-            # Temporarily set the text entry widget to normal state to update its value
-            get_image_widget.textbox.configure(state="normal")
-            get_image_widget.textbox.delete(0, tk.END)
-            get_image_widget.textbox.insert(tk.END, image_path)
-            get_image_widget.textbox.configure(state="readonly")
 
             # Update the preview
             app.preview.update(image_path, rows, columns, gap)
@@ -484,15 +646,17 @@ class ButtonFunctions:
         get_rows_widget = next((widget for widget in widgets if widget.id == "GetRows"), None)
         get_columns_widget = next((widget for widget in widgets if widget.id == "GetColumns"), None)
         get_gap_widget = next((widget for widget in widgets if widget.id == "GetGap"), None)
+        get_offsetx_widget = next((widget for widget in widgets if widget.id == "XOffset"), None)
+        get_offsety_widget = next((widget for widget in widgets if widget.id == "YOffset"), None)
 
         # Show/hide the widgets based on the selected option
-        if get_rows_widget and get_columns_widget and get_gap_widget:
+        if get_rows_widget and get_columns_widget and get_gap_widget and get_offsetx_widget and get_offsety_widget:
             if option == "Defaults":
-                for widget in (get_rows_widget, get_columns_widget, get_gap_widget):
+                for widget in (get_rows_widget, get_columns_widget, get_gap_widget, get_offsetx_widget, get_offsety_widget):
                     if widget:
                         widget.grid_remove()
             elif option == "User Defined":
-                for widget in (get_rows_widget, get_columns_widget, get_gap_widget):
+                for widget in (get_rows_widget, get_columns_widget, get_gap_widget, get_offsetx_widget, get_offsety_widget):
                     if widget:
                         widget.grid(sticky="n")
 
@@ -528,17 +692,17 @@ def determine_split_type(file_path, output_dir, rows, cols, gap):
     print(get_supported_types()[1])
 
     try:
-        # Check if image format is supported
+        # Check if Image Format is supported
         with Image.open(file_path) as image:
             print("Image can be opened: " + (
                 "True" if image else "False") + "\n   Image format is: " + "." + image.format.lower())
-            # Is Image
+            # Is Static
             if "." + image.format.lower() in image_formats:
-                split_image(file_path, output_dir, rows, cols, gap)
+                split_static(file_path, output_dir, rows, cols, gap)
                 return True
             # Is Animated
             elif "." + image.format.lower() in animated_formats:
-                split_gif(file_path, output_dir, rows, cols, gap)
+                split_animated(file_path, output_dir, rows, cols, gap)
                 return True
             else:
                 print("No formats matched")
@@ -557,18 +721,190 @@ def determine_split_type(file_path, output_dir, rows, cols, gap):
         print("Wrong File Type: ", type(error_message).__name__, str(error_message))
         return None
 
-# TODO: Separate the Splitting/Cropping functionality into a separate function, to be called by others
-# TODO: Others will provide the Image, function will return Coordinates that will be used to Split/Crop the Image.
-# TODO: NOTE: .gif will work the same, but needs to call this as a loop for each Frame.
-#def calculate_FUNCTIONALNAME(image_path, rows, cols, gap)
-#    return [splitting_grid, cropping_cells]
-# TODO: Additionally this could be used to show the Preview version of teh Splitting/Cropping.
-# TODO: Meaning the the Previewer class doesnt have to calculate this anymore.
+
+# TODO: 1.) Combine image splitting logic into one function, update split_image/split_gif to call that logic as needed
+# ---------- DONE ----------
+
+# TODO: 2.) Add offset input, limit(clamp) max offset amount to 1cell in both width / height
+
+
+
+# Splits the provided Image into Image-Cell's based on provided parameters.
+# Will also crop the Image-Cells into a Square Format
+# Returns {preview_coordinates, image_cells}
+def calculate_image_split(image, rows, cols, gap):
+    preview_grid = []
+    cropped_cells = []
+
+    # Calculate the width and height of each image-cell
+    width, height = image.size
+    print("Width:", width)
+    print("Height:", height)
+    cell_width = (width - (cols - 1) * gap) // cols
+    cell_height = (height - (rows - 1) * gap) // rows
+
+    print("Cell Width:", cell_width)
+    print("Cell Height:", cell_height)
+
+    # Determine the maximum cell size (to maintain square shape)
+    max_cell_size = min(cell_width, cell_height)
+    print("Max Cell Size:", max_cell_size)
+
+    # Calculate the horizontal and vertical gap offsets for cropping
+    horizontal_offset = (cell_width - max_cell_size) // 2
+    vertical_offset = (cell_height - max_cell_size) // 2
+
+    print("Horizontal Offset:", horizontal_offset)
+    print("Vertical Offset:", vertical_offset)
+
+    # Determine the longest dimension (width or height)
+    longest_dimension = "width" if cell_width > cell_height else "height"
+
+    # Split the image and save each image-cell
+    for row in range(rows):
+        for col in range(cols):
+            # Calculate the coordinates for cropping
+            left = col * (cell_width + gap) + horizontal_offset
+            upper = row * (cell_height + gap) + vertical_offset
+
+            # Remove rows/columns only if they are part of the Outlier image-cells
+            if row == 0:
+                upper += vertical_offset
+            elif row == rows - 1:
+                upper -= vertical_offset
+            if col == 0:
+                left += horizontal_offset
+            elif col == cols - 1:
+                left -= horizontal_offset
+            if longest_dimension == "width":
+                right = left + max_cell_size
+                lower = upper + cell_height
+            else:
+                right = left + cell_width
+                lower = upper + max_cell_size
+
+            # Crop all image-cells
+            image_cell = image.crop((left, upper, right, lower))
+
+            ########## Outputs ##########
+
+            # Generate new Image-Cell Name
+            image_cell.filename = f"{row}_{col}"
+            # Save Image Cell
+            cropped_cells.append(image_cell)
+
+            # Store Coordinates of split image cells, for Previewer
+            grid_cell = [{
+                "cell": f"{row}_{col}",
+                "Left_Coord": left,
+                "Right_Coord": right,
+                "Upper_Coord": upper,
+                "Lower_Coord": lower,
+            }]
+            preview_grid.append(grid_cell)
+
+    return { "preview_coordinates": preview_grid, "image_cells": cropped_cells}
+
+
+# Calls 'calculate_image_split' and saves its output 'image_cells'
+def split_static(image_path, output_dir, rows, cols, gap):
+    static_image = Image.open(image_path)
+
+    # Split the Image
+    split_image = calculate_image_split(static_image, rows, cols, gap)
+
+    # Create the output directory if it doesn't exist
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Generate the output file path
+    filename_without_extension = os.path.splitext(os.path.basename(static_image.filename))[0]
+
+    # Save the image-cells
+    for cell in split_image["image_cells"]:
+
+        output_path = os.path.join(output_dir, f"{filename_without_extension}_{cell.filename}.png")
+        cell.save(output_path)
+
+        print(f"Saved {output_path}")
+
+
+# Calls 'calculate_image_split' for each frame of an image
+# Recombines each image cell for each frame, before saving the combined Image-Cell
+# Preserves or adds Frame Timings in case Frame's are missing this information.
+# Discards 0ms Frame Times. Default Frame Timing is 100ms. If only some Frame's have timing, average will be used.
+def split_animated(gif_path, output_dir, rows, cols, gap):
+    # Create the output directory if it doesn't exist
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Open the image using PIL
+    gif = Image.open(gif_path)
+    print("GIF Frame Count: " + str(gif.n_frames))
+
+    # Extract frames from .gif file
+    frames = []
+    for frame in ImageSequence.Iterator(gif):
+        frames.append(frame.copy())
+
+    # Get duration of each frame
+    frame_durations = []
+    for frame in range(0, gif.n_frames):
+        gif.seek(frame)
+        try:
+            duration = int(gif.info['duration'])
+            if duration > 0:
+                frame_durations.append(duration)
+            else:
+                frame_durations.append(0)
+        except(KeyError, TypeError):
+            print("No frame durations present")
+
+            # Add default time in case no frame duration is provided by .gif
+            frame_durations.append(0)
+
+    # Calculate average duration
+    non_zero_durations = [d for d in frame_durations if d > 0]
+    if len(non_zero_durations) > 0:
+        default_duration = sum(non_zero_durations) // len(non_zero_durations)
+    else:
+        default_duration = 100
+
+    # Replace missing values with average duration
+    for i in range(len(frame_durations)):
+        if frame_durations[i] == 0:
+            frame_durations[i] = default_duration
+    print("Frame Durations: \n" + frame_durations.__str__())
+
+    # Takes the extracted frames from the gif and splits them individually
+    modified_frame_cells = []
+    for frame in frames:
+        split_frame = calculate_image_split(frame, rows, cols, gap)
+        modified_frame_cells.append(split_frame["image_cells"])
+
+    combined_cells = []
+    # Combine frame's cells together (ie. frame 0 cell 0, frame 1 cell 0, frame 2 cell 0, etc.)
+    num_cells = len(modified_frame_cells[0])
+    for cell_index in range(num_cells):
+        for frame_cells in modified_frame_cells:
+            combined_cells.append(frame_cells[cell_index])
+
+        # Generate the output file path
+        filename_without_extension = os.path.splitext(os.path.basename(gif.filename))[0]
+
+        # Use the filename of the cell image for creating the output_path
+        cell_name = combined_cells[0].filename
+        output_path = os.path.join(output_dir, f"{filename_without_extension}_{cell_name}.gif")
+
+        # Save the combined cells as a .gif file
+        combined_cells[0].save(output_path, save_all=True, append_images=combined_cells[1:],
+                               duration=frame_durations, loop=0)
+
+        print(f"Saved {output_path}")
+        combined_cells = []
 
 
 # Splits the provided Image into Image-Cell's based on provided parameters.
 # This function crops the Image's to make them square.
-def split_image(image_path, output_dir, rows, cols, gap):
+def split_static_old(image_path, output_dir, rows, cols, gap):
     # Open the image using PIL
     image = Image.open(image_path)
 
@@ -639,7 +975,7 @@ def split_image(image_path, output_dir, rows, cols, gap):
 # This function crops the GIF's to make them square.
 # This function preserves or adds Frame Timings in case Frame's are missing this information.
 # Discards 0ms Frame Times. Default Frame Timing is 100ms, if only some Frame's have timing, average will be used.
-def split_gif(gif_path, output_dir, rows, cols, gap):
+def split_animated_old(gif_path, output_dir, rows, cols, gap):
     # Create the output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
 
@@ -754,86 +1090,6 @@ if __name__ == "__main__":
     # For flow debugging
     print("---Code Start---")
 
-    # Create DisplayKeys_Widget's
-    ToolProperties = [
-        {
-            "widget_id": "Credits",
-            "label_text": "Image Splitter made by Neuffexx",
-            "label_colour": "#E9ECEF",
-        },
-        {
-            "widget_id": "GetImage",
-            "label_text": "Choose Image:",
-            "label_colour": "#E9ECEF",
-            "has_textbox": True,
-            "textbox_state": "readonly",
-            "textbox_colour": "#ADB5BD",
-            "button_label": "Browse Image",
-            "button_command": ButtonFunctions.browse_image,
-            "button_tooltip": "Select the Image you want to be split.",
-        },
-        {
-            "widget_id": "GetOutput",
-            "label_text": "Choose Output Location:",
-            "label_colour": "#E9ECEF",
-            "has_textbox": True,
-            "textbox_state": "readonly",
-            "textbox_colour": "#ADB5BD",
-            "button_label": "Browse Folder",
-            "button_command": ButtonFunctions.browse_directory,
-            "button_tooltip": "Select the Folder to save the split Image to.",
-        },
-        {
-            "widget_id": "TopDivider",
-            "label_text": "-------------------------------------",
-            "label_colour": "#343A40",
-        },
-        {
-            "widget_id": "GetParamsType",
-            "label_text": "Set Splitting Parameters:",
-            "label_colour": "#E9ECEF",
-            "dropdown_options": ["Defaults", "User Defined"],  # "Profile"], for future implementation
-            "dropdown_command": ButtonFunctions.property_options_visibility,
-            "dropdown_tooltip": "Default Values are: \n Rows         | 2 \nColumns   | 6 \n Gap            | 40",
-            "has_textbox": False,
-        },
-        {
-            "widget_id": "GetRows",
-            "label_text": "Rows:",
-            "label_colour": "#E9ECEF",
-            "has_spinbox": True,
-            "spinbox_colour": "#CED4DA",
-            "spinbox_default_value": "2",
-        },
-        {
-            "widget_id": "GetColumns",
-            "label_text": "Columns:",
-            "label_colour": "#E9ECEF",
-            "has_spinbox": True,
-            "spinbox_colour": "#CED4DA",
-            "spinbox_default_value": "6",
-        },
-        {
-            "widget_id": "GetGap",
-            "label_text": "Gap (in Pixels):",
-            "label_colour": "#E9ECEF",
-            "has_spinbox": True,
-            "spinbox_colour": "#CED4DA",
-            "spinbox_default_value": "40",
-        },
-        {
-            "widget_id": "BottomDivider",
-            "label_text": "-------------------------------------",
-            "label_colour": "#343A40",
-        },
-        {
-            "widget_id": "SplitImage",
-            "button_label": "Split Image",
-            "label_colour": "#E9ECEF",
-            "button_command": ButtonFunctions.process_image,
-        },
-    ]
-
     # Create/Start Application Window
-    app = DisplayKeys_GUI(ToolProperties)
+    app = DisplayKeys_GUI()
     app.run()
