@@ -54,7 +54,8 @@ If any further information is needed it will be requested within this issue.
 
 ## Discussing the current state of the code
 Honestly, this is probably just developer to developer talk, and has no need to be dumped anywhere in the project unless it escalates into a new issue that needs to be worked on.  
-So just contact me and/or anyone working on it directly on Discord @Neuffexx
+- So just contact me and/or anyone working on it directly on Discord @Neuffexx
+- Additionally I enabled the [Community section](https://github.com/Neuffexx/DisplayKeys-IS/discussions) on GitHub so that we can discuss there between each other or with the community!
 
 
 ## Use a Consistent Coding Style
