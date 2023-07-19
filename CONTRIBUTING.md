@@ -22,7 +22,7 @@ Any and all Changes for the final versions must be proposed through Pull Request
 1. Fork the repo and create your branch from `main`.
 2. Each new branch should address a specific issue to keep changes trackable.  
    * Ensure that `no one is assigned` to the Issue you are intending to take up first.  
-   * Then make sure to `assign the issue to yourself` if its something you are working on so that other!
+   * Then make sure to `assign the issue to yourself` if its something you are working on so that others know!
 3. Once ready, create the pull request.  
 4. Ensure the test Actions succeed!
 
@@ -50,7 +50,8 @@ If any questions related to the bug arise it will be added as acomment, and all 
 ## Suggest new functionalities / features
 To make any kind of suggestions please open a [new issue](https://github.com/Neuffexx/DisplayKeys-IS/issues/new) with the `suggestion` label, detailing what it is you think should be added, why, and how it should work.  
 Please be descriptive but keep it digestible, and preferably (if applicable) add some visual example to make it easier to understand. (ie. if its a UI change/addition)  
-If any further information is needed it will be requested within this issue.
+If any further information is needed it will be requested within this issue.  
+Alternatively if you have an idea but its not quite ready yet and want to discuss it you can post about it in the [Community section](https://github.com/Neuffexx/DisplayKeys-IS/discussions).
 
 ## Discussing the current state of the code
 Honestly, this is probably just developer to developer talk, and has no need to be dumped anywhere in the project unless it escalates into a new issue that needs to be worked on.  
