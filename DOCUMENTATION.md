@@ -13,7 +13,7 @@
 </pre>
 
 ## How does the Application work?
-Oh wow someone actually reads this?
+
 
 Quite simple honestly.
 The whole thing is built on Python, making the job quite easy with the plethra of libraries out there that make your life easier.
