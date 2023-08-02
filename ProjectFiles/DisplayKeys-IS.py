@@ -4,7 +4,9 @@
 # And I was too lazy to do this to each image manually.
 # Was this more effort? Yes. You are welcome.
 
-import os, sys
+from typing import Literal, Callable, Annotated
+import os
+import sys
 from PIL import Image, ImageTk, ImageSequence, ImageDraw
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
@@ -205,6 +207,7 @@ class DisplayKeys_Previewer:
         :param height: The Height of the Previewer Canvas.
     """
     def __init__(self, parent, width, height):
+        # Initialize Image
         self.width = width
         self.height = height
         self.placeholder_path = "./Preview.png" #sys._MEIPASS + "./Preview.png"
@@ -216,17 +219,25 @@ class DisplayKeys_Previewer:
         self.canvas.tag_bind("preview_image", "<ButtonPress-1>", self.start_drag)
         self.canvas.tag_bind("preview_image", "<ButtonRelease-1>", self.end_drag)
         self.canvas.tag_bind("preview_image", "<B1-Motion>", self.do_drag)
-        
-        self.drag_data = {"item": None, "x": 0, "y": 0}
-        self.image_reset_position = {"x": 0, "y": 0}
-        self.image_current_position = {"x": 0, "y": 0}
-        self.allowed_drag_distance = 0
+
+        # Initialize Click-Drag / Offset Functionality
+        self.drag_data = {"item": None, "x": 0.0, "y": 0.0}
+        self.image_reset_position = {"x": 0.0, "y": 0.0}
+        self.image_current_position = {"x": 0.0, "y": 0.0}
+        self.allowed_drag_distance_cell = 0
+        self.allowed_drag_distance_cropping = {"x": 0.0, "y": 0.0}
+        self.drag_limit_type = False
+        self.scale_factor = 1
+        self.final_offset = {"x": 0.0, "y": 0.0}
 
         # Load and show the initial placeholder image
         self.display_preview_image(self.placeholder_path)
 
-    # Simply gets the image, rescales it and renders it onto the canvas.
     def display_preview_image(self, image_path):
+        """
+        Simply gets the image, rescales it and renders it onto the canvas.
+        :param image_path: The on Disk path to the Image to be Previewed
+        """
         image = Image.open(image_path)
 
         # Rescaling image to fit within preview boundaries
@@ -270,7 +281,7 @@ class DisplayKeys_Previewer:
     # Also calls the 'display_preview_image' to refresh the image.
     # TODO:
     #     - Update function to use newly added 'Offset' inputs
-    def update(self, image_path, num_rows, num_columns, gap):
+    def update_preview(self, image_path, num_rows, num_columns, gap):
         # Clear the canvas to prepare for new content
         self.canvas.delete("all")
 
@@ -285,183 +296,13 @@ class DisplayKeys_Previewer:
 
         # Define the size of the square to be cropped from each cell
         square_size = min(cell_width, cell_height) - scaled_gap
-        self.allowed_drag_distance = square_size
+        # For Cell Clamping
+        self.allowed_drag_distance_cell = square_size
+        # For Cropping Clamping
+        self.allowed_drag_distance_cropping["x"] = abs((cell_width - square_size)) / (self.scale_factor)
+        self.allowed_drag_distance_cropping["y"] = abs((cell_height - square_size)) / (self.scale_factor)
 
-        # Loop through each cell in the grid
-        for column_index in range(num_columns):
-            for row_index in range(num_rows):
-
-                # Initial position for cropping rectangle (centered in cell)
-                crop_left = column_index * cell_width + (cell_width - square_size) / 2 + self.x_offset
-                crop_top = row_index * cell_height + (cell_height - square_size) / 2 + self.y_offset
-                crop_right = crop_left + square_size
-                crop_bottom = crop_top + square_size
-
-                # Position adjustments for Outlier Image-Cells
-                if row_index == 0:  # First Row
-                    crop_bottom = (row_index + 1) * cell_height - scaled_gap / 2 + self.y_offset
-                    crop_top = crop_bottom - square_size
-                elif row_index == num_rows - 1:  # Last Row
-                    crop_top = row_index * cell_height + scaled_gap / 2 + self.y_offset
-                    crop_bottom = crop_top + square_size
-
-                if column_index == 0:  # First Column
-                    crop_right = (column_index + 1) * cell_width - scaled_gap / 2 + self.x_offset
-                    crop_left = crop_right - square_size
-                elif column_index == num_columns - 1:  # Last Column
-                    crop_left = column_index * cell_width + scaled_gap / 2 + self.x_offset
-                    crop_right = crop_left + square_size
-
-                # Draw the adjusted Cropping Overlay
-                self.canvas.create_rectangle(crop_left, crop_top, crop_right, crop_bottom, outline="blue")
-
-                # Draw Cropping Overlays with stipple effect, adjusted for Outlier Image-Cells
-                stipple_pattern = "gray25"
-                overlay_left = self.x_offset if column_index == 0 else column_index * cell_width + self.x_offset
-                overlay_right = self.x_offset + image_width if column_index == num_columns - 1 else (
-                                                                                                                column_index + 1) * cell_width + self.x_offset
-                overlay_top = self.y_offset if row_index == 0 else row_index * cell_height + self.y_offset
-                overlay_bottom = self.y_offset + image_height if row_index == num_rows - 1 else (
-                                                                                                            row_index + 1) * cell_height + self.y_offset
-
-                self.canvas.create_rectangle(overlay_left, crop_top, crop_right, overlay_top, fill="gray",
-                                             stipple=stipple_pattern)
-                self.canvas.create_rectangle(overlay_left, crop_bottom, crop_right, overlay_bottom, fill="gray",
-                                             stipple=stipple_pattern)
-                self.canvas.create_rectangle(crop_left, overlay_top, overlay_left, overlay_bottom, fill="gray",
-                                             stipple=stipple_pattern)
-                self.canvas.create_rectangle(crop_right, overlay_top, overlay_right, overlay_bottom, fill="gray",
-                                             stipple=stipple_pattern)
-
-        # Draw the grid lines
-        for column_index in range(1, num_columns):
-            grid_x = column_index * cell_width + self.x_offset
-            self.canvas.create_line(grid_x, self.y_offset, grid_x, image_height + self.y_offset, fill="#CC0000",
-                                    width=scaled_gap)
-
-        for row_index in range(1, num_rows):
-            grid_y = row_index * cell_height + self.y_offset
-            self.canvas.create_line(self.x_offset, grid_y, image_width + self.x_offset, grid_y, fill="#CC0000",
-                                    width=scaled_gap)
-
-        # TODO: Clamp position of image by size of tiles?
-
-    def start_drag(self, event):
-        # record the item and its location
-        self.drag_data["item"] = self.canvas.find_closest(event.x, event.y)[0]
-        self.drag_data["x"] = event.x
-        self.drag_data["y"] = event.y
-        print("Start Drag Position:", event.x, event.y)
-
-    def end_drag(self, event):
-        # Save the final position of the drag
-        self.image_current_position["x"], self.image_current_position["y"] = self.canvas.coords(self.preview_image)
-
-        # Calculate the distance moved
-        delta_x = self.image_current_position["x"] - self.image_reset_position["x"]
-        delta_y = self.image_current_position["y"] - self.image_reset_position["y"]
-
-        # Clamp the movement distance
-        print("Max Drag Distance:", self.allowed_drag_distance)
-        if abs(delta_x) > self.allowed_drag_distance:
-            self.image_current_position["x"] = self.image_reset_position["x"] + self.allowed_drag_distance * (
-                        delta_x / abs(delta_x))
-        if abs(delta_y) > self.allowed_drag_distance:
-            self.image_current_position["y"] = self.image_reset_position["y"] + self.allowed_drag_distance * (
-                        delta_y / abs(delta_y))
-
-        # move the image back to the new clamped position
-        self.canvas.coords(self.preview_image, self.image_current_position["x"], self.image_current_position["y"])
-        print("End Drag Position:", self.image_current_position["x"], self.image_current_position["y"])
-
-        # reset the drag information
-        self.drag_data["item"] = None
-        self.drag_data["x"] = 0
-        self.drag_data["y"] = 0
-
-        # Update the Previewer - In the future it will show what cells will be discarded
-        ButtonFunctions.process_image("DragPreviewImage")
-
-    def do_drag(self, event):
-        # compute how much the mouse has moved
-        delta_x = event.x - self.drag_data["x"]
-        delta_y = event.y - self.drag_data["y"]
-        # move the object the appropriate amount
-        self.canvas.move(self.drag_data["item"], delta_x, delta_y)
-        # record the new position
-        self.drag_data["x"] = event.x
-        self.drag_data["y"] = event.y
-        print("New Drag Position:", delta_x, delta_y)
-
-    # Move the preview image back to its original position
-    def reset_drag(self):
-        self.image_current_position["x"], self.image_current_position["y"] = self.canvas.coords(self.preview_image, self.image_reset_position["x"], self.image_reset_position["y"])
-        # Update the Previewer - In the future it will show what cells will be discarded
-        ButtonFunctions.process_image("ResetPreviewer")
-
-class DisplayKeys_Previewer_backup:
-    def __init__(self, parent, width, height):
-        self.width = width
-        self.height = height
-        self.image_path = "./Preview.png"  # sys._MEIPASS + "./Preview.png"
-
-        # Initialize canvas
-        self.canvas = tk.Canvas(parent, width=self.width, height=self.height, background="#151515",
-                                highlightthickness=3, highlightbackground="#343A40")
-        self.canvas.grid()
-
-        # Load and show the initial placeholder image
-        self.display_preview_image(self.image_path)
-
-    # Simply gets the image, rescales it and renders it onto the canvas.
-    def display_preview_image(self, image_path):
-        image = Image.open(image_path)
-
-        # Rescaling image to fit within preview boundaries
-        aspect_ratio = image.width / image.height
-        if self.width / self.height >= aspect_ratio:
-            # Constrained by height
-            new_height = self.height
-            new_width = int(self.height * aspect_ratio)
-        else:
-            # Constrained by width
-            new_width = self.width
-            new_height = int(self.width / aspect_ratio)
-        self.scale_factor = new_width / image.width
-        resized_image = image.resize((new_width, new_height))
-
-        # Convert to PhotoImage to be used in TkInter Canvas
-        self.tk_image = ImageTk.PhotoImage(resized_image)
-        x_offset = (self.width - new_width) / 2
-        y_offset = (self.height - new_height) / 2
-        self.canvas.create_image(x_offset, y_offset, image=self.tk_image, anchor=tk.NW)
-
-        self.resized_image = resized_image
-        self.x_offset = x_offset
-        self.y_offset = y_offset
-
-    # This calculates an approximate version of the split_image function,
-    # to preview the Splitting and Cropping of an image provided.
-    # Also calls the 'display_preview_image' to refresh the image.
-    # TODO:
-    #     - Update function to use newly added 'Offset' inputs
-    def update(self, image_path, num_rows, num_columns, gap):
-        # Clear the canvas to prepare for new content
-        self.canvas.delete("all")
-
-        # Display the image after rescaling
-        self.display_preview_image(image_path)
-
-        # Calculate the dimensions of each image cell
-        image_width, image_height = self.resized_image.size
-        cell_width = image_width / num_columns
-        cell_height = image_height / num_rows
-        scaled_gap = gap * self.scale_factor
-
-        # Define the size of the square to be cropped from each cell
-        square_size = min(cell_width, cell_height) - scaled_gap
-
-        # Loop through each cell in the grid
+        # Draw Cropping Stipple's
         for column_index in range(num_columns):
             for row_index in range(num_rows):
 
@@ -496,7 +337,7 @@ class DisplayKeys_Previewer_backup:
                                                                                                             column_index + 1) * cell_width + self.x_offset
                 overlay_top = self.y_offset if row_index == 0 else row_index * cell_height + self.y_offset
                 overlay_bottom = self.y_offset + image_height if row_index == num_rows - 1 else (
-                                                                                                        row_index + 1) * cell_height + self.y_offset
+                                                                                                            row_index + 1) * cell_height + self.y_offset
 
                 self.canvas.create_rectangle(overlay_left, crop_top, crop_right, overlay_top, fill="gray",
                                              stipple=stipple_pattern)
@@ -507,7 +348,7 @@ class DisplayKeys_Previewer_backup:
                 self.canvas.create_rectangle(crop_right, overlay_top, overlay_right, overlay_bottom, fill="gray",
                                              stipple=stipple_pattern)
 
-        # Draw the grid lines
+        # Draw the Grid Lines
         for column_index in range(1, num_columns):
             grid_x = column_index * cell_width + self.x_offset
             self.canvas.create_line(grid_x, self.y_offset, grid_x, image_height + self.y_offset, fill="#CC0000",
@@ -517,6 +358,106 @@ class DisplayKeys_Previewer_backup:
             grid_y = row_index * cell_height + self.y_offset
             self.canvas.create_line(self.x_offset, grid_y, image_width + self.x_offset, grid_y, fill="#CC0000",
                                     width=scaled_gap)
+
+        # Draw Blackout Lines
+        blackout_rectangles = [
+            self.canvas.create_rectangle(0, 0, self.width + 15, self.y_offset, fill='black'), # Top
+            self.canvas.create_rectangle(0, self.y_offset + self.resized_image.height, self.width + 15, self.height + 15,
+                                         fill='black'), # Bottom
+            self.canvas.create_rectangle(0, self.y_offset, self.x_offset, self.y_offset + self.resized_image.height,
+                                         fill='black'), # Left
+            self.canvas.create_rectangle(self.x_offset + self.resized_image.width, self.y_offset, self.width + 15,
+                                         self.y_offset + self.resized_image.height, fill='black'), # Right
+        ]
+
+    # noinspection PyTypedDict
+    def start_drag(self, event):
+        # record the item and its location
+        self.drag_data["item"] = self.canvas.find_closest(event.x, event.y)[0]
+        self.drag_data["x"] = event.x
+        self.drag_data["y"] = event.y
+        #print("Start Drag Position:", event.x, event.y)
+
+    def end_drag(self, event):
+        # Save the end position of the drag
+        self.image_current_position["x"], self.image_current_position["y"] = self.canvas.coords(self.preview_image)
+
+        # Calculate the distance moved on Canvas
+        canvas_delta_x = self.image_current_position["x"] - self.image_reset_position["x"]
+        canvas_delta_y = self.image_current_position["y"] - self.image_reset_position["y"]
+        # Convert to In-Canvas Image Space
+        delta_x = canvas_delta_x / self.scale_factor
+        delta_y = canvas_delta_y / self.scale_factor
+
+        # Clamp the distance moved in Canvas Space
+        if self.drag_limit_type:
+            # Clamp the distance moved based on Cell Size
+            if delta_x > 0:
+                delta_x = min(delta_x, self.allowed_drag_distance_cell)
+            else:
+                delta_x = max(delta_x, -self.allowed_drag_distance_cell)
+
+            if delta_y > 0:
+                delta_y = min(delta_y, self.allowed_drag_distance_cell)
+            else:
+                delta_y = max(delta_y, -self.allowed_drag_distance_cell)
+        else:
+            # Clamp the distance moved based on Cropping Size
+            if delta_x > 0:
+                delta_x = min(delta_x, self.allowed_drag_distance_cropping["x"])
+            else:
+                delta_x = max(delta_x, -self.allowed_drag_distance_cropping["x"])
+
+            if delta_y > 0:
+                delta_y = min(delta_y, self.allowed_drag_distance_cropping["y"])
+            else:
+                delta_y = max(delta_y, -self.allowed_drag_distance_cropping["y"])
+
+
+        # Update the position in Canvas Space, given the new delta_x and delta_y
+        self.image_current_position["x"] = self.image_reset_position["x"] + delta_x * self.scale_factor
+        self.image_current_position["y"] = self.image_reset_position["y"] + delta_y * self.scale_factor
+
+        # move the image back to the new clamped position
+        self.canvas.coords(self.preview_image, self.image_current_position["x"], self.image_current_position["y"])
+
+        # Get / Store Offset in Original-Image Space
+        delta_x = (self.image_current_position["x"] - self.image_reset_position["x"]) / self.scale_factor
+        delta_y = (self.image_current_position["y"] - self.image_reset_position["y"]) / self.scale_factor
+        self.final_offset = {"x": delta_x, "y": delta_y}
+        print("Final Offset:", delta_x, delta_y)
+
+        # reset the drag information
+        self.drag_data["item"] = None
+        self.drag_data["x"] = 0
+        self.drag_data["y"] = 0
+
+        # Update the Previewer - In the future it will show what cells will be discarded
+        ButtonFunctions.process_image("DragPreviewImage")
+
+    def do_drag(self, event):
+        # compute how much the mouse has moved
+        delta_x = event.x - self.drag_data["x"]
+        delta_y = event.y - self.drag_data["y"]
+        # move the object the appropriate amount
+        self.canvas.move(self.drag_data["item"], delta_x, delta_y)
+        # record the new position
+        self.drag_data["x"] = event.x
+        self.drag_data["y"] = event.y
+        #print("New Drag Position:", delta_x, delta_y)
+
+    # Move the preview image back to its original position
+    def reset_drag(self):
+        # Reset Position / Save
+        self.canvas.coords(self.preview_image, self.image_reset_position["x"], self.image_reset_position["y"])
+        self.image_current_position["x"], self.image_current_position["y"] = self.canvas.coords(self.preview_image)
+        delta_x = self.image_current_position["x"] - self.image_reset_position["x"]
+        delta_y = self.image_current_position["y"] - self.image_reset_position["y"]
+        self.final_offset = {"x": delta_x, "y": delta_y}
+        print("Reset Offset:", delta_x, delta_y)
+
+        # Update the Previewer - In the future it will show what cells will be discarded
+        ButtonFunctions.process_image("ResetPreviewer")
 
 
 # Generic Widgets used throughout the Applications UI (ie. Labels, Textboxes, Buttons, etc.)
@@ -528,10 +469,14 @@ class DisplayKeys_Composite_Widget(tk.Frame):
         :param parent: The Widget container
         :param widget_id: A Unique ID to Identify/Distinguish it from other Composite Widgets.
     """
-    def __init__(self, parent, widget_id, label_text=None, label_tooltip=None, dropdown_options=None,
-                 dropdown_tooltip=None, dropdown_command=None,
-                 has_textbox=False, textbox_state="normal", textbox_default_value=None, has_spinbox=False, spinbox_default_value=0, button_label=None, button_command=None,
-                 button_tooltip=None, updates_previewer=False, label_colour="white", textbox_colour="white", spinbox_colour="white") -> object:
+    def __init__(self, parent: tk.Frame, widget_id: str, label_text: str = None, label_tooltip: str = None,
+                 dropdown_options: list[str] = None, dropdown_tooltip: str = None,
+                 dropdown_command: Callable[[list['DisplayKeys_Composite_Widget']], None] = None,
+                 has_textbox: bool = False, textbox_state: Literal["normal", "disabled", "readonly"] = "normal",
+                 textbox_default_value: str = None, has_spinbox: bool = False, spinbox_default_value: int | str = 0,
+                 button_label: str = None, button_command: Callable[[str], None] = None, button_tooltip: str = None,
+                 updates_previewer: bool = False, label_colour: str = "white",
+                 textbox_colour: str = "white", spinbox_colour: str = "white"):
         super().__init__(parent, bg="#343A40")
         self.grid(sticky="nsew", padx=5, pady=5)
         self.columnconfigure(0, weight=1)
@@ -622,7 +567,9 @@ class DisplayKeys_Tooltip:
         :param justify: The Relative Alignment of Text to itself when broken into a new line.
         :param anchor: The Alignment of Text in general Relative to the Tooltips Widget Space
     """
-    def __init__(self, parent, text, justify="center", anchor="center"):
+    def __init__(self, parent: tk.Label | tk.Entry | tk.Spinbox | tk.Button | ttk.Combobox, text: str,
+                 justify: Literal["left", "center", "right"] = "center",
+                 anchor: Literal["nw", "n", "ne", "w", "center", "e", "sw", "s", "se"] = "center"):
         self.parent = parent
         self.text = text
         self.tooltip = None
@@ -674,8 +621,10 @@ class DisplayKeys_Help:
         :param tooltip_justification: See DisplayKeys_Tooltip for clarification.
         :param tooltip_anchor: See DisplayKeys_Tooltip for clarification.
     """
-    def __init__(self, parent, row=0, col=0, alignment="nsew", percentage_size=100, help_tooltip="Placeholder Help",
-                 tooltip_justification="center", tooltip_anchor="center"):
+    def __init__(self, parent: tk.Frame, row: int = 0, col: int = 0, alignment: str = "nsew",
+                 percentage_size: int = 100, help_tooltip: str = "Placeholder Help",
+                 tooltip_justification: Literal["left", "center", "right"] = "center",
+                 tooltip_anchor: Literal["nw", "n", "ne", "w", "center", "e", "sw", "s", "se"] = "center"):
         self.image = Image.open("./Help.png")#sys._MEIPASS + "./Help.png"
         new_size = int( self.image.height * (percentage_size / 100) )
         self.resized_image = ImageTk.PhotoImage( self.image.resize((new_size, new_size)) )
@@ -716,7 +665,7 @@ class ButtonFunctions:
         widget.bind(event_name, function_name)
 
     @staticmethod
-    def disable_trace(widget: object, trace_id: vars, event: str = "w"):
+    def disable_trace(widget: vars, trace_id: vars, event: str = "w"):
         """
 
             :param widget: The Widget which holds the Trace to be destroyed.
@@ -728,9 +677,10 @@ class ButtonFunctions:
             widget.trace_vdelete(event, trace_id)
             print("Deleted Trace:", trace_id)
 
-    # Trace_variable_name (string) should be provided based on type of widget (i.e. if textbox: textbox_trace, if spinbox: spinbox_trace, etc.)
+    # Trace_variable_name (string) should be provided based on type of widget
+    # (i.e. if textbox: textbox_trace, if spinbox: spinbox_trace, etc.)
     @staticmethod
-    def enable_trace(widget: object, widget_parent: object, trace_variable_name: str, function, event: str = "w"):
+    def enable_trace(widget: vars, widget_parent: DisplayKeys_Composite_Widget, trace_variable_name: str, function, event: str = "w"):
         """
         Will create a new Trace on a widget, that will fire a callback function whenever it is triggered.
         :param widget: The Widget to enable the trace on.
@@ -758,7 +708,7 @@ class ButtonFunctions:
         """
         print("---Browsing for Image---")
         print("Widget ID: " + widget_id)
-        widget = next((widget for widget in app.properties if widget.id == widget_id), None)
+        widget: DisplayKeys_Composite_Widget = next((widget for widget in app.properties if widget.id == widget_id), None)
 
         if widget:
             # Ask the user to select an Image
@@ -826,7 +776,7 @@ class ButtonFunctions:
             Currently, no defaults are provided for any of the required inputs that are missing.
             :param widget_id: The Unique ID of the Widget that Called this function
         """
-        print("---Processing Preview---")
+        print("---Processing Image---")
         print("Widget ID: " + widget_id)
         calling_widget = next((widget for widget in app.properties if widget.id == widget_id), None)
         widgets = app.properties
@@ -886,17 +836,17 @@ class ButtonFunctions:
                 rows = int(get_rows_widget.spinbox_default)
                 columns = int(get_columns_widget.spinbox_default)
                 gap = int(get_gap_widget.spinbox_default)
-                xoffset = 0
-                yoffset = 0
+                x_offset = 0
+                y_offset = 0
 
             elif get_params_type_widget.dropdown_var.get() == "User Defined":
                 rows = int(get_rows_widget.spinbox.get()) if get_rows_widget.spinbox.get().isnumeric() else None
                 columns = int(
                     get_columns_widget.spinbox.get()) if get_columns_widget.spinbox.get().isnumeric() else None
                 gap = int(get_gap_widget.spinbox.get()) if get_gap_widget.spinbox.get().isnumeric() else None
-                xoffset = previewer.image_current_position["x"] if previewer.image_current_position else None
-                yoffset = previewer.image_current_position["y"] if previewer.image_current_position else None
-                if not all(param is not None for param in [rows, columns, gap, xoffset, yoffset]):
+                x_offset = previewer.final_offset["x"] if previewer.final_offset else None
+                y_offset = previewer.final_offset["y"] if previewer.final_offset else None
+                if not all(param is not None for param in [rows, columns, gap, x_offset, y_offset]):
                     # TODO: Make into Error Pop-up in the future
                     return
             else:
@@ -905,10 +855,10 @@ class ButtonFunctions:
             if widget_id == "SplitImage":
                 # Split Image
                 # Determine_Split_Type function then passes it to the appropriate Splitting funcion
-                determine_split_type(image_path, output_dir, rows, columns, gap, xoffset, yoffset)
+                determine_split_type(image_path, output_dir, rows, columns, gap, x_offset, y_offset)
             else:
                 # Update the preview
-                app.preview.update(image_path, rows, columns, gap)
+                app.preview.update_preview(image_path, rows, columns, gap)
 
         else:
             print("One or more required widgets are missing.")
@@ -918,7 +868,7 @@ class ButtonFunctions:
     # TODO: Make generic so that dropdown button provides the list of WidgetID's its responsible for.
     # TODO: Will make life easier for future dropdown functions as well (namely profiles etc.).
     @staticmethod
-    def property_options_visibility(properties: list[object]):
+    def property_options_visibility(properties: list[DisplayKeys_Composite_Widget]):
         """
             Hides / Un-hides specific Widgets
             (Will change in the future be changed to provide the list of Widgets it wants the visibility toggled for)
@@ -965,8 +915,8 @@ def get_supported_types():
 
 # Checks the provided image and determines whether it's a static or dynamic image format.
 # Also passes along rest of variables provided by ButtonFunctions.ProcessImage
-def determine_split_type(file_path, output_dir, rows, cols, gap, xoffset, yoffset):
-    print("---Determening File Type---")
+def determine_split_type(file_path: str, output_dir: str, rows: int, cols: int, gap: int, x_offset: float, y_offset: float):
+    print("---Determining File Type---")
 
     # The supported file formats:
     image_formats = get_supported_types()[0]
@@ -983,11 +933,11 @@ def determine_split_type(file_path, output_dir, rows, cols, gap, xoffset, yoffse
                 "True" if image else "False") + "\n   Image format is: " + "." + image.format.lower())
             # Is Static
             if "." + image.format.lower() in image_formats:
-                split_static(file_path, output_dir, rows, cols, gap)
+                split_static(file_path, output_dir, rows, cols, gap, x_offset, y_offset)
                 return True
             # Is Animated
             elif "." + image.format.lower() in animated_formats:
-                split_animated(file_path, output_dir, rows, cols, gap)
+                split_animated(file_path, output_dir, rows, cols, gap, x_offset, y_offset)
                 return True
             else:
                 print("No formats matched")
@@ -1011,94 +961,23 @@ def determine_split_type(file_path, output_dir, rows, cols, gap, xoffset, yoffse
 #  1.) Combine image splitting logic into one function, update split_image/split_gif to call that logic as needed
 #      ---------- DONE ----------
 #  2.) Update split_.../calculate_... functions to use newly added 'Offset' inputs.
-#      Add offset input, limit(clamp) max offset amount to 1cell in both width / height
+#      ---------- DONE ----------
+#  3.) Add offset input, limit(clamp) max offset amount to 1cell in both width / height
+#      ---------- DONE ----------           ( temporarily(?) in Previewer )
 #  3.) Replace the Previewer Drawing Functionality inside of the Previewer Update Function
 #      to use the calculate_image_split function returned 'preview_coordinates'
-
-
-# Splits the provided Image into Image-Cell's based on provided parameters.
-# Will also crop the Image-Cells into a Square Format
-# Returns {preview_coordinates, image_cells}
-def calculate_image_split(image, rows, cols, gap):
-    preview_grid = []
-    cropped_cells = []
-
-    # Calculate the width and height of each image-cell
-    width, height = image.size
-    print("Width:", width)
-    print("Height:", height)
-    cell_width = (width - (cols - 1) * gap) // cols
-    cell_height = (height - (rows - 1) * gap) // rows
-
-    print("Cell Width:", cell_width)
-    print("Cell Height:", cell_height)
-
-    # Determine the maximum cell size (to maintain square shape)
-    max_cell_size = min(cell_width, cell_height)
-    print("Max Cell Size:", max_cell_size)
-
-    # Calculate the horizontal and vertical gap offsets for cropping
-    horizontal_offset = (cell_width - max_cell_size) // 2
-    vertical_offset = (cell_height - max_cell_size) // 2
-
-    print("Horizontal Offset:", horizontal_offset)
-    print("Vertical Offset:", vertical_offset)
-
-    # Determine the longest dimension (width or height)
-    longest_dimension = "width" if cell_width > cell_height else "height"
-
-    # Split the image and save each image-cell
-    for row in range(rows):
-        for col in range(cols):
-            # Calculate the coordinates for cropping
-            left = col * (cell_width + gap) + horizontal_offset
-            upper = row * (cell_height + gap) + vertical_offset
-
-            # Remove rows/columns only if they are part of the Outlier image-cells
-            if row == 0:
-                upper += vertical_offset
-            elif row == rows - 1:
-                upper -= vertical_offset
-            if col == 0:
-                left += horizontal_offset
-            elif col == cols - 1:
-                left -= horizontal_offset
-            if longest_dimension == "width":
-                right = left + max_cell_size
-                lower = upper + cell_height
-            else:
-                right = left + cell_width
-                lower = upper + max_cell_size
-
-            # Crop all image-cells
-            image_cell = image.crop((left, upper, right, lower))
-
-            ########## Outputs ##########
-
-            # Generate new Image-Cell Name
-            image_cell.filename = f"{row}_{col}"
-            # Save Image Cell
-            cropped_cells.append(image_cell)
-
-            # Store Coordinates of split image cells, for Previewer
-            grid_cell = [{
-                "cell": f"{row}_{col}",
-                "Left_Coord": left,
-                "Right_Coord": right,
-                "Upper_Coord": upper,
-                "Lower_Coord": lower,
-            }]
-            preview_grid.append(grid_cell)
-
-    return { "preview_coordinates": preview_grid, "image_cells": cropped_cells}
+#       ( This may be too complicated now with the way the Offset input interacts with the Preview rendering )
+#       ( Will check when I am not sleep deprived to make sure it works when adapting to use external function )
+#  4.) Wrap all splitting related functions into class, no reason other than that I prefer it this way...
 
 
 # Calls 'calculate_image_split' and saves its output 'image_cells'
-def split_static(image_path, output_dir, rows, cols, gap):
+def split_static(image_path: str, output_dir: str, rows: int, cols: int, gap: int, x_offset: float, y_offset: float):
+    # Open the image using PIL
     static_image = Image.open(image_path)
 
     # Split the Image
-    split_image = calculate_image_split(static_image, rows, cols, gap)
+    split_image = calculate_image_split(static_image, rows, cols, gap, x_offset, y_offset)
 
     # Create the output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
@@ -1107,8 +986,8 @@ def split_static(image_path, output_dir, rows, cols, gap):
     filename_without_extension = os.path.splitext(os.path.basename(static_image.filename))[0]
 
     # Save the image-cells
+    cell: ImageTk.PhotoImage
     for cell in split_image["image_cells"]:
-
         output_path = os.path.join(output_dir, f"{filename_without_extension}_{cell.filename}.png")
         cell.save(output_path)
 
@@ -1119,7 +998,8 @@ def split_static(image_path, output_dir, rows, cols, gap):
 # Recombines each image cell for each frame, before saving the combined Image-Cell
 # Preserves or adds Frame Timings in case Frame's are missing this information.
 # Discards 0ms Frame Times. Default Frame Timing is 100ms. If only some Frame's have timing, average will be used.
-def split_animated(gif_path, output_dir, rows, cols, gap):
+# noinspection PyUnresolvedReferences
+def split_animated(gif_path: str, output_dir: str, rows: int, cols: int, gap: int, x_offset: float, y_offset: float):
     # Create the output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
 
@@ -1164,11 +1044,11 @@ def split_animated(gif_path, output_dir, rows, cols, gap):
     # Takes the extracted frames from the gif and splits them individually
     modified_frame_cells = []
     for frame in frames:
-        split_frame = calculate_image_split(frame, rows, cols, gap)
+        split_frame = calculate_image_split(frame, rows, cols, gap, x_offset, y_offset)
         modified_frame_cells.append(split_frame["image_cells"])
 
     combined_cells = []
-    # Combine frame's cells together (ie. frame 0 cell 0, frame 1 cell 0, frame 2 cell 0, etc.)
+    # Combine Image cell's into gif cell's (ie. [frame 0 cell 0] + [frame 1 cell 0] + [frame 2 cell 0] + etc.)
     num_cells = len(modified_frame_cells[0])
     for cell_index in range(num_cells):
         for frame_cells in modified_frame_cells:
@@ -1178,6 +1058,7 @@ def split_animated(gif_path, output_dir, rows, cols, gap):
         filename_without_extension = os.path.splitext(os.path.basename(gif.filename))[0]
 
         # Use the filename of the cell image for creating the output_path
+
         cell_name = combined_cells[0].filename
         output_path = os.path.join(output_dir, f"{filename_without_extension}_{cell_name}.gif")
 
@@ -1190,34 +1071,28 @@ def split_animated(gif_path, output_dir, rows, cols, gap):
 
 
 # Splits the provided Image into Image-Cell's based on provided parameters.
-# This function crops the Image's to make them square.
-def split_static_old(image_path, output_dir, rows, cols, gap):
-    # Open the image using PIL
-    image = Image.open(image_path)
+# Will also crop the Image-Cells into a Square Format
+# Returns {preview_coordinates, image_cells}
+def calculate_image_split(image: ImageTk, rows: int, cols: int, gap: int, x_offset: float, y_offset: float) -> dict[str, list[dict] | str, list[ImageTk.PhotoImage]]:
+    preview_grid = []
+    cropped_cells = []
 
     # Calculate the width and height of each image-cell
     width, height = image.size
-    print("Width:", width)
-    print("Height:", height)
+    print("Image Dimensions:", width, height)
     cell_width = (width - (cols - 1) * gap) // cols
     cell_height = (height - (rows - 1) * gap) // rows
-
-    print("Cell Width:", cell_width)
-    print("Cell Height:", cell_height)
-
-    # Create the output directory if it doesn't exist
-    os.makedirs(output_dir, exist_ok=True)
+    print("Cell Dimensions:", cell_width, cell_height)
 
     # Determine the maximum cell size (to maintain square shape)
     max_cell_size = min(cell_width, cell_height)
     print("Max Cell Size:", max_cell_size)
 
-    # Calculate the horizontal and vertical offsets for cropping
-    horizontal_offset = (cell_width - max_cell_size) // 2
-    vertical_offset = (cell_height - max_cell_size) // 2
+    # Calculate the horizontal and vertical gap offsets for cropping
+    gap_horizontal_offset = (cell_width - max_cell_size) // 2
+    gap_vertical_offset = (cell_height - max_cell_size) // 2
 
-    print("Horizontal Offset:", horizontal_offset)
-    print("Vertical Offset:", vertical_offset)
+    print("Gap Offsets:", gap_horizontal_offset, gap_vertical_offset)
 
     # Determine the longest dimension (width or height)
     longest_dimension = "width" if cell_width > cell_height else "height"
@@ -1226,18 +1101,18 @@ def split_static_old(image_path, output_dir, rows, cols, gap):
     for row in range(rows):
         for col in range(cols):
             # Calculate the coordinates for cropping
-            left = col * (cell_width + gap) + horizontal_offset
-            upper = row * (cell_height + gap) + vertical_offset
+            left = (col * (cell_width + gap) + gap_horizontal_offset) - x_offset
+            upper = (row * (cell_height + gap) + gap_vertical_offset) - y_offset
 
             # Remove rows/columns only if they are part of the Outlier image-cells
             if row == 0:
-                upper += vertical_offset
+                upper += gap_vertical_offset
             elif row == rows - 1:
-                upper -= vertical_offset
+                upper -= gap_vertical_offset
             if col == 0:
-                left += horizontal_offset
+                left += gap_horizontal_offset
             elif col == cols - 1:
-                left -= horizontal_offset
+                left -= gap_horizontal_offset
             if longest_dimension == "width":
                 right = left + max_cell_size
                 lower = upper + cell_height
@@ -1248,124 +1123,24 @@ def split_static_old(image_path, output_dir, rows, cols, gap):
             # Crop all image-cells
             image_cell = image.crop((left, upper, right, lower))
 
-            # Generate the output file path
-            filename_without_extension = os.path.splitext(os.path.basename(image.filename))[0]
-            output_path = os.path.join(output_dir, f"{filename_without_extension}_{row}_{col}.png")
+            ########## Outputs ##########
 
-            # Save the image-cells
-            image_cell.save(output_path)
+            # Generate new Image-Cell Name
+            image_cell.filename = f"{row}_{col}"
+            # Save Image Cell
+            cropped_cells.append(image_cell)
 
-            print(f"Saved {output_path}")
+            # Store Coordinates of split image cells, for Previewer
+            grid_cell = [{
+                "cell": f"{row}_{col}",
+                "Left_Coord": left,
+                "Right_Coord": right,
+                "Upper_Coord": upper,
+                "Lower_Coord": lower,
+            }]
+            preview_grid.append(grid_cell)
 
-
-# Splits the provided GIF into GIF-Cell's based on provided parameters.
-# This function crops the GIF's to make them square.
-# This function preserves or adds Frame Timings in case Frame's are missing this information.
-# Discards 0ms Frame Times. Default Frame Timing is 100ms, if only some Frame's have timing, average will be used.
-def split_animated_old(gif_path, output_dir, rows, cols, gap):
-    # Create the output directory if it doesn't exist
-    os.makedirs(output_dir, exist_ok=True)
-
-    # Open the image using PIL
-    gif = Image.open(gif_path)
-    print("GIF Frame Count: " + str(gif.n_frames))
-
-    # Extract frames from .gif file
-    frames = []
-    for frame in ImageSequence.Iterator(gif):
-        frames.append(frame.copy())
-
-    # Get duration of each frame
-    frame_durations = []
-    for frame in range(0, gif.n_frames):
-        gif.seek(frame)
-        try:
-            duration = int(gif.info['duration'])
-            if duration > 0:
-                frame_durations.append(duration)
-            else:
-                frame_durations.append(0)
-        except(KeyError, TypeError):
-            print("No frame durations present")
-
-            # Add default time in case no frame duration is provided by .gif
-            frame_durations.append(0)
-
-    # Calculate average duration
-    non_zero_durations = [d for d in frame_durations if d > 0]
-    if len(non_zero_durations) > 0:
-        default_duration = sum(non_zero_durations) // len(non_zero_durations)
-    else:
-        default_duration = 100
-
-    # Replace missing values with average duration
-    for i in range(len(frame_durations)):
-        if frame_durations[i] == 0:
-            frame_durations[i] = default_duration
-    print("Frame Durations: \n" + frame_durations.__str__())
-
-    # Calculate the width and height of each image-cell
-    width, height = frames[0].size
-    cell_width = (width - (cols - 1) * gap) // cols
-    cell_height = (height - (rows - 1) * gap) // rows
-
-    # Determine the maximum cell size (to maintain square format)
-    max_cell_size = min(cell_width, cell_height)
-
-    # Calculate the horizontal and vertical offsets for cropping
-    horizontal_offset = (cell_width - max_cell_size) // 2
-    vertical_offset = (cell_height - max_cell_size) // 2
-
-    # Determine the longest dimension (width or height)
-    longest_dimension = "width" if cell_width > cell_height else "height"
-
-    # Split Frames
-    modified_frames = []
-    for row in range(rows):
-        for col in range(cols):
-            # Calculate the coordinates for cropping
-            left = col * (cell_width + gap) + horizontal_offset
-            upper = row * (cell_height + gap) + vertical_offset
-
-            # Remove rows/columns only if they are part of the Outlier image-cells
-            if row == 0:
-                upper += vertical_offset
-            elif row == rows - 1:
-                upper -= vertical_offset
-            if col == 0:
-                left += horizontal_offset
-            elif col == cols - 1:
-                left -= horizontal_offset
-            if longest_dimension == "width":
-                right = left + max_cell_size
-                lower = upper + cell_height
-            else:
-                right = left + cell_width
-                lower = upper + max_cell_size
-
-            # Perform operation on each frame, for each row/column split image-cell
-            for frame in frames:
-                # Crop the current frame
-                image_cell = frame.crop((left, upper, right, lower))
-                # Hold onto cropped image-cell
-                modified_frames.append(image_cell)
-
-            # Generate the output file path
-            filename_without_extension = os.path.splitext(os.path.basename(gif.filename))[0]
-            output_path = os.path.join(output_dir, f"{filename_without_extension}_{row}_{col}.gif")
-            print("Num of Modified Frames: " + str(modified_frames.__sizeof__()))
-
-            # Save all frames of the image-cell into a single .gif file
-            modified_frames[0].save(
-                output_path,
-                save_all=True,
-                append_images=modified_frames[1:],
-                duration=frame_durations,  # Might make this a user definable variable in the future
-                loop=0
-            )
-            modified_frames = []
-            print(f"gif_cell_{row}_{col} has this many frames: " + str(Image.open(output_path).n_frames))
-            print(f"Saved {output_path}")
+    return {"preview_coordinates": preview_grid, "image_cells": cropped_cells}
 
 
 ####################################################################################################################
