@@ -26,7 +26,7 @@ class DisplayKeys_GUI:
         print("---Creating Window---")
         self.window = tk.Tk()
         self.window.title("DisplayKeys-IS")
-        icon_path = sys._MEIPASS + "./DisplayKeys-IS.ico"
+        icon_path = Sys._MEIPASS + "./DisplayKeys-IS.ico"
         self.window.iconbitmap(icon_path)
         self.window.geometry("600x600")
         self.window.resizable(False, False)
@@ -210,7 +210,7 @@ class DisplayKeys_Previewer:
         # Initialize Image
         self.width = width
         self.height = height
-        self.placeholder_path = sys._MEIPASS + "./Preview.png"
+        self.placeholder_path = Sys._MEIPASS + "./Preview.png"
         self.image_path = None
 
         # Initialize canvas
@@ -625,7 +625,7 @@ class DisplayKeys_Help:
                  percentage_size: int = 100, help_tooltip: str = "Placeholder Help",
                  tooltip_justification: Literal["left", "center", "right"] = "center",
                  tooltip_anchor: Literal["nw", "n", "ne", "w", "center", "e", "sw", "s", "se"] = "center"):
-        self.image = Image.open(sys._MEIPASS + "./Help.png")
+        self.image = Image.open(Sys._MEIPASS + "./Help.png")
         new_size = int( self.image.height * (percentage_size / 100) )
         self.resized_image = ImageTk.PhotoImage( self.image.resize((new_size, new_size)) )
 
@@ -665,35 +665,34 @@ class ButtonFunctions:
         widget.bind(event_name, function_name)
 
     @staticmethod
-    def disable_trace(widget: vars, trace_id: vars, event: str = "w"):
+    def disable_trace(traced_variable: vars, trace_id: vars, event: str = "w"):
         """
 
-            :param widget: The Widget which holds the Trace to be destroyed.
+            :param traced_variable: The Widget's Variable which holds the Trace to be destroyed.
             :param trace_id: The variable holding the stored Trace.
             :param event: The Type of Event to trigger the Trace.
         """
         # Ensure widget has a trace
-        if widget.trace_info():
-            widget.trace_vdelete(event, trace_id)
+        if traced_variable.trace_info():
+            traced_variable.trace_vdelete(event, trace_id)
             print("Deleted Trace:", trace_id)
 
     # Trace_variable_name (string) should be provided based on type of widget
     # (i.e. if textbox: textbox_trace, if spinbox: spinbox_trace, etc.)
     @staticmethod
-    def enable_trace(widget: vars, widget_parent: DisplayKeys_Composite_Widget, trace_variable_name: str, function, event: str = "w"):
+    def enable_trace(variable_to_trace: vars, widget: DisplayKeys_Composite_Widget, function, event: str = "w"):
         """
         Will create a new Trace on a widget, that will fire a callback function whenever it is triggered.
-        :param widget: The Widget to enable the trace on.
-        :param widget_parent: The Parent widget to store the newly created Trace.
-        :param trace_variable_name: The Variable inside the Parent that will store the new Trace.
+        :param variable_to_trace: The Widget's Variable to enable the trace on.
+        :param widget: The Parent widget to store the newly created Trace.
         :param function: The Function to Call when the Trace is triggered.
         :param event: The Event that will trigger this Trace.
         """
         # Create trace
-        trace = widget.trace(event, lambda *args: function(widget_parent.id))
-        # Store trace
-        setattr(widget_parent, trace_variable_name, trace)
-        print("Re-attached Trace:", getattr(widget_parent, trace_variable_name))
+        trace = variable_to_trace.trace(event, lambda *args: function(widget.id))
+        widget.textbox_trace = trace
+        print("Re-attached Trace:", type(widget.textbox_trace), widget.textbox_trace)
+        return trace
 
     # --- Main Window Functions: ---
     # Buttons
@@ -727,8 +726,7 @@ class ButtonFunctions:
                 widget.textbox.delete(0, tk.END)
 
                 # Re-Enable the trace
-                ButtonFunctions.enable_trace(widget.textbox_var, widget, 'textbox_trace',
-                                             ButtonFunctions.process_image)
+                ButtonFunctions.enable_trace(widget.textbox_var, widget, ButtonFunctions.process_image)
 
                 widget.textbox.insert(tk.END, file_path)
                 widget.textbox.configure(state=widget_original_state)
@@ -806,7 +804,7 @@ class ButtonFunctions:
             image_path = get_image_widget.textbox.get() if get_image_widget.textbox.get() else None
             output_dir = get_output_widget.textbox.get() if get_output_widget.textbox.get() else None
             if not image_path:
-                image_path = "./Preview.png"  # sys._MEIPASS + "./Preview.png"
+                image_path = Sys._MEIPASS + "./Preview.png"
 
                 # Disable Trace temporarily to not call this function again mid-execution
                 ButtonFunctions.disable_trace(get_image_widget.textbox_var, get_image_widget.textbox_trace)
@@ -815,12 +813,13 @@ class ButtonFunctions:
                 get_image_widget.textbox.configure(state="normal")
                 get_image_widget.textbox.delete(0, tk.END)
 
-                # Re-enable Trace
-                ButtonFunctions.enable_trace(get_image_widget.textbox_var, get_image_widget, 'textbox_var',
-                                             lambda *args: ButtonFunctions.process_image(get_image_widget.id))
-
                 get_image_widget.textbox.insert(tk.END, image_path)
                 get_image_widget.textbox.configure(state="readonly")
+
+                # Re-enable Trace
+                ButtonFunctions.enable_trace(get_image_widget.textbox_var, get_image_widget,
+                                             lambda *args: ButtonFunctions.process_image(get_image_widget.id))
+
             if not output_dir:
                 output_dir = os.path.join(os.path.expanduser("~"), "Desktop")
 
