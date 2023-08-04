@@ -10,6 +10,8 @@ import sys
 from PIL import Image, ImageTk, ImageSequence, ImageDraw
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
+import tkinterdnd2 as tkdnd
+from tkinterdnd2 import *
 
 ####################################################################################################################
 #                                                    GUI Window
@@ -24,9 +26,9 @@ class DisplayKeys_GUI:
     """
     def __init__(self):
         print("---Creating Window---")
-        self.window = tk.Tk()
+        self.window = tkdnd.Tk()
         self.window.title("DisplayKeys-IS")
-        icon_path = Sys._MEIPASS + "./DisplayKeys-IS.ico"
+        icon_path = "./DisplayKeys-IS.ico" #Sys._MEIPASS + "./DisplayKeys-IS.ico"
         self.window.iconbitmap(icon_path)
         self.window.geometry("600x600")
         self.window.resizable(False, False)
@@ -41,6 +43,7 @@ class DisplayKeys_GUI:
         # Populate the properties frame with widgets
         self.properties = []
         self.properties = self.populate_column(self.properties_frame, self.get_properties_widgets())
+        #(next(widget for widget in self.properties if widget.id == "GetOutput").textbox, 'image').enable_dnd()
 
         print("---Creating Right Column---")
         # Create the Preview Frame
@@ -54,7 +57,7 @@ class DisplayKeys_GUI:
         self.previewer_reset_tooltip = DisplayKeys_Tooltip(self.preview_reset, "Reset the Preview Image to its original position.")
         # Create the Preview Statistics and place them in the right column
         self.previewer_help = DisplayKeys_Help(parent=self.preview_frame, row=1, alignment="nes", percentage_size=40,
-                                               help_tooltip="Previewer is not 100% Accurate!\n\nPreviewer Legend:\n  - Red Lines: Image Split\n  - Red Lines (thickness): Gap\n  - Black Stipped: Cell Cropping",
+                                               help_tooltip="Previewer is not 100% Accurate!\n\nPreviewer Legend:\n  - Red Lines: Image Split\n  - Red Line Thickness: Gap\n  - Black Stipped: Cell Cropping",
                                                tooltip_justification="left", tooltip_anchor="center")
         # TODO: Add Results Widget's and populate content (ie. cell resolution, % of lost pixels?, etc.)
         #       Also check if there is any actual meaningful information that can be added.
@@ -94,6 +97,8 @@ class DisplayKeys_GUI:
                 "has_textbox": True,
                 "textbox_state": "readonly",
                 "textbox_colour": "#ADB5BD",
+                "has_textbox_dnd": True,
+                "dnd_type": 'image',
                 "button_label": "Browse Image",
                 "button_command": ButtonFunctions.browse_image,
                 "button_tooltip": "Select the Image you want to be split.",
@@ -106,6 +111,8 @@ class DisplayKeys_GUI:
                 "has_textbox": True,
                 "textbox_state": "readonly",
                 "textbox_colour": "#ADB5BD",
+                "has_textbox_dnd": True,
+                "dnd_type": 'folder',
                 "button_label": "Browse Folder",
                 "button_command": ButtonFunctions.browse_directory,
                 "button_tooltip": "Select the Folder to save the split Image to.",
@@ -131,6 +138,8 @@ class DisplayKeys_GUI:
                 "has_spinbox": True,
                 "spinbox_colour": "#CED4DA",
                 "spinbox_default_value": "2",
+                "has_spinbox_dnd": True,
+                "dnd_type": "text",
                 "updates_previewer": True,
             },
             {
@@ -140,6 +149,8 @@ class DisplayKeys_GUI:
                 "has_spinbox": True,
                 "spinbox_colour": "#CED4DA",
                 "spinbox_default_value": "6",
+                "has_spinbox_dnd": True,
+                "dnd_type": "text",
                 "updates_previewer": True,
             },
             {
@@ -149,6 +160,8 @@ class DisplayKeys_GUI:
                 "has_spinbox": True,
                 "spinbox_colour": "#CED4DA",
                 "spinbox_default_value": "40",
+                "has_spinbox_dnd": True,
+                "dnd_type": "text",
                 "updates_previewer": True,
             },
             {
@@ -210,7 +223,7 @@ class DisplayKeys_Previewer:
         # Initialize Image
         self.width = width
         self.height = height
-        self.placeholder_path = Sys._MEIPASS + "./Preview.png"
+        self.placeholder_path = "./Preview.png" #Sys._MEIPASS + "./Preview.png"
         self.image_path = None
 
         # Initialize canvas
@@ -476,7 +489,9 @@ class DisplayKeys_Composite_Widget(tk.Frame):
                  textbox_default_value: str = None, has_spinbox: bool = False, spinbox_default_value: int | str = 0,
                  button_label: str = None, button_command: Callable[[str], None] = None, button_tooltip: str = None,
                  updates_previewer: bool = False, label_colour: str = "white",
-                 textbox_colour: str = "white", spinbox_colour: str = "white"):
+                 textbox_colour: str = "white", spinbox_colour: str = "white",
+                 has_textbox_dnd: bool = False, has_spinbox_dnd: bool = False,
+                 dnd_type: Literal['image', 'folder'] = 'image'):
         super().__init__(parent, bg="#343A40")
         self.grid(sticky="nsew", padx=5, pady=5)
         self.columnconfigure(0, weight=1)
@@ -522,10 +537,11 @@ class DisplayKeys_Composite_Widget(tk.Frame):
             if textbox_default_value:
                 self.textbox_var.set(textbox_default_value)
                 self.textbox.insert(tk.END, textbox_default_value)
-
             # Binds the Textbox to Call the DisplayKeys_Previewer Update function when any of the Image Splitting Properties are changed
             if updates_previewer:
                 self.textbox_trace = self.textbox_var.trace('w', lambda *args: ButtonFunctions.process_image(self.id))
+            if (has_textbox_dnd and not has_spinbox_dnd) and dnd_type:
+                self.dnd = DisplayKeys_DragDrop(self.textbox, drop_type=dnd_type, parent_widget=self, traced_callback=lambda *args: ButtonFunctions.process_image(self.id) if updates_previewer else None)
 
             self.textbox.grid(sticky="nsew", column=0)
 
@@ -540,10 +556,14 @@ class DisplayKeys_Composite_Widget(tk.Frame):
                 self.spinbox_var.set(spinbox_default_value)
                 self.spinbox.delete(0, tk.END)
                 self.spinbox.insert(tk.END, spinbox_default_value)
-
             # Binds the Spinbox to Call the DisplayKeys_Previewer Update function when any of the Image Splitting Properties are changed
             if updates_previewer:
                 self.spinbox_trace = self.spinbox_var.trace('w', lambda *args: ButtonFunctions.process_image(self.id))
+            if (has_spinbox_dnd and not has_textbox_dnd) and dnd_type:
+                self.dnd = DisplayKeys_DragDrop(self.spinbox, drop_type=dnd_type, parent_widget=self,
+                                                traced_callback=lambda *args: ButtonFunctions.process_image(
+                                                    self.id) if updates_previewer else None)
+                self.dnd.enable_dnd()
 
             self.spinbox.grid(sticky="nsew", column=0)
 
@@ -608,6 +628,128 @@ class DisplayKeys_Tooltip:
             self.tooltip = None
 
 
+#
+# noinspection PyUnresolvedReferences
+class DisplayKeys_DragDrop:
+    """
+    Class that adds drag-and-drop functionality to a Tkinter widget.
+    Any Data received will be passed along to the Widget to handle the input.
+    This simply ensures that you get the expected data.
+    :param widget: The Widget to which to attach the Drag n Drop functionality.
+    :param drop_type: Specifies the type of Data that is expected to be received and handled by this widget.
+    """
+    def __init__(self, widget: tk.Entry | tk.Spinbox, parent_widget, drop_type: Literal["image", "folder", "text", "any"], traced_callback=None):
+        self.widget = widget
+        self.parent_widget = parent_widget
+        self.trace_callback = traced_callback
+        self.type_legend = {"image": DND_FILES, "folder": DND_FILES, "text": DND_TEXT, "any": DND_ALL}
+        self.type = drop_type
+        self.accept_type = self.type_legend[drop_type] if drop_type in self.type_legend else print("Incorrect drag type for:", widget)
+        self.enable_dnd()
+
+    def enable_dnd(self):
+        # Register widget with drag and drop functionality.
+        self.widget.drop_target_register(self.accept_type)
+        self.widget.dnd_bind('<<Drop>>', self.drop)
+        self.widget.dnd_bind('<<DragEnter>>', self.drag_enter)  # Doesnt trigger
+        self.widget.dnd_bind('<<DragLeave>>', self.drag_leave)  # Doesnt trigger
+        self.widget.dnd_bind('<<Drag>>', self.drag)  # Doesnt trigger
+
+    def disable_dnd(self):
+        self.widget.dnd_bind('<<Drop>>', None)
+        self.widget.dnd_bind('<<DragEnter>>', None)
+        self.widget.dnd_bind('<<DragLeave>>', None)
+        self.widget.dnd_bind('<<Drag>>', None)
+
+    @staticmethod
+    def drag(event):
+        # For testing
+        print('Dragging over widget: %s' % event.widget)
+        return event.action
+
+    def drag_enter(self, event):
+        self.original_bg = self.widget.cget("background")
+        self.widget.configure(background="green")
+        print('Entering widget: %s' % event.widget)
+        return event.action
+
+    def drag_leave(self, event):
+        self.widget.configure(background=self.original_bg)
+        print('Leaving widget: %s' % event.widget)
+        return event.action
+
+    def drop(self, event):
+        print("---Dropping File---")
+        if event.data:
+            # Check if a variable is attached to the widget
+            widget_var = None
+            trace_id = None
+            if isinstance(self.widget, tk.Entry) and hasattr(self.parent_widget, 'textbox_var'):
+                widget_var = self.parent_widget.textbox_var
+                if hasattr(self.parent_widget, 'textbox_trace'):
+                    trace_id = self.parent_widget.textbox_trace
+            elif isinstance(self.widget, tk.Spinbox) and hasattr(self.parent_widget, 'spinbox_var'):
+                widget_var = self.parent_widget.spinbox_var
+                if hasattr(self.parent_widget, 'spinbox_trace'):
+                    trace_id = self.parent_widget.spinbox_trace
+
+            if widget_var is not None and trace_id is not None:
+                # Disable trace if one exists
+                ButtonFunctions.disable_trace(widget_var, trace_id)
+
+            # Store original widget state
+            widget_original_state = self.widget.__getitem__('state')
+            print("Original widget State: " + widget_original_state)
+
+            # Set widget to editable
+            self.widget.configure(state='normal')
+            self.widget.delete(0, tk.END)
+
+            # Re-Enable Trace if one existed
+            if widget_var is not None and trace_id is not None:
+                # Enable trace back again
+                ButtonFunctions.enable_trace(widget_var, self.parent_widget, self.trace_callback)
+
+            if self.accept_type == (self.type_legend["image"] or self.type_legend["folder"]):
+                # Remove brackets
+                data_path = event.data[1:-1]
+                print("The data path:", data_path)
+
+                if self.type == "image":
+                    # Attempt to open image file, to ensure it is an image
+                    try:
+                        Image.open(data_path)
+                        # Save path to widget
+                        self.widget.insert(tk.END, data_path)
+                    except IOError:
+                        print("Not an Image DnD!")
+
+                elif self.type == "folder":
+                    # Ensure that dropped item is a folder
+                    if os.path.isdir(data_path):
+                        self.widget.insert(tk.END, data_path)
+                    else:
+                        print("Not a Folder DnD!")
+
+            elif self.accept_type == self.type_legend["text"]:
+                # Ensure that dropped item is text
+                try:
+                    event.data.encode('utf-8')
+                    self.widget.insert(tk.END, event.data)
+                except UnicodeDecodeError:
+                    print("Not a Text DnD!")
+
+            elif self.accept_type == self.type_legend["any"]:
+                self.widget.insert(tk.END, event.data)
+
+            # Set widget back to its original state
+            self.widget.configure(state=widget_original_state)
+
+        else:
+            print("COULDN'T GET DROP DATA!")
+        return event.action
+
+
 # A Label holding an Image with a Tooltip attached to it, used to simply provide helpful information
 class DisplayKeys_Help:
     """
@@ -625,7 +767,7 @@ class DisplayKeys_Help:
                  percentage_size: int = 100, help_tooltip: str = "Placeholder Help",
                  tooltip_justification: Literal["left", "center", "right"] = "center",
                  tooltip_anchor: Literal["nw", "n", "ne", "w", "center", "e", "sw", "s", "se"] = "center"):
-        self.image = Image.open(Sys._MEIPASS + "./Help.png")
+        self.image = Image.open("./Help.png")#Sys._MEIPASS + "./Help.png")
         new_size = int( self.image.height * (percentage_size / 100) )
         self.resized_image = ImageTk.PhotoImage( self.image.resize((new_size, new_size)) )
 
@@ -673,7 +815,7 @@ class ButtonFunctions:
             :param event: The Type of Event to trigger the Trace.
         """
         # Ensure widget has a trace
-        if traced_variable.trace_info():
+        if ButtonFunctions.has_trace(traced_variable):
             traced_variable.trace_vdelete(event, trace_id)
             print("Deleted Trace:", trace_id)
 
@@ -693,6 +835,13 @@ class ButtonFunctions:
         widget.textbox_trace = trace
         print("Re-attached Trace:", type(widget.textbox_trace), widget.textbox_trace)
         return trace
+
+    @staticmethod
+    def has_trace(item: vars) -> bool:
+        if item.trace_info():
+            return True
+
+        return False
 
     # --- Main Window Functions: ---
     # Buttons
@@ -804,7 +953,7 @@ class ButtonFunctions:
             image_path = get_image_widget.textbox.get() if get_image_widget.textbox.get() else None
             output_dir = get_output_widget.textbox.get() if get_output_widget.textbox.get() else None
             if not image_path:
-                image_path = Sys._MEIPASS + "./Preview.png"
+                image_path = "./Preview.png"  # #Sys._MEIPASS + "./Preview.png"
 
                 # Disable Trace temporarily to not call this function again mid-execution
                 ButtonFunctions.disable_trace(get_image_widget.textbox_var, get_image_widget.textbox_trace)
