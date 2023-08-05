@@ -39,7 +39,7 @@ jobs:
       # Application
       Application_File_Path: ${{ github.workspace }}/ProjectFiles/DisplayKeys-IS.py
       Application_Title: "DisplayKeys-IS"
-      Application_Icon_Path: ${{ github.workspace }}/ProjectFiles/assets/DisplayKeys-IS.ico
+      Application_Icon_Path: ${{ github.workspace }}/ProjectFiles/assets/images/DisplayKeys-IS.ico
       # Assets
       Packaging_Add_Icon: "${{ github.workspace }}/ProjectFiles/assets/images/DisplayKeys-IS.ico;."
       Packaging_Add_Preview: "${{ github.workspace }}/ProjectFiles/assets/images/Preview.png;."
