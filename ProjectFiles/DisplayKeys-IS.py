@@ -11,8 +11,8 @@
 #       pyinstaller DisplayKeys-IS.py --onefile --noconsole --debug all --name DisplayKeys-IS --add-data "./path/to/DisplayKeys-IS.ico;." --add-data "./path/to/Preview.png;." --add-data "./path/to/Help.png;." --additional-hooks-dir=./path/to/hooks
 # Note:
 #       - Ensure that all paths referencing packaged files have 'sys._MEIPASS + ' in front of them,
-#         otherwise they won't be found!
-#         (i.e. sys._MEIPASS + "a./DisplayKeys-IS.ico")
+#         otherwise they won't be found! Also, they will be packaged to the root, so no folder directories before the file name!
+#         (i.e. sys._MEIPASS + "./DisplayKeys-IS.ico")
 #       - '--additional-hooks-dir=' requires the path to the folder with any modules to be packaged
 #         (i.e. Package tkinterdnd2, and its within './assets/modules/hook-tkinterdnd2.py',
 #         then it will be '...hooks-dir=./assets/modules')
