@@ -11,7 +11,7 @@
 #       pyinstaller DisplayKeys-IS.py --onefile --noconsole --debug all --name DisplayKeys-IS --add-data "./path/to/DisplayKeys-IS.ico;." --add-data "./path/to/Preview.png;." --add-data "./path/to/Help.png;." --additional-hooks-dir=./path/to/hooks
 # Note:
 #       - Ensure that all paths referencing packaged files have 'sys._MEIPASS + ' in front of them,
-#         otherwise they won't be found! Also, they will be packaged to the root, so no folder directories before the file name!
+#         otherwise they won't be found!
 #         (i.e. sys._MEIPASS + "./DisplayKeys-IS.ico")
 #       - '--additional-hooks-dir=' requires the path to the folder with any modules to be packaged
 #         (i.e. Package tkinterdnd2, and its within './assets/modules/hook-tkinterdnd2.py',
@@ -545,7 +545,7 @@ class DisplayKeys_Composite_Widget(tk.Frame):
         # Takes: Default Text Value, Tooltip Text, State
         if has_textbox:
             self.textbox_var = tk.StringVar()
-            self.textbox = tk.Entry(self, textvariable=self.textbox_var, state=textbox_state, background=textbox_colour,readonlybackground=textbox_colour, disabledbackground=textbox_colour, insertbackground=textbox_colour, selectbackground=textbox_colour)
+            self.textbox = tk.Entry(self, textvariable=self.textbox_var, state=textbox_state, background=textbox_colour, readonlybackground=textbox_colour, disabledbackground=textbox_colour)
             if textbox_default_value:
                 self.textbox_var.set(textbox_default_value)
                 self.textbox.insert(tk.END, textbox_default_value)
@@ -562,7 +562,7 @@ class DisplayKeys_Composite_Widget(tk.Frame):
         # Takes: Default Spinbox Value, Tooltip Text
         if has_spinbox:
             self.spinbox_var = tk.IntVar()
-            self.spinbox = tk.Spinbox(self, from_=0, to=(int(spinbox_default_value) + 1) * 100, textvariable=self.spinbox_var, background=spinbox_colour, readonlybackground=spinbox_colour, disabledbackground=spinbox_colour, insertbackground=spinbox_colour, selectbackground=spinbox_colour)
+            self.spinbox = tk.Spinbox(self, from_=0, to=(int(spinbox_default_value) + 1) * 100, textvariable=self.spinbox_var, background=spinbox_colour, readonlybackground=spinbox_colour, disabledbackground=spinbox_colour, )
             self.spinbox_default = spinbox_default_value
             if spinbox_default_value:
                 self.spinbox_var.set(spinbox_default_value)
@@ -723,6 +723,7 @@ class DisplayKeys_DragDrop:
                 if hasattr(self.parent_widget, 'spinbox_trace'):
                     trace_id = self.parent_widget.spinbox_trace
 
+            # Disable Trace if one exists
             if widget_var is not None and trace_id is not None:
                 # Disable trace if one exists
                 ButtonFunctions.disable_trace(widget_var, trace_id)
@@ -733,6 +734,7 @@ class DisplayKeys_DragDrop:
 
             # Set widget to editable
             self.widget.configure(state='normal')
+            widget_current_text = self.widget.get() # Backup if needed
             self.widget.delete(0, tk.END)
 
             # Re-Enable Trace if one existed
@@ -752,6 +754,7 @@ class DisplayKeys_DragDrop:
                         # Save path to widget
                         self.widget.insert(tk.END, data_path)
                     except IOError:
+                        self.widget.insert(tk.END, widget_current_text)
                         print("Not an Image DnD!")
 
                 elif self.type == "folder":
@@ -759,6 +762,7 @@ class DisplayKeys_DragDrop:
                     if os.path.isdir(data_path):
                         self.widget.insert(tk.END, data_path)
                     else:
+                        self.widget.insert(tk.END, widget_current_text)
                         print("Not a Folder DnD!")
 
             elif self.accept_type == self.type_legend["text"]:
