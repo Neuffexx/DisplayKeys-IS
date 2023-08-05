@@ -8,7 +8,7 @@
 #            Local Packaging Instructions
 ########################################################
 # Command:
-#       pyinstaller ImageTool_updated.py --onefile --noconsole --debug all --name DisplayKeys-IS --add-data "./path/to/DisplayKeys-IS.ico;." --add-data "./path/to/Preview.png;." --add-data "./path/to/Help.png;." --additional-hooks-dir=./path/to/hooks
+#       pyinstaller DisplayKeys-IS.py --onefile --noconsole --debug all --name DisplayKeys-IS --add-data "./path/to/DisplayKeys-IS.ico;." --add-data "./path/to/Preview.png;." --add-data "./path/to/Help.png;." --additional-hooks-dir=./path/to/hooks
 # Note:
 #       - Ensure that all paths referencing packaged files have 'sys._MEIPASS + ' in front of them,
 #         otherwise they won't be found!
