@@ -639,12 +639,12 @@ class DisplayKeys_Tooltip:
             self.tooltip = None
 
 
-#
+# A Drag&Drop latch-on class that can be used on any tk.Entry or tk.Spinbox widget
 # noinspection PyUnresolvedReferences
 class DisplayKeys_DragDrop:
     """
     Class that adds drag-and-drop functionality to a Tkinter widget.
-    Any Data received will be passed along to the Widget to handle the input.
+    Any Data received will be passed along to the Widget to handle the input data.
     This simply ensures that you get the expected data.
     :param widget: The Widget to which to attach the Drag n Drop functionality.
     :param drop_type: Specifies the type of Data that is expected to be received and handled by this widget.
@@ -692,11 +692,49 @@ class DisplayKeys_DragDrop:
         print("---DnD Enter---")
         print('Entering widget: %s' % event.widget)
 
-        self.set_background(event.widget)
+        if event.data:
+            if self.accept_type == (self.type_legend["image"] or self.type_legend["folder"]):
+                # Remove brackets
+                data_path = event.data[1:-1]
+                print("The data path:", data_path)
+
+                if self.type == "image":
+                    # Attempt to open image file, to ensure it is an image
+                    try:
+                        Image.open(data_path)
+                        # Show Can Drop
+                        self.set_background(event.widget, 'green')
+                    except IOError:
+                        # Show Can't Drop
+                        self.set_background(event.widget, 'red')
+                        print("Not an Image DnD!")
+
+                elif self.type == "folder":
+                    # Ensure that dropped item is a folder
+                    if os.path.isdir(data_path):
+                        # Show Can Drop
+                        self.set_background(event.widget, 'green')
+                    else:
+                        # Show Can't Drop
+                        self.set_background(event.widget, 'red')
+                        print("Not a Folder DnD!")
+            elif self.accept_type == self.type_legend["text"]:
+                # Ensure that dropped item is text
+                try:
+                    event.data.encode('utf-8')
+                    # Show Can Drop
+                    self.set_background(event.widget, 'green')
+                except UnicodeDecodeError:
+                    # Show Can't Drop
+                    self.set_background(event.widget, 'red')
+                    print("Not a Text DnD!")
+            elif self.accept_type == self.type_legend["any"]:
+                # Show Can Drop
+                self.set_background(event.widget, 'green')
+
+        #self.set_background(event.widget)
 
         #print("Background was:", self.original_bg)
-
-
 
         return event.action
 
@@ -787,17 +825,17 @@ class DisplayKeys_DragDrop:
 
         return event.action
 
-    def set_background(self, widget):
+    def set_background(self, widget, colour):
         self.current_widget_state = widget.cget('state')
         if self.current_widget_state == 'normal':
             self.original_bg = widget.cget("background")
-            widget.configure(background="green")
+            widget.configure(background=colour)
         elif self.current_widget_state == 'readonly':
             self.original_bg = widget.cget("readonlybackground")
-            widget.configure(readonlybackground="green")
+            widget.configure(readonlybackground=colour)
         elif self.current_widget_state == 'disabled':
             self.original_bg = widget.cget("disabledbackground")
-            widget.configure(disabledbackground="green")
+            widget.configure(disabledbackground=colour)
 
     def reset_background(self, widget):
         if self.current_widget_state == 'normal':
