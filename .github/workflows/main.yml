@@ -46,7 +46,7 @@ jobs:
       Packaging_Add_Help: "${{ github.workspace }}/ProjectFiles/assets/Help.png;."
       Packaging_Add_Versioning: ${{ github.workspace }}/ProjectFiles/config/version.txt
       # Modules
-      Hooks: ${{ github.workspace }}/ProjectFiles/modules
+      Hooks: ${{ github.workspace }}/ProjectFiles/modules/
       
     steps:
       - name: Checkout repository
