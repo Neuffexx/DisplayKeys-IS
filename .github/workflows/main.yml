@@ -41,9 +41,9 @@ jobs:
       Application_Title: "DisplayKeys-IS"
       Application_Icon_Path: ${{ github.workspace }}/ProjectFiles/assets/DisplayKeys-IS.ico
       # Assets
-      Packaging_Add_Icon: "${{ github.workspace }}/ProjectFiles/assets/DisplayKeys-IS.ico;."
-      Packaging_Add_Preview: "${{ github.workspace }}/ProjectFiles/assets/Preview.png;."
-      Packaging_Add_Help: "${{ github.workspace }}/ProjectFiles/assets/Help.png;."
+      Packaging_Add_Icon: "${{ github.workspace }}/ProjectFiles/assets/images/DisplayKeys-IS.ico;."
+      Packaging_Add_Preview: "${{ github.workspace }}/ProjectFiles/assets/images/Preview.png;."
+      Packaging_Add_Help: "${{ github.workspace }}/ProjectFiles/assets/images/Help.png;."
       Packaging_Add_Versioning: ${{ github.workspace }}/ProjectFiles/config/version.txt
       # Modules
       Hooks: ${{ github.workspace }}/ProjectFiles/modules/
