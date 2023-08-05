@@ -40,7 +40,7 @@ class DisplayKeys_GUI:
         print("---Creating Window---")
         self.window = tkdnd.Tk()
         self.window.title("DisplayKeys-IS")
-        icon_path = sys._MEIPASS + "./assets/images/DisplayKeys-IS.ico"
+        icon_path = sys._MEIPASS + "./DisplayKeys-IS.ico"
         self.window.iconbitmap(icon_path)
         self.window.geometry("600x600")
         self.window.resizable(False, False)
@@ -235,7 +235,7 @@ class DisplayKeys_Previewer:
         # Initialize Image
         self.width = width
         self.height = height
-        self.placeholder_path = sys._MEIPASS + "./assets/images/Preview.png"
+        self.placeholder_path = sys._MEIPASS + "./Preview.png"
         self.image_path = None
 
         # Initialize canvas
@@ -821,7 +821,7 @@ class DisplayKeys_Help:
                  percentage_size: int = 100, help_tooltip: str = "Placeholder Help",
                  tooltip_justification: Literal["left", "center", "right"] = "center",
                  tooltip_anchor: Literal["nw", "n", "ne", "w", "center", "e", "sw", "s", "se"] = "center"):
-        self.image = Image.open(sys._MEIPASS + "./assets/images/Help.png")
+        self.image = Image.open(sys._MEIPASS + "./Help.png")
         new_size = int( self.image.height * (percentage_size / 100) )
         self.resized_image = ImageTk.PhotoImage( self.image.resize((new_size, new_size)) )
 
@@ -1007,7 +1007,7 @@ class ButtonFunctions:
             image_path = get_image_widget.textbox.get() if get_image_widget.textbox.get() else None
             output_dir = get_output_widget.textbox.get() if get_output_widget.textbox.get() else None
             if not image_path:
-                image_path = sys._MEIPASS + "./assets/images/Preview.png"
+                image_path = sys._MEIPASS + "./Preview.png"
 
                 # Disable Trace temporarily to not call this function again mid-execution
                 ButtonFunctions.disable_trace(get_image_widget.textbox_var, get_image_widget.textbox_trace)
