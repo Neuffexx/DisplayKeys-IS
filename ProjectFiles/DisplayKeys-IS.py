@@ -4,9 +4,21 @@
 # And I was too lazy to do this to each image manually.
 # Was this more effort? Yes. You are welcome.
 
+########################################################
+#            Local Packaging Instructions
+########################################################
+# Command:
+#       pyinstaller ImageTool_updated.py --onefile --noconsole --debug all --name DisplayKeys-IS --add-data "./path/to/DisplayKeys-IS.ico;." --add-data "./path/to/Preview.png;." --add-data "./path/to/Help.png;." --additional-hooks-dir=./path/to/hooks
+# Note:
+#       - Ensure that all paths referencing packaged files have 'sys._MEIPASS + ' in front of them,
+#         otherwise they won't be found!
+#         (i.e. sys._MEIPASS + "a./DisplayKeys-IS.ico")
+#       - '--additional-hooks-dir=' requires the path to the folder with any modules to be packaged
+#         (i.e. Package tkinterdnd2, and its within './assets/modules/hook-tkinterdnd2.py',
+#         then it will be '...hooks-dir=./assets/modules')
+
 from typing import Literal, Callable, Annotated
-import os
-import sys
+import os, sys
 from PIL import Image, ImageTk, ImageSequence, ImageDraw
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
@@ -28,7 +40,7 @@ class DisplayKeys_GUI:
         print("---Creating Window---")
         self.window = tkdnd.Tk()
         self.window.title("DisplayKeys-IS")
-        icon_path = "./DisplayKeys-IS.ico" #Sys._MEIPASS + "./DisplayKeys-IS.ico"
+        icon_path = "./assets/images/DisplayKeys-IS.ico"  #sys._MEIPASS + "./assets/images/DisplayKeys-IS.ico"
         self.window.iconbitmap(icon_path)
         self.window.geometry("600x600")
         self.window.resizable(False, False)
@@ -223,7 +235,7 @@ class DisplayKeys_Previewer:
         # Initialize Image
         self.width = width
         self.height = height
-        self.placeholder_path = "./Preview.png" #Sys._MEIPASS + "./Preview.png"
+        self.placeholder_path = "./assets/images/Preview.png"  #sys._MEIPASS + "./assets/images/Preview.png"
         self.image_path = None
 
         # Initialize canvas
@@ -563,7 +575,6 @@ class DisplayKeys_Composite_Widget(tk.Frame):
                 self.dnd = DisplayKeys_DragDrop(self.spinbox, drop_type=dnd_type, parent_widget=self,
                                                 traced_callback=lambda *args: ButtonFunctions.process_image(
                                                     self.id) if updates_previewer else None)
-                self.dnd.enable_dnd()
 
             self.spinbox.grid(sticky="nsew", column=0)
 
@@ -642,40 +653,59 @@ class DisplayKeys_DragDrop:
         self.widget = widget
         self.parent_widget = parent_widget
         self.trace_callback = traced_callback
+        self.original_bg: str
+        self.current_widget_state: str
+
         self.type_legend = {"image": DND_FILES, "folder": DND_FILES, "text": DND_TEXT, "any": DND_ALL}
         self.type = drop_type
         self.accept_type = self.type_legend[drop_type] if drop_type in self.type_legend else print("Incorrect drag type for:", widget)
+
+        self.drag_pos_x, self.drag_pos_y = 0.0, 0.0
+
         self.enable_dnd()
 
     def enable_dnd(self):
         # Register widget with drag and drop functionality.
         self.widget.drop_target_register(self.accept_type)
         self.widget.dnd_bind('<<Drop>>', self.drop)
-        self.widget.dnd_bind('<<DragEnter>>', self.drag_enter)  # Doesnt trigger
-        self.widget.dnd_bind('<<DragLeave>>', self.drag_leave)  # Doesnt trigger
-        self.widget.dnd_bind('<<Drag>>', self.drag)  # Doesnt trigger
+        self.widget.dnd_bind('<<DropEnter>>', self.drag_enter)
+        self.widget.dnd_bind('<<DropLeave>>', self.drag_leave)
+        self.widget.dnd_bind('<<DropPosition>>', self.drag_position)  # Doesnt trigger
 
     def disable_dnd(self):
         self.widget.dnd_bind('<<Drop>>', None)
         self.widget.dnd_bind('<<DragEnter>>', None)
         self.widget.dnd_bind('<<DragLeave>>', None)
-        self.widget.dnd_bind('<<Drag>>', None)
+        self.widget.dnd_bind('<<DropPosition>>', None)
 
-    @staticmethod
-    def drag(event):
-        # For testing
-        print('Dragging over widget: %s' % event.widget)
+    def drag_position(self, event):
+        if not self.drag_pos_x == event.x_root or not self.drag_pos_y == event.y_root:
+            print("---DnD Drag---")
+            self.drag_pos_x = event.x_root
+            self.drag_pos_y = event.y_root
+
+            # For testing
+            print('Dragging over widget: %s' % self.parent_widget.id)
         return event.action
 
     def drag_enter(self, event):
-        self.original_bg = self.widget.cget("background")
-        self.widget.configure(background="green")
+        print("---DnD Enter---")
         print('Entering widget: %s' % event.widget)
+
+        self.set_background(event.widget)
+
+        #print("Background was:", self.original_bg)
+
+
+
         return event.action
 
     def drag_leave(self, event):
-        self.widget.configure(background=self.original_bg)
+        print("---DnD Leave---")
         print('Leaving widget: %s' % event.widget)
+
+        self.reset_background(event.widget)
+
         return event.action
 
     def drop(self, event):
@@ -747,7 +777,31 @@ class DisplayKeys_DragDrop:
 
         else:
             print("COULDN'T GET DROP DATA!")
+
+        # Reset background colour
+        self.reset_background(event.widget)
+
         return event.action
+
+    def set_background(self, widget):
+        self.current_widget_state = widget.cget('state')
+        if self.current_widget_state == 'normal':
+            self.original_bg = widget.cget("background")
+            widget.configure(background="green")
+        elif self.current_widget_state == 'readonly':
+            self.original_bg = widget.cget("readonlybackground")
+            widget.configure(readonlybackground="green")
+        elif self.current_widget_state == 'disabled':
+            self.original_bg = widget.cget("disabledbackground")
+            widget.configure(disabledbackground="green")
+
+    def reset_background(self, widget):
+        if self.current_widget_state == 'normal':
+            widget.configure(background=self.original_bg)
+        elif self.current_widget_state == 'readonly':
+            widget.configure(readonlybackground=self.original_bg)
+        elif self.current_widget_state == 'disabled':
+            widget.configure(disabledbackground=self.original_bg)
 
 
 # A Label holding an Image with a Tooltip attached to it, used to simply provide helpful information
@@ -767,7 +821,7 @@ class DisplayKeys_Help:
                  percentage_size: int = 100, help_tooltip: str = "Placeholder Help",
                  tooltip_justification: Literal["left", "center", "right"] = "center",
                  tooltip_anchor: Literal["nw", "n", "ne", "w", "center", "e", "sw", "s", "se"] = "center"):
-        self.image = Image.open("./Help.png")#Sys._MEIPASS + "./Help.png")
+        self.image = Image.open("./assets/images/Help.png") #sys._MEIPASS + "./assets/images/Help.png")
         new_size = int( self.image.height * (percentage_size / 100) )
         self.resized_image = ImageTk.PhotoImage( self.image.resize((new_size, new_size)) )
 
@@ -953,7 +1007,7 @@ class ButtonFunctions:
             image_path = get_image_widget.textbox.get() if get_image_widget.textbox.get() else None
             output_dir = get_output_widget.textbox.get() if get_output_widget.textbox.get() else None
             if not image_path:
-                image_path = "./Preview.png"  # #Sys._MEIPASS + "./Preview.png"
+                image_path = "./assets/images/Preview.png"  #sys._MEIPASS + "./assets/images/Preview.png"
 
                 # Disable Trace temporarily to not call this function again mid-execution
                 ButtonFunctions.disable_trace(get_image_widget.textbox_var, get_image_widget.textbox_trace)
