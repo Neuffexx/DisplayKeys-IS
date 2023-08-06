@@ -688,9 +688,9 @@ class DisplayKeys_DragDrop:
             print('Dragging over widget: %s' % self.parent_widget.id)
         return event.action
 
-    def drag_enter(self, event):
+        def drag_enter(self, event):
         print("---DnD Enter---")
-        print('Entering widget: %s' % event.widget)
+        print('Entering widget: %s' % self.parent_widget.id)
 
         if event.data:
             if self.accept_type == (self.type_legend["image"] or self.type_legend["folder"]):
@@ -732,15 +732,11 @@ class DisplayKeys_DragDrop:
                 # Show Can Drop
                 self.set_background(event.widget, 'green')
 
-        #self.set_background(event.widget)
-
-        #print("Background was:", self.original_bg)
-
         return event.action
 
     def drag_leave(self, event):
         print("---DnD Leave---")
-        print('Leaving widget: %s' % event.widget)
+        print('Leaving widget: %s' % self.parent_widget.id)
 
         self.reset_background(event.widget)
 
