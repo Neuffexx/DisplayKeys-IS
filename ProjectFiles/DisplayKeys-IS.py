@@ -688,51 +688,51 @@ class DisplayKeys_DragDrop:
             print('Dragging over widget: %s' % self.parent_widget.id)
         return event.action
 
-        def drag_enter(self, event):
-            print("---DnD Enter---")
-            print('Entering widget: %s' % self.parent_widget.id)
+    def drag_enter(self, event):
+        print("---DnD Enter---")
+        print('Entering widget: %s' % self.parent_widget.id)
 
-            if event.data:
-                if self.accept_type == (self.type_legend["image"] or self.type_legend["folder"]):
-                    # Remove brackets
-                    data_path = event.data[1:-1]
-                    print("The data path:", data_path)
-    
-                    if self.type == "image":
-                        # Attempt to open image file, to ensure it is an image
-                        try:
-                            Image.open(data_path)
-                            # Show Can Drop
-                            self.set_background(event.widget, 'green')
-                        except IOError:
-                            # Show Can't Drop
-                            self.set_background(event.widget, 'red')
-                            print("Not an Image DnD!")
-    
-                    elif self.type == "folder":
-                        # Ensure that dropped item is a folder
-                        if os.path.isdir(data_path):
-                            # Show Can Drop
-                            self.set_background(event.widget, 'green')
-                        else:
-                            # Show Can't Drop
-                            self.set_background(event.widget, 'red')
-                            print("Not a Folder DnD!")
-                elif self.accept_type == self.type_legend["text"]:
-                    # Ensure that dropped item is text
+        if event.data:
+            if self.accept_type == (self.type_legend["image"] or self.type_legend["folder"]):
+                # Remove brackets
+                data_path = event.data[1:-1]
+                print("The data path:", data_path)
+
+                if self.type == "image":
+                    # Attempt to open image file, to ensure it is an image
                     try:
-                        event.data.encode('utf-8')
+                        Image.open(data_path)
                         # Show Can Drop
                         self.set_background(event.widget, 'green')
-                    except UnicodeDecodeError:
+                    except IOError:
                         # Show Can't Drop
                         self.set_background(event.widget, 'red')
-                        print("Not a Text DnD!")
-                elif self.accept_type == self.type_legend["any"]:
+                        print("Not an Image DnD!")
+
+                elif self.type == "folder":
+                    # Ensure that dropped item is a folder
+                    if os.path.isdir(data_path):
+                        # Show Can Drop
+                        self.set_background(event.widget, 'green')
+                    else:
+                        # Show Can't Drop
+                        self.set_background(event.widget, 'red')
+                        print("Not a Folder DnD!")
+            elif self.accept_type == self.type_legend["text"]:
+                # Ensure that dropped item is text
+                try:
+                    event.data.encode('utf-8')
                     # Show Can Drop
                     self.set_background(event.widget, 'green')
-    
-            return event.action
+                except UnicodeDecodeError:
+                    # Show Can't Drop
+                    self.set_background(event.widget, 'red')
+                    print("Not a Text DnD!")
+            elif self.accept_type == self.type_legend["any"]:
+                # Show Can Drop
+                self.set_background(event.widget, 'green')
+
+        return event.action
 
     def drag_leave(self, event):
         print("---DnD Leave---")
