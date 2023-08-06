@@ -40,7 +40,7 @@ class DisplayKeys_GUI:
         print("---Creating Window---")
         self.window = tkdnd.Tk()
         self.window.title("DisplayKeys-IS")
-        icon_path = sys._MEIPASS + "./DisplayKeys-IS.ico"
+        icon_path = sys._MEIPASS + "./assets/images/DisplayKeys-IS.ico"
         self.window.iconbitmap(icon_path)
         self.window.geometry("600x600")
         self.window.resizable(False, False)
@@ -235,7 +235,7 @@ class DisplayKeys_Previewer:
         # Initialize Image
         self.width = width
         self.height = height
-        self.placeholder_path = sys._MEIPASS + "./Preview.png"
+        self.placeholder_path = sys._MEIPASS + "./assets/images/Preview.png"
         self.image_path = None
 
         # Initialize canvas
@@ -282,7 +282,9 @@ class DisplayKeys_Previewer:
         self.tk_image = ImageTk.PhotoImage(resized_image)
         x_offset = (self.width - new_width) / 2
         y_offset = (self.height - new_height) / 2
-        self.preview_image = self.canvas.create_image(x_offset if self.image_path != image_path else self.image_current_position["x"], y_offset if self.image_path != image_path else self.image_current_position["y"], image=self.tk_image, anchor=tk.NW, tags="preview_image")
+        self.preview_image = self.canvas.create_image(x_offset if self.image_path != image_path else self.image_current_position["x"],
+                                                      y_offset if self.image_path != image_path else self.image_current_position["y"],
+                                                      image=self.tk_image, anchor=tk.NW, tags="preview_image")
 
         # Store initial position of Image for reset
         # (only if it's a new image)
@@ -304,8 +306,6 @@ class DisplayKeys_Previewer:
     # This calculates an approximate version of the split_image function,
     # to preview the Splitting and Cropping of an image provided.
     # Also calls the 'display_preview_image' to refresh the image.
-    # TODO:
-    #     - Update function to use newly added 'Offset' inputs
     def update_preview(self, image_path, num_rows, num_columns, gap):
         # Clear the canvas to prepare for new content
         self.canvas.delete("all")
@@ -531,15 +531,22 @@ class DisplayKeys_Composite_Widget(tk.Frame):
             self.dropdown.grid(sticky="nsew", column=0)
             # Bind the selection change event to the dropdown command
             self.dropdown.bind("<<ComboboxSelected>>", lambda event: dropdown_command(app.properties))
+            self.dropdown_trace = self.dropdown_var.trace('w', lambda *args: ButtonFunctions.process_image(self.id))
 
             if dropdown_tooltip:
                 self.d_tooltip = DisplayKeys_Tooltip(self.dropdown, dropdown_tooltip)
 
-            # TODO: Make dropdown update previewer when changing selections.
+            # TODO:
+            #   1.) Make dropdown update previewer when changing selections.
             #       Simply make dropdown selections change the values in the textboxes that will be taken anyways.
             #       Instead of manually checking for the dropdown selection in the Process_Image Function.
             #       You just take whatever is in the textboxes at all times, and have all dropdown selections only,
             #       update the textboxes based on 'saved' values from them (this will tie in nicely with presets)!
+            #                                           ----- DONE -----
+            #                             Still need dropdown selection for the time being
+            #                                           -----      -----
+            #   2.) Make generic so that dropdown button provides the list of WidgetID's its responsible for.
+            #       Will make life easier for future dropdown functions as well (namely profiles etc.).
 
         # Textbox - Mainly used for getting user input, but can also be used as a good place to dynamically show text
         # Takes: Default Text Value, Tooltip Text, State
@@ -639,6 +646,98 @@ class DisplayKeys_Tooltip:
             self.tooltip = None
 
 
+# A Pop-Up Window to Display Confirmation/Warning/Error messages
+class DisplayKeys_PopUp:
+    def __init__(self, parent, popup_type: Literal['confirm', 'warning', 'error'], message: str, buttons: list[dict[str, Callable[[], None]]], buttons_per_row: int = 2):
+        # --- Create Window Setup ---
+        self.parent = parent
+        self.popup = tk.Toplevel(parent)
+        self.popup.geometry("250x100")
+        self.type = popup_type
+        self.popup.title(self.type.upper())
+
+        # Makes the popup act as a modal dialog
+        self.popup.grab_set()
+        # Disable parent window
+        self.parent.attributes('-disabled', True)
+        # Ensure main window becomes active after popup was closed
+        self.popup.bind("<Destroy>", self.on_close)
+
+        # --- Create Popup Content ---
+
+        # Content Container
+        self.container = tk.Frame(self.popup)
+        self.container.grid_columnconfigure(0, weight=1)
+        self.container.grid_rowconfigure(0, weight=1)
+
+        self.popup_message = message
+
+        # The Type of message
+        self.message_type = tk.Label(self.popup, text=self.type.upper())
+        self.message_type.grid(sticky="news", row=0, column=0, columnspan=buttons_per_row)
+        # The message to display
+        self.message = tk.Label(self.popup, text=self.popup_message)
+        self.message.grid(sticky="news", row=1, column=0, columnspan=buttons_per_row, pady=15)
+
+        # Loop over the buttons to populate with as many as needed
+        # (future setup for profiles)
+        self.buttons = buttons
+        for i, button in enumerate(self.buttons):
+            button_name, button_function = list(button.items())[0]
+            tk.Button(self.popup, text=button_name, command=self.button_command(button_function)).grid(sticky="news",
+                                                                                                       row=(i // buttons_per_row) + 2,
+                                                                                                       column=i % buttons_per_row)
+
+        # Center the window
+        self.center(self.parent)
+        # Center the content
+        self.center_content(buttons_per_row)
+
+
+    def button_command(self, function):
+        def execute_function():
+            function()
+            # re-enable parent window
+            self.popup.master.attributes('-disabled', False)
+            # Close the popup when the function is done executing
+            self.popup.destroy()
+        return execute_function
+
+    def center(self, parent):
+        # Update the window to get correct measurements
+        self.popup.update()
+
+        # Get the window's width, height
+        width = self.popup.winfo_width()
+        height = self.popup.winfo_height()
+
+        # Get the parent's width, height
+        parent_width = parent.winfo_width()
+        parent_height = parent.winfo_height()
+
+        # Get the parent's top-left coordinates
+        parent_x = parent.winfo_rootx()
+        parent_y = parent.winfo_rooty()
+
+        # Calculate the position to center the window
+        x = parent_x + (parent_width / 2) - (width / 2)
+        y = parent_y + (parent_height / 2) - (height / 2)
+
+        self.popup.geometry(f'+{int(x)}+{int(y)}')
+
+    def center_content(self, buttons_per_row):
+        # Configuring grid to center content
+        for i in range(buttons_per_row):
+            self.container.columnconfigure(i, weight=1)
+        for i in range(len(self.buttons) // buttons_per_row + 2):  # "+2" to account for label and any extra row for buttons
+            self.container.rowconfigure(i, weight=1)
+
+    def on_close(self, event):
+        # Custom code equivalent to 'cancel' to make sure nothing happens
+
+        self.popup.master.attributes('-disabled', False)
+
+
 # A Drag&Drop latch-on class that can be used on any tk.Entry or tk.Spinbox widget
 # noinspection PyUnresolvedReferences
 class DisplayKeys_DragDrop:
@@ -732,6 +831,10 @@ class DisplayKeys_DragDrop:
                 # Show Can Drop
                 self.set_background(event.widget, 'green')
 
+        #self.set_background(event.widget)
+
+        #print("Background was:", self.original_bg)
+
         return event.action
 
     def drag_leave(self, event):
@@ -745,7 +848,7 @@ class DisplayKeys_DragDrop:
     def drop(self, event):
         print("---Dropping File---")
         if event.data:
-            # Check if a variable is attached to the widget
+            # Check if a trace is attached to the widget
             widget_var = None
             trace_id = None
             if isinstance(self.widget, tk.Entry) and hasattr(self.parent_widget, 'textbox_var'):
@@ -759,7 +862,6 @@ class DisplayKeys_DragDrop:
 
             # Disable Trace if one exists
             if widget_var is not None and trace_id is not None:
-                # Disable trace if one exists
                 ButtonFunctions.disable_trace(widget_var, trace_id)
 
             # Store original widget state
@@ -773,11 +875,10 @@ class DisplayKeys_DragDrop:
 
             # Re-Enable Trace if one existed
             if widget_var is not None and trace_id is not None:
-                # Enable trace back again
                 ButtonFunctions.enable_trace(widget_var, self.parent_widget, self.trace_callback)
 
             if self.accept_type == (self.type_legend["image"] or self.type_legend["folder"]):
-                # Remove brackets
+                # Remove unnecessary brackets (beginning / end of string)
                 data_path = event.data[1:-1]
                 print("The data path:", data_path)
 
@@ -789,6 +890,9 @@ class DisplayKeys_DragDrop:
                         self.widget.insert(tk.END, data_path)
                     except IOError:
                         self.widget.insert(tk.END, widget_current_text)
+                        DisplayKeys_PopUp(app.window, popup_type='error',
+                                          message='Not an Image!',
+                                          buttons=[{'OK': lambda: None}])
                         print("Not an Image DnD!")
 
                 elif self.type == "folder":
@@ -797,6 +901,9 @@ class DisplayKeys_DragDrop:
                         self.widget.insert(tk.END, data_path)
                     else:
                         self.widget.insert(tk.END, widget_current_text)
+                        DisplayKeys_PopUp(app.window, popup_type='error',
+                                          message='Not an Folder!',
+                                          buttons=[{'OK': lambda: None}])
                         print("Not a Folder DnD!")
 
             elif self.accept_type == self.type_legend["text"]:
@@ -805,6 +912,9 @@ class DisplayKeys_DragDrop:
                     event.data.encode('utf-8')
                     self.widget.insert(tk.END, event.data)
                 except UnicodeDecodeError:
+                    DisplayKeys_PopUp(app.window, popup_type='error',
+                                      message='Not Text!',
+                                      buttons=[{'OK': lambda: None}])
                     print("Not a Text DnD!")
 
             elif self.accept_type == self.type_legend["any"]:
@@ -859,7 +969,7 @@ class DisplayKeys_Help:
                  percentage_size: int = 100, help_tooltip: str = "Placeholder Help",
                  tooltip_justification: Literal["left", "center", "right"] = "center",
                  tooltip_anchor: Literal["nw", "n", "ne", "w", "center", "e", "sw", "s", "se"] = "center"):
-        self.image = Image.open(sys._MEIPASS + "./Help.png")
+        self.image = Image.open(sys._MEIPASS + "./assets/images/Help.png")
         new_size = int( self.image.height * (percentage_size / 100) )
         self.resized_image = ImageTk.PhotoImage( self.image.resize((new_size, new_size)) )
 
@@ -1021,7 +1131,6 @@ class ButtonFunctions:
         widgets = app.properties
         previewer = app.preview
 
-
         # Get Image Properties Type
         get_params_type_widget = next((widget for widget in widgets if widget.id == "GetParamsType"), None)
 
@@ -1032,11 +1141,6 @@ class ButtonFunctions:
         get_columns_widget = next((widget for widget in widgets if widget.id == "GetColumns"), None)
         get_gap_widget = next((widget for widget in widgets if widget.id == "GetGap"), None)
 
-        # TODO: 1.) Change to directly getting values from the TextBoxes rather than deciding what it should be based on
-        # TODO: the dropdown selection. Use a 'for loop' to iterate through the widgets just in case to make sure
-        # TODO: they exist, and only if they dont exist will it return 'defaults'. (Once it is a profile?)
-        # TODO: Otherwise will directly get value, and if value is 'NONE' then return, and show pop-up error message.
-
         if all(widget is not None for widget in
                [get_image_widget, get_output_widget, get_rows_widget, get_columns_widget, get_gap_widget,
                 get_params_type_widget, previewer]):
@@ -1045,7 +1149,7 @@ class ButtonFunctions:
             image_path = get_image_widget.textbox.get() if get_image_widget.textbox.get() else None
             output_dir = get_output_widget.textbox.get() if get_output_widget.textbox.get() else None
             if not image_path:
-                image_path = sys._MEIPASS + "./Preview.png"
+                image_path = sys._MEIPASS + "./assets/images/Preview.png"
 
                 # Disable Trace temporarily to not call this function again mid-execution
                 ButtonFunctions.disable_trace(get_image_widget.textbox_var, get_image_widget.textbox_trace)
@@ -1105,8 +1209,6 @@ class ButtonFunctions:
 
     # --- Dropdowns: ---
     # Hides / Un-hides specific Widgets
-    # TODO: Make generic so that dropdown button provides the list of WidgetID's its responsible for.
-    # TODO: Will make life easier for future dropdown functions as well (namely profiles etc.).
     @staticmethod
     def property_options_visibility(properties: list[DisplayKeys_Composite_Widget]):
         """
@@ -1142,7 +1244,6 @@ class ButtonFunctions:
 ####################################################################################################################
 #                                                   Split Image
 ####################################################################################################################
-
 
 class split:
     # Holds the list of currently supported Image Types,
@@ -1198,8 +1299,7 @@ class split:
             print(TypeError)
             print("Wrong File Type: ", type(error_message).__name__, str(error_message))
             return None
-    
-    
+
     # TODO:
     #  1.) Combine image splitting logic into one function, update split_image/split_gif to call that logic as needed
     #       ---------- DONE ----------
