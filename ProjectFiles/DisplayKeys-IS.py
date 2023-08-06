@@ -1099,7 +1099,7 @@ class ButtonFunctions:
             if widget_id == "SplitImage":
                 # Split Image
                 # Determine_Split_Type function then passes it to the appropriate Splitting funcion
-                determine_split_type(image_path, output_dir, rows, columns, gap, x_offset, y_offset)
+                split.determine_split_type(image_path, output_dir, rows, columns, gap, x_offset, y_offset)
             else:
                 # Update the preview
                 app.preview.update_preview(image_path, rows, columns, gap)
@@ -1148,243 +1148,250 @@ class ButtonFunctions:
 ####################################################################################################################
 
 
-# Holds the list of currently supported Image Types,
-# Might look into extending this in the future if necessary.
-def get_supported_types():
-    # The supported file formats:
-    sup_image_formats = [".png", ".jpg", ".jpeg", ".bmp"]
-    sup_animated_formats = [".gif"]
-    return sup_image_formats, sup_animated_formats
-
-
-# Checks the provided image and determines whether it's a static or dynamic image format.
-# Also passes along rest of variables provided by ButtonFunctions.ProcessImage
-def determine_split_type(file_path: str, output_dir: str, rows: int, cols: int, gap: int, x_offset: float, y_offset: float):
-    print("---Determining File Type---")
-
-    # The supported file formats:
-    image_formats = get_supported_types()[0]
-    animated_formats = get_supported_types()[1]
-
-    print("File Types are: ")
-    print(get_supported_types()[0])
-    print(get_supported_types()[1])
-
-    try:
-        # Check if Image Format is supported
-        with Image.open(file_path) as image:
-            print("Image can be opened: " + (
-                "True" if image else "False") + "\n   Image format is: " + "." + image.format.lower())
-            # Is Static
-            if "." + image.format.lower() in image_formats:
-                split_static(file_path, output_dir, rows, cols, gap, x_offset, y_offset)
-                return True
-            # Is Animated
-            elif "." + image.format.lower() in animated_formats:
-                split_animated(file_path, output_dir, rows, cols, gap, x_offset, y_offset)
-                return True
-            else:
-                print("No formats matched")
-
-    # Is not of a supported image format
-    except TypeError as error_message:
-        # In the future simply open a Pop-Up Window with an error message:
-        # |----------------------------------------|
-        # | File Format not supported \n           |
-        # | Currently supported formats are: \n    |
-        # | - Image     | get_supported_types()[0] |
-        # | - Animated  | get_supported_types()[1] |
-        # |----------------------------------------|
-        # Do nothing for now
-        print(TypeError)
-        print("Wrong File Type: ", type(error_message).__name__, str(error_message))
-        return None
-
-
-# TODO:
-#  1.) Combine image splitting logic into one function, update split_image/split_gif to call that logic as needed
-#      ---------- DONE ----------
-#  2.) Update split_.../calculate_... functions to use newly added 'Offset' inputs.
-#      ---------- DONE ----------
-#  3.) Add offset input, limit(clamp) max offset amount to 1cell in both width / height
-#      ---------- DONE ----------           ( temporarily(?) in Previewer )
-#  3.) Replace the Previewer Drawing Functionality inside of the Previewer Update Function
-#      to use the calculate_image_split function returned 'preview_coordinates'
-#       ( This may be too complicated now with the way the Offset input interacts with the Preview rendering )
-#       ( Will check when I am not sleep deprived to make sure it works when adapting to use external function )
-#  4.) Wrap all splitting related functions into class, no reason other than that I prefer it this way...
-
-
-# Calls 'calculate_image_split' and saves its output 'image_cells'
-def split_static(image_path: str, output_dir: str, rows: int, cols: int, gap: int, x_offset: float, y_offset: float):
-    # Open the image using PIL
-    static_image = Image.open(image_path)
-
-    # Split the Image
-    split_image = calculate_image_split(static_image, rows, cols, gap, x_offset, y_offset)
-
-    # Create the output directory if it doesn't exist
-    os.makedirs(output_dir, exist_ok=True)
-
-    # Generate the output file path
-    filename_without_extension = os.path.splitext(os.path.basename(static_image.filename))[0]
-
-    # Save the image-cells
-    cell: ImageTk.PhotoImage
-    for cell in split_image["image_cells"]:
-        output_path = os.path.join(output_dir, f"{filename_without_extension}_{cell.filename}.png")
-        cell.save(output_path)
-
-        print(f"Saved {output_path}")
-
-
-# Calls 'calculate_image_split' for each frame of an image
-# Recombines each image cell for each frame, before saving the combined Image-Cell
-# Preserves or adds Frame Timings in case Frame's are missing this information.
-# Discards 0ms Frame Times. Default Frame Timing is 100ms. If only some Frame's have timing, average will be used.
-# noinspection PyUnresolvedReferences
-def split_animated(gif_path: str, output_dir: str, rows: int, cols: int, gap: int, x_offset: float, y_offset: float):
-    # Create the output directory if it doesn't exist
-    os.makedirs(output_dir, exist_ok=True)
-
-    # Open the image using PIL
-    gif = Image.open(gif_path)
-    print("GIF Frame Count: " + str(gif.n_frames))
-
-    # Extract frames from .gif file
-    frames = []
-    for frame in ImageSequence.Iterator(gif):
-        frames.append(frame.copy())
-
-    # Get duration of each frame
-    frame_durations = []
-    for frame in range(0, gif.n_frames):
-        gif.seek(frame)
+class split:
+    # Holds the list of currently supported Image Types,
+    # Might look into extending this in the future if necessary.
+    @staticmethod
+    def get_supported_types():
+        # The supported file formats:
+        sup_image_formats = [".png", ".jpg", ".jpeg", ".bmp"]
+        sup_animated_formats = [".gif"]
+        return sup_image_formats, sup_animated_formats
+    
+    
+    # Checks the provided image and determines whether it's a static or dynamic image format.
+    # Also passes along rest of variables provided by ButtonFunctions.ProcessImage
+    @staticmethod
+    def determine_split_type(file_path: str, output_dir: str, rows: int, cols: int, gap: int, x_offset: float, y_offset: float):
+        print("---Determining File Type---")
+    
+        # The supported file formats:
+        image_formats = split.get_supported_types()[0]
+        animated_formats = split.get_supported_types()[1]
+    
+        print("File Types are: ")
+        print(split.get_supported_types()[0])
+        print(split.get_supported_types()[1])
+    
         try:
-            duration = int(gif.info['duration'])
-            if duration > 0:
-                frame_durations.append(duration)
-            else:
-                frame_durations.append(0)
-        except(KeyError, TypeError):
-            print("No frame durations present")
-
-            # Add default time in case no frame duration is provided by .gif
-            frame_durations.append(0)
-
-    # Calculate average duration
-    non_zero_durations = [d for d in frame_durations if d > 0]
-    if len(non_zero_durations) > 0:
-        default_duration = sum(non_zero_durations) // len(non_zero_durations)
-    else:
-        default_duration = 100
-
-    # Replace missing values with average duration
-    for i in range(len(frame_durations)):
-        if frame_durations[i] == 0:
-            frame_durations[i] = default_duration
-    print("Frame Durations: \n" + frame_durations.__str__())
-
-    # Takes the extracted frames from the gif and splits them individually
-    modified_frame_cells = []
-    for frame in frames:
-        split_frame = calculate_image_split(frame, rows, cols, gap, x_offset, y_offset)
-        modified_frame_cells.append(split_frame["image_cells"])
-
-    combined_cells = []
-    # Combine Image cell's into gif cell's (ie. [frame 0 cell 0] + [frame 1 cell 0] + [frame 2 cell 0] + etc.)
-    num_cells = len(modified_frame_cells[0])
-    for cell_index in range(num_cells):
-        for frame_cells in modified_frame_cells:
-            combined_cells.append(frame_cells[cell_index])
-
+            # Check if Image Format is supported
+            with Image.open(file_path) as image:
+                print("Image can be opened: " + (
+                    "True" if image else "False") + "\n   Image format is: " + "." + image.format.lower())
+                # Is Static
+                if "." + image.format.lower() in image_formats:
+                    split.image_static(file_path, output_dir, rows, cols, gap, x_offset, y_offset)
+                    return True
+                # Is Animated
+                elif "." + image.format.lower() in animated_formats:
+                    split.image_animated(file_path, output_dir, rows, cols, gap, x_offset, y_offset)
+                    return True
+                else:
+                    print("No formats matched")
+    
+        # Is not of a supported image format
+        except TypeError as error_message:
+            # In the future simply open a Pop-Up Window with an error message:
+            # |----------------------------------------|
+            # | File Format not supported \n           |
+            # | Currently supported formats are: \n    |
+            # | - Image     | get_supported_types()[0] |
+            # | - Animated  | get_supported_types()[1] |
+            # |----------------------------------------|
+            # Do nothing for now
+            print(TypeError)
+            print("Wrong File Type: ", type(error_message).__name__, str(error_message))
+            return None
+    
+    
+    # TODO:
+    #  1.) Combine image splitting logic into one function, update split_image/split_gif to call that logic as needed
+    #       ---------- DONE ----------
+    #  2.) Update split_.../calculate_... functions to use newly added 'Offset' inputs.
+    #       ---------- DONE ----------
+    #  3.) Add offset input, limit(clamp) max offset amount to 1cell in both width / height
+    #       ---------- DONE ----------           ( temporarily(?) in Previewer )
+    #  3.) Replace the Previewer Drawing Functionality inside of the Previewer Update Function
+    #      to use the calculate_image_split function's returned 'preview_coordinates'
+    #       ( This may be too complicated now with the way the Offset input interacts with the Preview rendering )
+    #       ( Will check when I am not sleep deprived to make sure it works when adapting to use external function )
+    #  4.) Wrap all splitting related functions into class, no reason other than that I prefer it this way...
+    #       ---------- DONE - ---------
+    
+    
+    # Calls 'calculate_image_split' and saves its output 'image_cells'
+    @staticmethod
+    def image_static(image_path: str, output_dir: str, rows: int, cols: int, gap: int, x_offset: float, y_offset: float):
+        # Open the image using PIL
+        static_image = Image.open(image_path)
+    
+        # Split the Image
+        split_image = split.calculate_image_split(static_image, rows, cols, gap, x_offset, y_offset)
+    
+        # Create the output directory if it doesn't exist
+        os.makedirs(output_dir, exist_ok=True)
+    
         # Generate the output file path
-        filename_without_extension = os.path.splitext(os.path.basename(gif.filename))[0]
-
-        # Use the filename of the cell image for creating the output_path
-
-        cell_name = combined_cells[0].filename
-        output_path = os.path.join(output_dir, f"{filename_without_extension}_{cell_name}.gif")
-
-        # Save the combined cells as a .gif file
-        combined_cells[0].save(output_path, save_all=True, append_images=combined_cells[1:],
-                               duration=frame_durations, loop=0)
-
-        print(f"Saved {output_path}")
+        filename_without_extension = os.path.splitext(os.path.basename(static_image.filename))[0]
+    
+        # Save the image-cells
+        cell: ImageTk.PhotoImage
+        for cell in split_image["image_cells"]:
+            output_path = os.path.join(output_dir, f"{filename_without_extension}_{cell.filename}.png")
+            cell.save(output_path)
+    
+            print(f"Saved {output_path}")
+    
+    
+    # Calls 'calculate_image_split' for each frame of an image
+    # Recombines each image cell for each frame, before saving the combined Image-Cell
+    # Preserves or adds Frame Timings in case Frame's are missing this information.
+    # Discards 0ms Frame Times. Default Frame Timing is 100ms. If only some Frame's have timing, average will be used.
+    # noinspection PyUnresolvedReferences
+    @staticmethod
+    def image_animated(gif_path: str, output_dir: str, rows: int, cols: int, gap: int, x_offset: float, y_offset: float):
+        # Create the output directory if it doesn't exist
+        os.makedirs(output_dir, exist_ok=True)
+    
+        # Open the image using PIL
+        gif = Image.open(gif_path)
+        print("GIF Frame Count: " + str(gif.n_frames))
+    
+        # Extract frames from .gif file
+        frames = []
+        for frame in ImageSequence.Iterator(gif):
+            frames.append(frame.copy())
+    
+        # Get duration of each frame
+        frame_durations = []
+        for frame in range(0, gif.n_frames):
+            gif.seek(frame)
+            try:
+                duration = int(gif.info['duration'])
+                if duration > 0:
+                    frame_durations.append(duration)
+                else:
+                    frame_durations.append(0)
+            except(KeyError, TypeError):
+                print("No frame durations present")
+    
+                # Add default time in case no frame duration is provided by .gif
+                frame_durations.append(0)
+    
+        # Calculate average duration
+        non_zero_durations = [d for d in frame_durations if d > 0]
+        if len(non_zero_durations) > 0:
+            default_duration = sum(non_zero_durations) // len(non_zero_durations)
+        else:
+            default_duration = 100
+    
+        # Replace missing values with average duration
+        for i in range(len(frame_durations)):
+            if frame_durations[i] == 0:
+                frame_durations[i] = default_duration
+        print("Frame Durations: \n" + frame_durations.__str__())
+    
+        # Takes the extracted frames from the gif and splits them individually
+        modified_frame_cells = []
+        for frame in frames:
+            split_frame = split.calculate_image_split(frame, rows, cols, gap, x_offset, y_offset)
+            modified_frame_cells.append(split_frame["image_cells"])
+    
         combined_cells = []
-
-
-# Splits the provided Image into Image-Cell's based on provided parameters.
-# Will also crop the Image-Cells into a Square Format
-# Returns {preview_coordinates, image_cells}
-def calculate_image_split(image: ImageTk, rows: int, cols: int, gap: int, x_offset: float, y_offset: float) -> dict[str, list[dict] | str, list[ImageTk.PhotoImage]]:
-    preview_grid = []
-    cropped_cells = []
-
-    # Calculate the width and height of each image-cell
-    width, height = image.size
-    print("Image Dimensions:", width, height)
-    cell_width = (width - (cols - 1) * gap) // cols
-    cell_height = (height - (rows - 1) * gap) // rows
-    print("Cell Dimensions:", cell_width, cell_height)
-
-    # Determine the maximum cell size (to maintain square shape)
-    max_cell_size = min(cell_width, cell_height)
-    print("Max Cell Size:", max_cell_size)
-
-    # Calculate the horizontal and vertical gap offsets for cropping
-    gap_horizontal_offset = (cell_width - max_cell_size) // 2
-    gap_vertical_offset = (cell_height - max_cell_size) // 2
-
-    print("Gap Offsets:", gap_horizontal_offset, gap_vertical_offset)
-
-    # Determine the longest dimension (width or height)
-    longest_dimension = "width" if cell_width > cell_height else "height"
-
-    # Split the image and save each image-cell
-    for row in range(rows):
-        for col in range(cols):
-            # Calculate the coordinates for cropping
-            left = (col * (cell_width + gap) + gap_horizontal_offset) - x_offset
-            upper = (row * (cell_height + gap) + gap_vertical_offset) - y_offset
-
-            # Remove rows/columns only if they are part of the Outlier image-cells
-            if row == 0:
-                upper += gap_vertical_offset
-            elif row == rows - 1:
-                upper -= gap_vertical_offset
-            if col == 0:
-                left += gap_horizontal_offset
-            elif col == cols - 1:
-                left -= gap_horizontal_offset
-            if longest_dimension == "width":
-                right = left + max_cell_size
-                lower = upper + cell_height
-            else:
-                right = left + cell_width
-                lower = upper + max_cell_size
-
-            # Crop all image-cells
-            image_cell = image.crop((left, upper, right, lower))
-
-            ########## Outputs ##########
-
-            # Generate new Image-Cell Name
-            image_cell.filename = f"{row}_{col}"
-            # Save Image Cell
-            cropped_cells.append(image_cell)
-
-            # Store Coordinates of split image cells, for Previewer
-            grid_cell = [{
-                "cell": f"{row}_{col}",
-                "Left_Coord": left,
-                "Right_Coord": right,
-                "Upper_Coord": upper,
-                "Lower_Coord": lower,
-            }]
-            preview_grid.append(grid_cell)
-
-    return {"preview_coordinates": preview_grid, "image_cells": cropped_cells}
+        # Combine Image cell's into gif cell's (ie. [frame 0 cell 0] + [frame 1 cell 0] + [frame 2 cell 0] + etc.)
+        num_cells = len(modified_frame_cells[0])
+        for cell_index in range(num_cells):
+            for frame_cells in modified_frame_cells:
+                combined_cells.append(frame_cells[cell_index])
+    
+            # Generate the output file path
+            filename_without_extension = os.path.splitext(os.path.basename(gif.filename))[0]
+    
+            # Use the filename of the cell image for creating the output_path
+    
+            cell_name = combined_cells[0].filename
+            output_path = os.path.join(output_dir, f"{filename_without_extension}_{cell_name}.gif")
+    
+            # Save the combined cells as a .gif file
+            combined_cells[0].save(output_path, save_all=True, append_images=combined_cells[1:],
+                                   duration=frame_durations, loop=0)
+    
+            print(f"Saved {output_path}")
+            combined_cells = []
+    
+    
+    # Splits the provided Image into Image-Cell's based on provided parameters.
+    # Will also crop the Image-Cells into a Square Format
+    # Returns {preview_coordinates, image_cells}
+    @staticmethod
+    def calculate_image_split(image: ImageTk, rows: int, cols: int, gap: int, x_offset: float, y_offset: float) -> dict[str, list[dict] | str, list[ImageTk.PhotoImage]]:
+        preview_grid = []
+        cropped_cells = []
+    
+        # Calculate the width and height of each image-cell
+        width, height = image.size
+        print("Image Dimensions:", width, height)
+        cell_width = (width - (cols - 1) * gap) // cols
+        cell_height = (height - (rows - 1) * gap) // rows
+        print("Cell Dimensions:", cell_width, cell_height)
+    
+        # Determine the maximum cell size (to maintain square shape)
+        max_cell_size = min(cell_width, cell_height)
+        print("Max Cell Size:", max_cell_size)
+    
+        # Calculate the horizontal and vertical gap offsets for cropping
+        gap_horizontal_offset = (cell_width - max_cell_size) // 2
+        gap_vertical_offset = (cell_height - max_cell_size) // 2
+    
+        print("Gap Offsets:", gap_horizontal_offset, gap_vertical_offset)
+    
+        # Determine the longest dimension (width or height)
+        longest_dimension = "width" if cell_width > cell_height else "height"
+    
+        # Split the image and save each image-cell
+        for row in range(rows):
+            for col in range(cols):
+                # Calculate the coordinates for cropping
+                left = (col * (cell_width + gap) + gap_horizontal_offset) - x_offset
+                upper = (row * (cell_height + gap) + gap_vertical_offset) - y_offset
+    
+                # Remove rows/columns only if they are part of the Outlier image-cells
+                if row == 0:
+                    upper += gap_vertical_offset
+                elif row == rows - 1:
+                    upper -= gap_vertical_offset
+                if col == 0:
+                    left += gap_horizontal_offset
+                elif col == cols - 1:
+                    left -= gap_horizontal_offset
+                if longest_dimension == "width":
+                    right = left + max_cell_size
+                    lower = upper + cell_height
+                else:
+                    right = left + cell_width
+                    lower = upper + max_cell_size
+    
+                # Crop all image-cells
+                image_cell = image.crop((left, upper, right, lower))
+    
+                ########## Outputs ##########
+    
+                # Generate new Image-Cell Name
+                image_cell.filename = f"{row}_{col}"
+                # Save Image Cell
+                cropped_cells.append(image_cell)
+    
+                # Store Coordinates of split image cells, for Previewer
+                grid_cell = [{
+                    "cell": f"{row}_{col}",
+                    "Left_Coord": left,
+                    "Right_Coord": right,
+                    "Upper_Coord": upper,
+                    "Lower_Coord": lower,
+                }]
+                preview_grid.append(grid_cell)
+    
+        return {"preview_coordinates": preview_grid, "image_cells": cropped_cells}
 
 
 ####################################################################################################################
