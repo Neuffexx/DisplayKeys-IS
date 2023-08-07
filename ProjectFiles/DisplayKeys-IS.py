@@ -891,7 +891,7 @@ class DisplayKeys_DragDrop:
                     except IOError:
                         self.widget.insert(tk.END, widget_current_text)
                         DisplayKeys_PopUp(app.window, popup_type='error',
-                                          message='Not an Image!',
+                                          message=f'Not an Image or supported Type!\nSupported Types are:\n- Static [{split.get_supported_types()[0]}]\n- Animated [{split.get_supported_types()[1]}]',
                                           buttons=[{'OK': lambda: None}])
                         print("Not an Image DnD!")
 
