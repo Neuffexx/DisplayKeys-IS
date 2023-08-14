@@ -138,7 +138,7 @@ class DisplayKeys_GUI:
                 "widget_id": "GetParamsType",
                 "label_text": "Set Splitting Parameters:",
                 "label_colour": "#E9ECEF",
-                "dropdown_options": ["Defaults", "User Defined"],  # "Profile"], for future implementation
+                "dropdown_options": ["Defaults", "User Defined"],  # "Preset"], for future implementation
                 "dropdown_command": ButtonFunctions.property_options_visibility,
                 "dropdown_tooltip": "Default Values are: \n Rows         | 2 \nColumns   | 6 \n Gap            | 40",
                 "has_textbox": False,
@@ -546,7 +546,7 @@ class DisplayKeys_Composite_Widget(tk.Frame):
             #                             Still need dropdown selection for the time being
             #                                           -----      -----
             #   2.) Make generic so that dropdown button provides the list of WidgetID's its responsible for.
-            #       Will make life easier for future dropdown functions as well (namely profiles etc.).
+            #       Will make life easier for future dropdown functions as well (namely Presets etc.).
 
         # Textbox - Mainly used for getting user input, but can also be used as a good place to dynamically show text
         # Takes: Default Text Value, Tooltip Text, State
@@ -648,54 +648,47 @@ class DisplayKeys_Tooltip:
 
 # A Pop-Up Window to Display Confirmation/Warning/Error messages
 class DisplayKeys_PopUp:
-    def __init__(self, parent, popup_type: Literal['confirm', 'warning', 'error'], message: str, buttons: list[dict[str, Callable[[], None]]], buttons_per_row: int = 2):
+    def __init__(self, parent):
         # --- Create Window Setup ---
+        self.popup_min_width = 225
+        self.popup_min_height = 100
+
         self.parent = parent
         self.popup = tk.Toplevel(parent)
-        self.popup.geometry("250x100")
-        self.type = popup_type
-        self.popup.title(self.type.upper())
+        self.popup.geometry(f"{self.popup_min_width}x{self.popup_min_height}")
 
         # Makes the popup act as a modal dialog
         self.popup.grab_set()
         # Disable parent window
         self.parent.attributes('-disabled', True)
-        # Ensure main window becomes active after popup was closed
+        # Bind functionality to the creation of the window.
+        self.popup.bind_class("Toplevel", "<Map>", self.on_open)
+        # Bind functionality to the deletion of the window
         self.popup.bind("<Destroy>", self.on_close)
 
-        # --- Create Popup Content ---
-
-        # Content Container
+        # Primary Content Container ( will be used by all 'types' )
         self.container = tk.Frame(self.popup)
+        self.container.pack(expand=True, fill=tk.BOTH)
         self.container.grid_columnconfigure(0, weight=1)
         self.container.grid_rowconfigure(0, weight=1)
 
-        self.popup_message = message
+        # --- Create Popup Content Based on Type ---
+        # TODO: This will also be a setup for Presets, 'Preset' will be an option as a type
+        #       Maybe something along the lines of 'Preset_edit' if there will be different types of windows
+        #       required for it.
+        # TODO: The pop-up appears to be empty when created, even in fullscreen.
+        #       Investigate why this is the case.............
+        # TODO: Check whether it will be easier in the future to have multiple pop ups simply be overrides of the popup
+        #       class. Rather than determining the different types inside of the function after having passed all
+        #       the parameters and doing checks on them.
 
-        # The Type of message
-        self.message_type = tk.Label(self.popup, text=self.type.upper())
-        self.message_type.grid(sticky="news", row=0, column=0, columnspan=buttons_per_row)
-        # The message to display
-        self.message = tk.Label(self.popup, text=self.popup_message)
-        self.message.grid(sticky="news", row=1, column=0, columnspan=buttons_per_row, pady=15)
-
-        # Loop over the buttons to populate with as many as needed
-        # (future setup for profiles)
-        self.buttons = buttons
-        for i, button in enumerate(self.buttons):
-            button_name, button_function = list(button.items())[0]
-            tk.Button(self.popup, text=button_name, command=self.button_command(button_function)).grid(sticky="news",
-                                                                                                       row=(i // buttons_per_row) + 2,
-                                                                                                       column=i % buttons_per_row)
-
-        # Center the window
-        self.center(self.parent)
-        # Center the content
-        self.center_content(buttons_per_row)
-
-
-    def button_command(self, function):
+    def button_command_destructive(self, function):
+        """
+            Destructive version of the Button command execution.
+            Use if popup is to close after Button usage.
+        """
         def execute_function():
+            print("---Destructive Popup Button---")
             function()
             # re-enable parent window
             self.popup.master.attributes('-disabled', False)
@@ -703,7 +696,19 @@ class DisplayKeys_PopUp:
             self.popup.destroy()
         return execute_function
 
-    def center(self, parent):
+    @staticmethod
+    def button_command(function):
+        """
+            None-Destructive version of the Button command execution.
+            Use if popup is to stay open after the button press.
+            Useful simply for operations that may update the popup.
+        """
+        def execute_function():
+            print("---Non-Destructive Popup Button---")
+            function()
+        return execute_function
+
+    def center_window(self, parent):
         # Update the window to get correct measurements
         self.popup.update()
 
@@ -725,17 +730,139 @@ class DisplayKeys_PopUp:
 
         self.popup.geometry(f'+{int(x)}+{int(y)}')
 
-    def center_content(self, buttons_per_row):
+    # probably useless
+    def center_content(self, content_parent, content_child):
+        # Get the width and height of the screen
+        screen_width = content_parent.winfo_screenwidth()
+        screen_height = content_parent.winfo_screenheight()
+
+        # Get the width and height of the child widget
+        child_width = content_child.winfo_width()
+        child_height = content_child.winfo_height()
+
+        # Calculate the x and y coordinates of the child widget relative to the parent frame
+        x = (screen_width - child_width) // 2
+        y = (screen_height - child_height) // 2
+
+        # Move the child widget to its new position
+        content_parent.geometry(f"+{x}+{y}")
+
+    # probably useless
+    def center_row_content(self, content_parent: tk.Frame, buttons: list, items_per_row: int):
         # Configuring grid to center content
-        for i in range(buttons_per_row):
-            self.container.columnconfigure(i, weight=1)
-        for i in range(len(self.buttons) // buttons_per_row + 2):  # "+2" to account for label and any extra row for buttons
-            self.container.rowconfigure(i, weight=1)
+        for i in range(items_per_row):
+            content_parent.columnconfigure(i, weight=1)
+        for i in range(len(buttons) // items_per_row):
+            content_parent.rowconfigure(i, weight=1)
 
-    def on_close(self, event):
+    # Not yet needed, here as placeholder
+    def on_open(self, event: tk.Event):
+        """
+            Custom Event function that is called when the pop-up window is opened.
+            Can be extended in order to execute code on open time.
+            Call this function at the start of the subclass version, in order to keep and extend the functionality.
+        """
+        print("Pop-up window created!")
+        # Rescale popup to encompass all child widgets
+        self.resize_popup_window(self.container)
+        # Center the window
+        self.center_window(self.parent)
+
+    def on_close(self, event: tk.Event):
+        """
+            Custom Event function that is called when the pop-up window is closed.
+            Can be extended in order to execute code on close time.
+            Call this function at the start of the subclass version, in order to keep and extend the functionality.
+        """
         # Custom code equivalent to 'cancel' to make sure nothing happens
+        print("Pop-up window closed!")
 
+        # unbind events to avoid any accidental function triggers
+        self.popup.unbind_class("TopLevel", "<Map>")
+        self.popup.unbind("<Destroy>")
+
+        # Ensure main window becomes active after popup was closed
         self.popup.master.attributes('-disabled', False)
+
+    def resize_popup_window(self, container: tk.Frame):
+        """
+            Resizes the pop-up window based on the screen size its content takes up.
+            :param container: The parent of ALL the content inside the pop-up window.
+        """
+        self.popup.update_idletasks()
+        width = self.popup.winfo_width()
+        height = self.popup.winfo_height()
+        x = self.popup.winfo_rootx()
+        y = self.popup.winfo_rooty()
+
+        # Get the total width and height of all child widgets
+        total_width = 0
+        total_height = 0
+        for child in container.winfo_children():
+            total_width = max(total_width, child.winfo_x() + child.winfo_width())
+            total_height = max(total_height, child.winfo_y() + child.winfo_height())
+
+        if total_width >= self.popup_min_width and total_height >= self.popup_min_height:  # Needs bigger window size
+            # Resize the window to fit its contents
+            self.popup.geometry(f"{total_width}x{total_height}+{x}+{y}")
+        elif total_width < self.popup_min_width and total_height < self.popup_min_height:  # Too small both dimensions
+            self.popup.geometry(f"{self.popup_min_width}x{self.popup_min_height}+{x}+{y}")
+        elif total_width < self.popup_min_width:  # Not WIDE enough
+            self.popup.geometry(f"{self.popup_min_width}x{total_height}+{x}+{y}")
+        else:  # Not TALL enough
+            self.popup.geometry(f"{total_width}x{self.popup_min_height}+{x}+{y}")
+
+
+class PopUp_Dialogue(DisplayKeys_PopUp):
+    def __init__(self, parent, popup_type: Literal['confirm', 'warning', 'error'], message: str,
+                 buttons: list[dict[str, Callable[[], None]]] = [{'OK': lambda: None}, {'CANCEL': lambda: None}],
+                 buttons_per_row: int = 2):
+        super().__init__(parent)
+
+        # Set / Determine Dialogue Type
+        self.type = popup_type
+        self.popup.title(self.type.upper())
+
+        if self.type in ['confirm', 'warning', 'error']:
+            self.create_dialogue(message, buttons, buttons_per_row)
+        elif self.type == 'Preset':
+            print(f'Presets Pop-up...')
+
+    # Extends the Parent class on_open function
+    def on_open(self, event: tk.Event):
+        DisplayKeys_PopUp.on_open(self, event)
+
+    # Extends the Parent class on_close function
+    def on_close(self, event: tk.Event):
+        DisplayKeys_PopUp.on_close(self, event)
+
+    # Creates the necessary pop-up content for this class
+    def create_dialogue(self, message, buttons, buttons_per_row):
+        """
+            Creates all the widgets/content required for this class
+        """
+        # The message to display
+        self.popup_message = message
+
+        self.message = tk.Label(self.container, text=self.popup_message)
+        self.message.grid(sticky="nsew", row=1, column=0, columnspan=buttons_per_row, pady=15)
+
+        self.button_container = tk.Frame(self.container)
+        self.button_container.grid(sticky="nsew", row=2, column=0, columnspan=buttons_per_row)
+
+        # Loop over the buttons to populate with as many as needed
+        # (future setup for Presets)
+        self.buttons = buttons
+        for i, button in enumerate(self.buttons):
+            button_name, button_function = list(button.items())[0]
+            tk.Button(self.button_container, text=button_name, command=self.button_command_destructive(button_function)).grid(
+                sticky="nsew", pady=15,
+                row=(i // buttons_per_row),  # + 2,
+                column=i % buttons_per_row)
+
+
+class PopUp_Preset_Placeholder(DisplayKeys_PopUp):
+    pass
 
 
 # A Drag&Drop latch-on class that can be used on any tk.Entry or tk.Spinbox widget
@@ -890,7 +1017,7 @@ class DisplayKeys_DragDrop:
                         self.widget.insert(tk.END, data_path)
                     except IOError:
                         self.widget.insert(tk.END, widget_current_text)
-                        DisplayKeys_PopUp(app.window, popup_type='error',
+                        PopUp_Dialogue(app.window, popup_type='error',
                                           message=f'Not an Image or supported Type!\nSupported Types are:\n- Static [{split.get_supported_types()[0]}]\n- Animated [{split.get_supported_types()[1]}]',
                                           buttons=[{'OK': lambda: None}])
                         print("Not an Image DnD!")
@@ -901,9 +1028,9 @@ class DisplayKeys_DragDrop:
                         self.widget.insert(tk.END, data_path)
                     else:
                         self.widget.insert(tk.END, widget_current_text)
-                        DisplayKeys_PopUp(app.window, popup_type='error',
+                        PopUp_Dialogue(app.window, popup_type='error',
                                           message='Not an Folder!',
-                                          buttons=[{'OK': lambda: None}])
+                                          buttons=[{'OK': lambda: None}, {'CANCEL': lambda: None},])
                         print("Not a Folder DnD!")
 
             elif self.accept_type == self.type_legend["text"]:
@@ -912,7 +1039,7 @@ class DisplayKeys_DragDrop:
                     event.data.encode('utf-8')
                     self.widget.insert(tk.END, event.data)
                 except UnicodeDecodeError:
-                    DisplayKeys_PopUp(app.window, popup_type='error',
+                    PopUp_Dialogue(app.window, popup_type='error',
                                       message='Not Text!',
                                       buttons=[{'OK': lambda: None}])
                     print("Not a Text DnD!")
@@ -1175,7 +1302,7 @@ class ButtonFunctions:
                 get_output_widget.textbox.configure(state="readonly")
 
             # Determine if the default or user-defined values should be used
-            # Can later be expanded to profiles (i.e. 'CurrentProfile')
+            # Can later be expanded to Presets (i.e. 'CurrentPreset')
             if get_params_type_widget.dropdown_var.get() == "Defaults":
                 rows = int(get_rows_widget.spinbox_default)
                 columns = int(get_columns_widget.spinbox_default)
@@ -1241,6 +1368,17 @@ class ButtonFunctions:
     # Placeholder for the future...
 
 
+# TODO: Think of how to make the preset into an object that can be stored/read from disk
+#       Most likely going to use XML for that, maybe JavaScript?
+#       Still need to figure out how to even read/write from file, ensuring there is a file.
+#       Will probably let user create/select save files(Presets) as necessary via directory dialogue.
+#       (Meaning that the user can select a 'Preset' file, from disk to load with all presets saved)
+#       (The same way they will need to 'export'/'save' their presets to disk, it will not be
+#       stored between sessions)
+class Preset_Placeholder:
+    pass
+
+
 ####################################################################################################################
 #                                                   Split Image
 ####################################################################################################################
@@ -1254,22 +1392,21 @@ class split:
         sup_image_formats = [".png", ".jpg", ".jpeg", ".bmp"]
         sup_animated_formats = [".gif"]
         return sup_image_formats, sup_animated_formats
-    
-    
+
     # Checks the provided image and determines whether it's a static or dynamic image format.
     # Also passes along rest of variables provided by ButtonFunctions.ProcessImage
     @staticmethod
     def determine_split_type(file_path: str, output_dir: str, rows: int, cols: int, gap: int, x_offset: float, y_offset: float):
         print("---Determining File Type---")
-    
+
         # The supported file formats:
         image_formats = split.get_supported_types()[0]
         animated_formats = split.get_supported_types()[1]
-    
+
         print("File Types are: ")
         print(split.get_supported_types()[0])
         print(split.get_supported_types()[1])
-    
+
         try:
             # Check if Image Format is supported
             with Image.open(file_path) as image:
@@ -1285,7 +1422,7 @@ class split:
                     return True
                 else:
                     print("No formats matched")
-    
+
         # Is not of a supported image format
         except TypeError as error_message:
             # In the future simply open a Pop-Up Window with an error message:
@@ -1307,38 +1444,36 @@ class split:
     #       ---------- DONE ----------
     #  3.) Add offset input, limit(clamp) max offset amount to 1cell in both width / height
     #       ---------- DONE ----------           ( temporarily(?) in Previewer )
-    #  3.) Replace the Previewer Drawing Functionality inside of the Previewer Update Function
+    #  4.) Replace the Previewer Drawing Functionality inside of the Previewer Update Function
     #      to use the calculate_image_split function's returned 'preview_coordinates'
     #       ( This may be too complicated now with the way the Offset input interacts with the Preview rendering )
     #       ( Will check when I am not sleep deprived to make sure it works when adapting to use external function )
-    #  4.) Wrap all splitting related functions into class, no reason other than that I prefer it this way...
+    #  5.) Wrap all splitting related functions into class, no reason other than that I prefer it this way...
     #       ---------- DONE - ---------
-    
-    
+
     # Calls 'calculate_image_split' and saves its output 'image_cells'
     @staticmethod
     def image_static(image_path: str, output_dir: str, rows: int, cols: int, gap: int, x_offset: float, y_offset: float):
         # Open the image using PIL
         static_image = Image.open(image_path)
-    
+
         # Split the Image
         split_image = split.calculate_image_split(static_image, rows, cols, gap, x_offset, y_offset)
-    
+
         # Create the output directory if it doesn't exist
         os.makedirs(output_dir, exist_ok=True)
-    
+
         # Generate the output file path
         filename_without_extension = os.path.splitext(os.path.basename(static_image.filename))[0]
-    
+
         # Save the image-cells
         cell: ImageTk.PhotoImage
         for cell in split_image["image_cells"]:
             output_path = os.path.join(output_dir, f"{filename_without_extension}_{cell.filename}.png")
             cell.save(output_path)
-    
+
             print(f"Saved {output_path}")
-    
-    
+
     # Calls 'calculate_image_split' for each frame of an image
     # Recombines each image cell for each frame, before saving the combined Image-Cell
     # Preserves or adds Frame Timings in case Frame's are missing this information.
@@ -1348,16 +1483,16 @@ class split:
     def image_animated(gif_path: str, output_dir: str, rows: int, cols: int, gap: int, x_offset: float, y_offset: float):
         # Create the output directory if it doesn't exist
         os.makedirs(output_dir, exist_ok=True)
-    
+
         # Open the image using PIL
         gif = Image.open(gif_path)
         print("GIF Frame Count: " + str(gif.n_frames))
-    
+
         # Extract frames from .gif file
         frames = []
         for frame in ImageSequence.Iterator(gif):
             frames.append(frame.copy())
-    
+
         # Get duration of each frame
         frame_durations = []
         for frame in range(0, gif.n_frames):
@@ -1370,52 +1505,51 @@ class split:
                     frame_durations.append(0)
             except(KeyError, TypeError):
                 print("No frame durations present")
-    
+
                 # Add default time in case no frame duration is provided by .gif
                 frame_durations.append(0)
-    
+
         # Calculate average duration
         non_zero_durations = [d for d in frame_durations if d > 0]
         if len(non_zero_durations) > 0:
             default_duration = sum(non_zero_durations) // len(non_zero_durations)
         else:
             default_duration = 100
-    
+
         # Replace missing values with average duration
         for i in range(len(frame_durations)):
             if frame_durations[i] == 0:
                 frame_durations[i] = default_duration
         print("Frame Durations: \n" + frame_durations.__str__())
-    
+
         # Takes the extracted frames from the gif and splits them individually
         modified_frame_cells = []
         for frame in frames:
             split_frame = split.calculate_image_split(frame, rows, cols, gap, x_offset, y_offset)
             modified_frame_cells.append(split_frame["image_cells"])
-    
+
         combined_cells = []
         # Combine Image cell's into gif cell's (ie. [frame 0 cell 0] + [frame 1 cell 0] + [frame 2 cell 0] + etc.)
         num_cells = len(modified_frame_cells[0])
         for cell_index in range(num_cells):
             for frame_cells in modified_frame_cells:
                 combined_cells.append(frame_cells[cell_index])
-    
+
             # Generate the output file path
             filename_without_extension = os.path.splitext(os.path.basename(gif.filename))[0]
-    
+
             # Use the filename of the cell image for creating the output_path
-    
+
             cell_name = combined_cells[0].filename
             output_path = os.path.join(output_dir, f"{filename_without_extension}_{cell_name}.gif")
-    
+
             # Save the combined cells as a .gif file
             combined_cells[0].save(output_path, save_all=True, append_images=combined_cells[1:],
                                    duration=frame_durations, loop=0)
-    
+
             print(f"Saved {output_path}")
             combined_cells = []
-    
-    
+
     # Splits the provided Image into Image-Cell's based on provided parameters.
     # Will also crop the Image-Cells into a Square Format
     # Returns {preview_coordinates, image_cells}
@@ -1423,34 +1557,34 @@ class split:
     def calculate_image_split(image: ImageTk, rows: int, cols: int, gap: int, x_offset: float, y_offset: float) -> dict[str, list[dict] | str, list[ImageTk.PhotoImage]]:
         preview_grid = []
         cropped_cells = []
-    
+
         # Calculate the width and height of each image-cell
         width, height = image.size
         print("Image Dimensions:", width, height)
         cell_width = (width - (cols - 1) * gap) // cols
         cell_height = (height - (rows - 1) * gap) // rows
         print("Cell Dimensions:", cell_width, cell_height)
-    
+
         # Determine the maximum cell size (to maintain square shape)
         max_cell_size = min(cell_width, cell_height)
         print("Max Cell Size:", max_cell_size)
-    
+
         # Calculate the horizontal and vertical gap offsets for cropping
         gap_horizontal_offset = (cell_width - max_cell_size) // 2
         gap_vertical_offset = (cell_height - max_cell_size) // 2
-    
+
         print("Gap Offsets:", gap_horizontal_offset, gap_vertical_offset)
-    
+
         # Determine the longest dimension (width or height)
         longest_dimension = "width" if cell_width > cell_height else "height"
-    
+
         # Split the image and save each image-cell
         for row in range(rows):
             for col in range(cols):
                 # Calculate the coordinates for cropping
                 left = (col * (cell_width + gap) + gap_horizontal_offset) - x_offset
                 upper = (row * (cell_height + gap) + gap_vertical_offset) - y_offset
-    
+
                 # Remove rows/columns only if they are part of the Outlier image-cells
                 if row == 0:
                     upper += gap_vertical_offset
@@ -1466,17 +1600,17 @@ class split:
                 else:
                     right = left + cell_width
                     lower = upper + max_cell_size
-    
+
                 # Crop all image-cells
                 image_cell = image.crop((left, upper, right, lower))
-    
+
                 ########## Outputs ##########
-    
+
                 # Generate new Image-Cell Name
                 image_cell.filename = f"{row}_{col}"
                 # Save Image Cell
                 cropped_cells.append(image_cell)
-    
+
                 # Store Coordinates of split image cells, for Previewer
                 grid_cell = [{
                     "cell": f"{row}_{col}",
@@ -1486,7 +1620,7 @@ class split:
                     "Lower_Coord": lower,
                 }]
                 preview_grid.append(grid_cell)
-    
+
         return {"preview_coordinates": preview_grid, "image_cells": cropped_cells}
 
 
