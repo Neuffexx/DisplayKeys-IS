@@ -384,7 +384,7 @@ class DisplayKeys_Previewer:
             self.canvas.create_line(self.x_offset, grid_y, image_width + self.x_offset, grid_y, fill="#CC0000",
                                     width=scaled_gap)
 
-        # Draw Blackout Lines
+        # Draw Blackout Lines (hides out-of-grid pixels)
         blackout_rectangles = [
             self.canvas.create_rectangle(0, 0, self.width + 15, self.y_offset, fill='black'), # Top
             self.canvas.create_rectangle(0, self.y_offset + self.resized_image.height, self.width + 15, self.height + 15,
@@ -481,7 +481,7 @@ class DisplayKeys_Previewer:
         self.final_offset = {"x": delta_x, "y": delta_y}
         print("Reset Offset:", delta_x, delta_y)
 
-        # Update the Previewer - In the future it will show what cells will be discarded
+        # Update the Previewer
         ButtonFunctions.process_image("ResetPreviewer")
 
 
@@ -671,16 +671,6 @@ class DisplayKeys_PopUp:
         self.container.pack(expand=True, fill=tk.BOTH)
         self.container.grid_columnconfigure(0, weight=1)
         self.container.grid_rowconfigure(0, weight=1)
-
-        # --- Create Popup Content Based on Type ---
-        # TODO: This will also be a setup for Presets, 'Preset' will be an option as a type
-        #       Maybe something along the lines of 'Preset_edit' if there will be different types of windows
-        #       required for it.
-        # TODO: The pop-up appears to be empty when created, even in fullscreen.
-        #       Investigate why this is the case.............
-        # TODO: Check whether it will be easier in the future to have multiple pop ups simply be overrides of the popup
-        #       class. Rather than determining the different types inside of the function after having passed all
-        #       the parameters and doing checks on them.
 
     def button_command_destructive(self, function):
         """
@@ -1098,12 +1088,14 @@ class DisplayKeys_Help:
                  tooltip_anchor: Literal["nw", "n", "ne", "w", "center", "e", "sw", "s", "se"] = "center"):
         self.image = Image.open(sys._MEIPASS + "./assets/images/Help.png")
         new_size = int( self.image.height * (percentage_size / 100) )
-        self.resized_image = ImageTk.PhotoImage( self.image.resize((new_size, new_size)) )
+        self.resized_image = ImageTk.PhotoImage( self.image.resize((new_size, new_size)))
 
         self.label = tk.Label(master=parent, image=self.resized_image, background=parent.cget("bg"))
         self.label.grid(sticky=alignment, column=col, row=row)
 
-        self.h_tooltip = DisplayKeys_Tooltip(self.label, help_tooltip, justify=tooltip_justification, anchor=tooltip_anchor)
+        self.h_tooltip = DisplayKeys_Tooltip(self.label, help_tooltip,
+                                             justify=tooltip_justification,
+                                             anchor=tooltip_anchor)
 
 
 # A collection of button functions to be used throughout the UI
@@ -1371,7 +1363,7 @@ class ButtonFunctions:
 # TODO: Think of how to make the preset into an object that can be stored/read from disk
 #       Most likely going to use XML for that, maybe JavaScript?
 #       Still need to figure out how to even read/write from file, ensuring there is a file.
-#       Will probably let user create/select save files(Presets) as necessary via directory dialogue.
+#       - Will probably let user create/select save files(Presets) as necessary via directory dialogue.
 #       (Meaning that the user can select a 'Preset' file, from disk to load with all presets saved)
 #       (The same way they will need to 'export'/'save' their presets to disk, it will not be
 #       stored between sessions)
@@ -1438,18 +1430,10 @@ class split:
             return None
 
     # TODO:
-    #  1.) Combine image splitting logic into one function, update split_image/split_gif to call that logic as needed
-    #       ---------- DONE ----------
-    #  2.) Update split_.../calculate_... functions to use newly added 'Offset' inputs.
-    #       ---------- DONE ----------
-    #  3.) Add offset input, limit(clamp) max offset amount to 1cell in both width / height
-    #       ---------- DONE ----------           ( temporarily(?) in Previewer )
-    #  4.) Replace the Previewer Drawing Functionality inside of the Previewer Update Function
+    #  1.) Replace the Previewer Drawing Functionality inside of the Previewer Update Function
     #      to use the calculate_image_split function's returned 'preview_coordinates'
     #       ( This may be too complicated now with the way the Offset input interacts with the Preview rendering )
     #       ( Will check when I am not sleep deprived to make sure it works when adapting to use external function )
-    #  5.) Wrap all splitting related functions into class, no reason other than that I prefer it this way...
-    #       ---------- DONE - ---------
 
     # Calls 'calculate_image_split' and saves its output 'image_cells'
     @staticmethod
