@@ -657,8 +657,9 @@ class DisplayKeys_PopUp:
         self.popup = tk.Toplevel(parent)
         self.popup.geometry(f"{self.popup_min_width}x{self.popup_min_height}")
 
-        # Makes the popup act as a modal dialog
+        # Makes the popup act as a modal dialog and focused
         self.popup.grab_set()
+        self.popup.focus_force()
         # Disable parent window
         self.parent.attributes('-disabled', True)
         # Bind functionality to the creation of the window.
@@ -721,7 +722,7 @@ class DisplayKeys_PopUp:
         self.popup.geometry(f'+{int(x)}+{int(y)}')
 
     # probably useless
-    def center_content(self, content_parent, content_child):
+    def center_content(self, content_parent: tk.TopLevel, content_child: tk.Frame):
         # Get the width and height of the screen
         screen_width = content_parent.winfo_screenwidth()
         screen_height = content_parent.winfo_screenheight()
@@ -813,6 +814,8 @@ class PopUp_Dialogue(DisplayKeys_PopUp):
         self.type = popup_type
         self.popup.title(self.type.upper())
 
+        self.buttons_per_row = buttons_per_row
+
         if self.type in ['confirm', 'warning', 'error']:
             self.create_dialogue(message, buttons, buttons_per_row)
         elif self.type == 'Preset':
@@ -834,21 +837,37 @@ class PopUp_Dialogue(DisplayKeys_PopUp):
         # The message to display
         self.popup_message = message
 
-        self.message = tk.Label(self.container, text=self.popup_message)
-        self.message.grid(sticky="nsew", row=1, column=0, columnspan=buttons_per_row, pady=15)
+        self.message = tk.Label(self.container, text=self.popup_message)#, anchor='center', justify='left')
+        self.message.grid(sticky="nsew", row=1, column=1, columnspan=buttons_per_row, pady=15)
 
-        self.button_container = tk.Frame(self.container)
-        self.button_container.grid(sticky="nsew", row=2, column=0, columnspan=buttons_per_row)
+        # TODO:
+        #       Figure out how to get the spacing between the buttons and the fillers to be correct
+        #       + The offset with the text (see 'Folder' pop-up example)
+
+        # Buttons left side white space filler
+        self.left_placeholder = tk.Label(self.container)
+        self.left_placeholder.grid(sticky='nsew', pady=15, row=2, column=0)
+        self.container.grid_columnconfigure(0, weight=2)
 
         # Loop over the buttons to populate with as many as needed
-        # (future setup for Presets)
+        self.button_container = tk.Frame(self.container)
+        self.button_container.grid(sticky="nsew", row=2, column=1)#, columnspan=len(buttons))
+        self.container.grid_columnconfigure(1, weight=1)
+
         self.buttons = buttons
         for i, button in enumerate(self.buttons):
             button_name, button_function = list(button.items())[0]
-            tk.Button(self.button_container, text=button_name, command=self.button_command_destructive(button_function)).grid(
-                sticky="nsew", pady=15,
-                row=(i // buttons_per_row),  # + 2,
-                column=i % buttons_per_row)
+            tk.Button(self.button_container,
+                      text=button_name,
+                      command=self.button_command_destructive(button_function)).grid(sticky="nsew", pady=15,
+                                                                                     row=(i // buttons_per_row),
+                                                                                     column=i % buttons_per_row)
+            self.button_container.grid_columnconfigure(i, weight=1)
+
+        # Buttons right side white space filler
+        self.right_placeholder = tk.Label(self.container)
+        self.right_placeholder.grid(sticky='nsew', pady=15, row=0, column=2)
+        self.container.grid_columnconfigure(2, weight=2)
 
 
 class PopUp_Preset_Placeholder(DisplayKeys_PopUp):
@@ -1424,8 +1443,7 @@ class split:
             # | - Image     | get_supported_types()[0] |
             # | - Animated  | get_supported_types()[1] |
             # |----------------------------------------|
-            # Do nothing for now
-            print(TypeError)
+            PopUp_Dialogue(app.window, 'error', f"File Format not supporte\nCurrenlty supported formats are:\n- Image     | {split.get_supported_types()[0]}\n- Animated  | {split.get_supported_types()[1]}")
             print("Wrong File Type: ", type(error_message).__name__, str(error_message))
             return None
 
