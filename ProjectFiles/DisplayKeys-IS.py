@@ -24,6 +24,7 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import tkinterdnd2 as tkdnd
 from tkinterdnd2 import *
+import json
 
 ####################################################################################################################
 #                                                    GUI Window
@@ -722,7 +723,7 @@ class DisplayKeys_PopUp:
         self.popup.geometry(f'+{int(x)}+{int(y)}')
 
     # probably useless
-    def center_content(self, content_parent: tk.TopLevel, content_child: tk.Frame):
+    def center_content(self, content_parent: tk.Toplevel, content_child: tk.Frame):
         # Get the width and height of the screen
         screen_width = content_parent.winfo_screenwidth()
         screen_height = content_parent.winfo_screenheight()
@@ -946,7 +947,7 @@ class DisplayKeys_DragDrop:
 
                 elif self.type == "folder":
                     # Ensure that dropped item is a folder
-                    if os.path.isdir(data_path):
+                    if os.path.isdir(event.data):
                         # Show Can Drop
                         self.set_background(event.widget, 'green')
                     else:
@@ -1027,14 +1028,14 @@ class DisplayKeys_DragDrop:
                     except IOError:
                         self.widget.insert(tk.END, widget_current_text)
                         PopUp_Dialogue(app.window, popup_type='error',
-                                          message=f'Not an Image or supported Type!\nSupported Types are:\n- Static [{split.get_supported_types()[0]}]\n- Animated [{split.get_supported_types()[1]}]',
+                                          message=f'Not an Image or supported Type!\nSupported Types are:\n- Static |  {split.get_supported_types()[0]}\n- Animated |  {split.get_supported_types()[1]}',
                                           buttons=[{'OK': lambda: None}])
                         print("Not an Image DnD!")
 
                 elif self.type == "folder":
                     # Ensure that dropped item is a folder
-                    if os.path.isdir(data_path):
-                        self.widget.insert(tk.END, data_path)
+                    if os.path.isdir(event.data):
+                        self.widget.insert(tk.END, event.data)
                     else:
                         self.widget.insert(tk.END, widget_current_text)
                         PopUp_Dialogue(app.window, popup_type='error',
@@ -1386,8 +1387,50 @@ class ButtonFunctions:
 #       (Meaning that the user can select a 'Preset' file, from disk to load with all presets saved)
 #       (The same way they will need to 'export'/'save' their presets to disk, it will not be
 #       stored between sessions)
-class Preset_Placeholder:
-    pass
+
+# Defines the Data structure of Presets as well as contains all of its functionality.
+# Each Preset is able to independently preform its necessary operations once created.
+class PresetData:
+    def __init__(self, name="", rows=0, cols=0, gap=1):
+        self.name = name
+        self.rows = rows
+        self.cols = cols
+        self.gap = gap
+
+    # Serialize Data to JSON
+    def to_json(self):
+        return {
+            "name": self.name,
+            "rows": self.rows,
+            "cols": self.cols,
+            "gap": self.gap,
+        }
+
+    # De-Serialize from JSON to Data Struct
+    @classmethod
+    def from_json(cls, data_dict):
+        return cls(
+            name=data_dict.get("name", ""),
+            rows=data_dict.get("rows", 0),
+            cols=data_dict.get("cols", 0),
+            gap=data_dict.get("gap", 1),
+        )
+
+    def save_preset(self):  # Changed from staticmethod to regular instance method
+        file_path = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON files", "*.json"), ("All files", "*.*")])
+        if not file_path:  # If user cancels the save dialog
+            return
+        with open(file_path, 'w') as file:
+            json.dump(self.to_json(), file)
+
+    @staticmethod
+    def load_preset():
+        file_path = filedialog.askopenfilename(defaultextension=".json", filetypes=[("JSON files", "*.json"), ("All files", "*.*")])
+        if not file_path:  # If user cancels the open dialog
+            return PresetData()  # Return a default PresetData instance
+        with open(file_path, 'r') as file:
+            data = json.load(file)
+            return PresetData.from_json(data)
 
 
 ####################################################################################################################
