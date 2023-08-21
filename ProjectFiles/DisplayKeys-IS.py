@@ -1337,11 +1337,19 @@ class ButtonFunctions:
 
             if widget_id == "SplitImage":
                 # Split Image
-                # Determine_Split_Type function then passes it to the appropriate Splitting funcion
+                # Determine_Split_Type function then passes it to the appropriate Splitting function
                 split.determine_split_type(image_path, output_dir, rows, columns, gap, x_offset, y_offset)
             else:
                 # Update the preview
                 app.preview.update_preview(image_path, rows, columns, gap)
+
+                # TODO:
+                #       The previewer will in the future to use 'Split.calculate_image_split()' function's output.
+                #       Here is an example of how its intended:
+                #       app.preview.update_preview(Split.calculate_image_split(...))
+                #
+                #       (This will directly pass the results to the update function,
+                #       allowing me to rewrite the update function to directly use the output)
 
         else:
             print("One or more required widgets are missing.")
@@ -1376,17 +1384,32 @@ class ButtonFunctions:
                     if widget:
                         widget.grid(sticky="n")
 
-    # Popup Window Functions:
+    # --- Popup Windows: ---
     # Placeholder for the future...
 
 
-# TODO: Think of how to make the preset into an object that can be stored/read from disk
-#       Most likely going to use XML for that, maybe JavaScript?
-#       Still need to figure out how to even read/write from file, ensuring there is a file.
-#       - Will probably let user create/select save files(Presets) as necessary via directory dialogue.
-#       (Meaning that the user can select a 'Preset' file, from disk to load with all presets saved)
-#       (The same way they will need to 'export'/'save' their presets to disk, it will not be
-#       stored between sessions)
+# TODO:
+#     A Presets
+#        - Create Preset Data Structure
+#           === DONE ===
+#        - Import/Export Data functionality
+#           === DONE ===
+#        - Use Preset Data for splitting/previewing
+#           === WIP ===
+#        - De/Encode Image into profile?
+#          If yes, load image when loading profile into previewer?
+#          Then would also need to update data strucutre, and image needs to be optional
+#          (checkbox of currently loaded image, unless its Preview image)
+#     B Presets UI
+#       - Window Menu Bar Items:
+#           O Import Presets
+#           O Export Presets
+#           O Delete Current (imported) Presets
+#        - In Properties Panel, 'Split Type' widget:
+#           O Replace current 'Defaults' Options with 'Presets', which will always on launch of application be populated with the 'Defaults' Preset
+#           O Add a dropdown widget (of presets) that is shown/hidden based on the 'Split Type' dropdown selection
+#           O Add buttons for [Create, Delte, Edit] functionality
+#           O Create apropriate pop-up windows for said buttons (will also need to add the 'name' input field for the preset itself
 
 # Defines the Data structure of Presets as well as contains all of its functionality.
 # Each Preset is able to independently preform its necessary operations once created.
