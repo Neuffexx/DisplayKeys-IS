@@ -28,7 +28,7 @@ import webbrowser
 import json
 
 ####################################################################################################################
-#                                                    GUI Window
+#                                                    App Window
 ####################################################################################################################
 
 
@@ -102,6 +102,9 @@ class DisplayKeys_GUI:
 
         #########################
 
+        # Initially Create Object to hold reference to all Presets in the future.
+        self.Presets: list[PresetData]
+
         # Initially Hide Options Based on Dropdown Selection
         ButtonFunctions.property_options_visibility(self.properties)
 
@@ -161,9 +164,16 @@ class DisplayKeys_GUI:
                 "widget_id": "GetParamsType",
                 "label_text": "Set Splitting Parameters:",
                 "label_colour": "#E9ECEF",
-                "dropdown_options": ["Defaults", "User Defined"],  # "Preset"], for future implementation
+                "dropdown_options": ["Preset", "User Defined"],
                 "dropdown_command": ButtonFunctions.property_options_visibility,
                 "dropdown_tooltip": "Default Values are: \n Rows         | 2 \nColumns   | 6 \n Gap            | 40",
+                "has_textbox": False,
+            },
+            {
+                "widget_id": "PresetList",
+                "dropdown_options": ["Default"],
+                "dropdown_command": ButtonFunctions.placeholder,
+                "dropdown_tooltip": "Chose a pre-saved selection of Splitting Parameters",
                 "has_textbox": False,
             },
             {
@@ -1295,6 +1305,9 @@ class ButtonFunctions:
         # Get Image Properties Type
         get_params_type_widget = next((widget for widget in widgets if widget.id == "GetParamsType"), None)
 
+        # Get Selected Preset
+        get_preset_list_widget = next((widget for widget in widgets if widget.id == "PresetList"), None)
+
         # Get Text boxes to process image
         get_image_widget = next((widget for widget in widgets if widget.id == "GetImage"), None)
         get_output_widget = next((widget for widget in widgets if widget.id == "GetOutput"), None)
@@ -1335,14 +1348,30 @@ class ButtonFunctions:
                 get_output_widget.textbox.insert(tk.END, output_dir)
                 get_output_widget.textbox.configure(state="readonly")
 
-            # Determine if the default or user-defined values should be used
+            # Determine if a Preset`s or User-Defined values should be used
             # Can later be expanded to Presets (i.e. 'CurrentPreset')
-            if get_params_type_widget.dropdown_var.get() == "Defaults":
-                rows = int(get_rows_widget.spinbox_default)
-                columns = int(get_columns_widget.spinbox_default)
-                gap = int(get_gap_widget.spinbox_default)
-                x_offset = 0
-                y_offset = 0
+            if get_params_type_widget.dropdown_var.get() == "Preset":
+                if get_preset_list_widget.dropdown_var.get() == "Default":
+                    rows = int(get_rows_widget.spinbox_default)
+                    columns = int(get_columns_widget.spinbox_default)
+                    gap = int(get_gap_widget.spinbox_default)
+                    x_offset = 0
+                    y_offset = 0
+                elif get_preset_list_widget.dropdown_var.get():
+                    # TODO:
+                    #       Get Variables from Selected Preset and use them instead
+
+                    preset_name = get_preset_list_widget.dropdown_var.get()
+                    print(f"Selected Preset: {preset_name}")
+                    # Find and Load Preset via function using name
+                    # PresetData.load_preset(preset_name)
+
+                    #rows = int(get_rows_widget.spinbox_default)
+                    #columns = int(get_columns_widget.spinbox_default)
+                    #gap = int(get_gap_widget.spinbox_default)
+                    #x_offset = previewer.final_offset["x"] if previewer.final_offset else None
+                    #y_offset = previewer.final_offset["y"] if previewer.final_offset else None
+                    return
 
             elif get_params_type_widget.dropdown_var.get() == "User Defined":
                 rows = int(get_rows_widget.spinbox.get()) if get_rows_widget.spinbox.get().isnumeric() else None
@@ -1391,17 +1420,27 @@ class ButtonFunctions:
         option = properties_dropdown_widget.dropdown_var.get()
 
         # Get the widgets to show/hide
+        get_preset_list = next((widget for widget in widgets if widget.id == "PresetList"), None)
+        get_preset_create = next((widget for widget in widgets if widget.id == "..."), None)
+        get_preset_edit = next((widget for widget in widgets if widget.id == "..."), None)
+        get_preset_delete = next((widget for widget in widgets if widget.id == "..."), None)
         get_rows_widget = next((widget for widget in widgets if widget.id == "GetRows"), None)
         get_columns_widget = next((widget for widget in widgets if widget.id == "GetColumns"), None)
         get_gap_widget = next((widget for widget in widgets if widget.id == "GetGap"), None)
 
         # Show/hide the widgets based on the selected option
         if all(widget is not None for widget in [get_rows_widget, get_columns_widget, get_gap_widget]):
-            if option == "Defaults":
+            if option == "Preset":
                 for widget in (get_rows_widget, get_columns_widget, get_gap_widget):
                     if widget:
                         widget.grid_remove()
+                for widget in (get_preset_list, get_preset_create, get_preset_edit, get_preset_delete):
+                    if widget:
+                        widget.grid(sticky="n")
             elif option == "User Defined":
+                for widget in (get_preset_list, get_preset_create, get_preset_edit, get_preset_delete):
+                    if widget:
+                        widget.grid_remove()
                 for widget in (get_rows_widget, get_columns_widget, get_gap_widget):
                     if widget:
                         widget.grid(sticky="n")
@@ -1461,27 +1500,40 @@ class PresetData:
     @classmethod
     def from_json(cls, data_dict):
         return cls(
-            name=data_dict.get("name", ""),
-            rows=data_dict.get("rows", 0),
-            cols=data_dict.get("cols", 0),
+            name=data_dict.get("name", "Placeholder"),
+            rows=data_dict.get("rows", 1),
+            cols=data_dict.get("cols", 1),
             gap=data_dict.get("gap", 1),
         )
 
-    def save_preset(self):  # Changed from staticmethod to regular instance method
+    # Currently only saves itself to a selected/new file
+    # Need to change to save all presets that are in the list to this file
+    # and make this into a static method
+    def save_presets(self):
         file_path = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON files", "*.json"), ("All files", "*.*")])
         if not file_path:  # If user cancels the save dialog
             return
         with open(file_path, 'w') as file:
             json.dump(self.to_json(), file)
 
+    # Currently only loads a single preset from a selected file
+    # Need to change it to load all presets into a list
     @staticmethod
-    def load_preset():
+    def load_presets():
         file_path = filedialog.askopenfilename(defaultextension=".json", filetypes=[("JSON files", "*.json"), ("All files", "*.*")])
         if not file_path:  # If user cancels the open dialog
             return PresetData()  # Return a default PresetData instance
         with open(file_path, 'r') as file:
             data = json.load(file)
             return PresetData.from_json(data)
+
+    # Retrieves a single Preset by name from the list of currently existing Presets
+    @staticmethod
+    def get_preset(preset_name):
+        # TODO:
+        #       Need to Ensure list is not empty, then retrieve the PresetData object and return it.
+        #       Maybe make this into a ButtonFunction?
+        pass
 
 
 ####################################################################################################################
