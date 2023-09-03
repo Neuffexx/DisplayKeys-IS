@@ -21,9 +21,10 @@ from typing import Literal, Callable, Annotated
 import os, sys
 from PIL import Image, ImageTk, ImageSequence, ImageDraw
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
+from tkinter import ttk, filedialog, messagebox, Menu
 import tkinterdnd2 as tkdnd
 from tkinterdnd2 import *
+import webbrowser
 import json
 
 ####################################################################################################################
@@ -45,6 +46,27 @@ class DisplayKeys_GUI:
         self.window.iconbitmap(icon_path)
         self.window.geometry("600x600")
         self.window.resizable(False, False)
+        # Main Window Menu Bar
+        self.menu_bar = Menu()
+        self.window.configure(menu=self.menu_bar)
+        # --- File
+        self.app_menu = Menu(self.menu_bar, tearoff=False)
+        self.preset_menu = Menu(self.app_menu, tearoff=False)
+        self.app_menu.add_cascade(label="Presets", menu=self.preset_menu)
+        self.app_menu.add_separator()
+        self.app_menu.add_command(label="Exit", command=ButtonFunctions.quit)
+        # ---
+        self.preset_menu.add_command(label="Load Presets File", command=None)
+        self.preset_menu.add_command(label="Save Presets", command=None)
+        self.preset_menu.add_separator()
+        self.preset_menu.add_command(label="Remove Current Presets", command=None)
+        # --- Help
+        self.help_menu = Menu(self.menu_bar, tearoff=False)
+        self.help_menu.add_separator()
+        self.help_menu.add_command(label="Help", command=lambda: webbrowser.open("https://www.github.com/Neuffexx/DisplayKeys-IS"))
+        # Add to Menu Bar
+        self.menu_bar.add_cascade(label="File", menu=self.app_menu)
+        self.menu_bar.add_cascade(label="Help", menu=self.help_menu)
 
         #########################
 
@@ -1387,6 +1409,12 @@ class ButtonFunctions:
     # --- Popup Windows: ---
     # Placeholder for the future...
 
+    # --- Menu Bar: ---
+    # Closes Application
+    @staticmethod
+    def quit():
+        app.window.destroy()
+
 
 # TODO:
 #     A Presets
@@ -1399,12 +1427,12 @@ class ButtonFunctions:
 #        - De/Encode Image into profile?
 #          If yes, load image when loading profile into previewer?
 #          Then would also need to update data strucutre, and image needs to be optional
-#          (checkbox of currently loaded image, unless its Preview image)
+#          (checkbox of keeping currently loaded image, unless its Preview image)
 #     B Presets UI
 #       - Window Menu Bar Items:
 #           O Import Presets
 #           O Export Presets
-#           O Delete Current (imported) Presets
+#           O Delete ALL Current (imported) Presets
 #        - In Properties Panel, 'Split Type' widget:
 #           O Replace current 'Defaults' Options with 'Presets', which will always on launch of application be populated with the 'Defaults' Preset
 #           O Add a dropdown widget (of presets) that is shown/hidden based on the 'Split Type' dropdown selection
