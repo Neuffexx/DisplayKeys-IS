@@ -91,8 +91,6 @@ class DisplayKeys_GUI:
 
         # Initially Hide Property Column Widget's Based on Dropdown Selection
         ButtonFunctions.property_options_visibility(self.properties)
-        # Initially Populate Preset Dropdown
-        ButtonFunctions.populate_property_presets_options(self.properties, self.presets)
 
         # Set focus to Application Window, to stop it being hidden behind others on launch
         self.window.focus_force()
