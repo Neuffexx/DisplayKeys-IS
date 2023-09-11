@@ -39,6 +39,7 @@ class DisplayKeys_GUI:
         It Creates the Window and all of its UI Elements within it when Initialized.
     """
     def __init__(self):
+        # Window Properties
         print("---Creating Window---")
         self.window = tkdnd.Tk()
         self.window.title("DisplayKeys-IS")
@@ -46,27 +47,8 @@ class DisplayKeys_GUI:
         self.window.iconbitmap(icon_path)
         self.window.geometry("600x600")
         self.window.resizable(False, False)
-        # Main Window Menu Bar
-        self.menu_bar = Menu()
-        self.window.configure(menu=self.menu_bar)
-        # --- File
-        self.app_menu = Menu(self.menu_bar, tearoff=False)
-        self.preset_menu = Menu(self.app_menu, tearoff=False)
-        self.app_menu.add_cascade(label="Presets", menu=self.preset_menu)
-        self.app_menu.add_separator()
-        self.app_menu.add_command(label="Exit", command=ButtonFunctions.quit)
-        # ---
-        self.preset_menu.add_command(label="Load Presets File", command=None)
-        self.preset_menu.add_command(label="Save Presets", command=None)
-        self.preset_menu.add_separator()
-        self.preset_menu.add_command(label="Remove Current Presets", command=None)
-        # --- Help
-        self.help_menu = Menu(self.menu_bar, tearoff=False)
-        self.help_menu.add_separator()
-        self.help_menu.add_command(label="Help", command=lambda: webbrowser.open("https://www.github.com/Neuffexx/DisplayKeys-IS"))
-        # Add to Menu Bar
-        self.menu_bar.add_cascade(label="File", menu=self.app_menu)
-        self.menu_bar.add_cascade(label="Help", menu=self.help_menu)
+
+        self.create_menu_bar()
 
         #########################
 
@@ -103,10 +85,14 @@ class DisplayKeys_GUI:
         #########################
 
         # Initially Create Object to hold reference to all Presets in the future.
-        self.Presets: list[PresetData]
+        self.presets: list[PresetData] = []
+        self.default_preset = PresetData(name="Default", rows=2, cols=6, gap=40)
+        self.presets.append(self.default_preset)
 
-        # Initially Hide Options Based on Dropdown Selection
+        # Initially Hide Property Column Widget's Based on Dropdown Selection
         ButtonFunctions.property_options_visibility(self.properties)
+        # Initially Populate Preset Dropdown
+        ButtonFunctions.populate_property_presets_options(self.properties, self.presets)
 
         # Set focus to Application Window, to stop it being hidden behind others on launch
         self.window.focus_force()
@@ -166,14 +152,14 @@ class DisplayKeys_GUI:
                 "label_colour": "#E9ECEF",
                 "dropdown_options": ["Preset", "User Defined"],
                 "dropdown_command": ButtonFunctions.property_options_visibility,
-                "dropdown_tooltip": "Default Values are: \n Rows         | 2 \nColumns   | 6 \n Gap            | 40",
+                "dropdown_tooltip": "Preset: Saved selection of Splitting Parameters.\nUser Defined: Or Enter your own.",
                 "has_textbox": False,
             },
             {
                 "widget_id": "PresetList",
                 "dropdown_options": ["Default"],
                 "dropdown_command": ButtonFunctions.placeholder,
-                "dropdown_tooltip": "Chose a pre-saved selection of Splitting Parameters",
+                "dropdown_tooltip": "Default Values are: \n Rows         | 2 \nColumns   | 6 \n Gap            | 40",
                 "has_textbox": False,
             },
             {
@@ -250,6 +236,31 @@ class DisplayKeys_GUI:
         ]
 
         return PreviewWidgets
+
+    # To keep the code more encapsulated and clean
+    def create_menu_bar(self):
+        # Main Window Menu Bar
+        self.menu_bar = Menu()
+        self.window.configure(menu=self.menu_bar)
+        # --- File
+        self.app_menu = Menu(self.menu_bar, tearoff=False)
+        self.preset_menu = Menu(self.app_menu, tearoff=False)
+        self.app_menu.add_cascade(label="Presets", menu=self.preset_menu)
+        self.app_menu.add_separator()
+        self.app_menu.add_command(label="Exit", command=ButtonFunctions.quit)
+        # ---
+        self.preset_menu.add_command(label="Load Presets File", command=lambda: ButtonFunctions.load_presets_file())
+        self.preset_menu.add_command(label="Save Presets", command=lambda: ButtonFunctions.save_presets_file())
+        self.preset_menu.add_separator()
+        self.preset_menu.add_command(label="Delete Current Presets", command=lambda: ButtonFunctions.delete_all_presets())
+        # --- Help
+        self.help_menu = Menu(self.menu_bar, tearoff=False)
+        self.help_menu.add_separator()
+        self.help_menu.add_command(label="Help",
+                                   command=lambda: webbrowser.open("https://www.github.com/Neuffexx/DisplayKeys-IS"))
+        # Add to Menu Bar
+        self.menu_bar.add_cascade(label="File", menu=self.app_menu)
+        self.menu_bar.add_cascade(label="Help", menu=self.help_menu)
 
     # Starts the Window loop
     def run(self):
@@ -671,6 +682,12 @@ class DisplayKeys_Tooltip:
         x = self.parent.winfo_pointerx()
         y = self.parent.winfo_pointery()
         self.tooltip.wm_geometry(f"+{x+20}+{y+20}")
+
+    # TODO:
+    #       Tooltips dont disappear in some instances when used with Drop-down menus.
+    #       When Clicking on the dropdown to open it, but then click on it again without moving the mouse off of it
+    #       The dropdown remains until either a File Dialogue window is opened or a click-drag action is initiated.
+    #       At which point the tooltip isn't destroyed, just moved beneath ALL windows. And remains on Desktop.
 
     # Destroys the Tooltip whenever the Cursor leaves the region of the Parent Widget
     def hide_tooltip(self, event):
@@ -1351,28 +1368,22 @@ class ButtonFunctions:
             # Determine if a Preset`s or User-Defined values should be used
             # Can later be expanded to Presets (i.e. 'CurrentPreset')
             if get_params_type_widget.dropdown_var.get() == "Preset":
-                if get_preset_list_widget.dropdown_var.get() == "Default":
-                    rows = int(get_rows_widget.spinbox_default)
-                    columns = int(get_columns_widget.spinbox_default)
-                    gap = int(get_gap_widget.spinbox_default)
-                    x_offset = 0
-                    y_offset = 0
-                elif get_preset_list_widget.dropdown_var.get():
+                if get_preset_list_widget.dropdown_var.get() and app.presets:
                     # TODO:
                     #       Get Variables from Selected Preset and use them instead
 
                     preset_name = get_preset_list_widget.dropdown_var.get()
                     print(f"Selected Preset: {preset_name}")
+
                     # Find and Load Preset via function using name
-                    # PresetData.load_preset(preset_name)
-
-                    #rows = int(get_rows_widget.spinbox_default)
-                    #columns = int(get_columns_widget.spinbox_default)
-                    #gap = int(get_gap_widget.spinbox_default)
-                    #x_offset = previewer.final_offset["x"] if previewer.final_offset else None
-                    #y_offset = previewer.final_offset["y"] if previewer.final_offset else None
-                    return
-
+                    selected_preset = PresetData.get_preset(preset_name)
+                    rows = selected_preset.rows
+                    columns = selected_preset.cols
+                    gap =  selected_preset.gap
+                    x_offset = previewer.final_offset["x"] if previewer.final_offset else None
+                    y_offset = previewer.final_offset["y"] if previewer.final_offset else None
+                else:
+                    PopUp_Dialogue(app.window, popup_type='error', message='Preset List was not found!', buttons=[{"OK": lambda: None}])
             elif get_params_type_widget.dropdown_var.get() == "User Defined":
                 rows = int(get_rows_widget.spinbox.get()) if get_rows_widget.spinbox.get().isnumeric() else None
                 columns = int(
@@ -1381,7 +1392,9 @@ class ButtonFunctions:
                 x_offset = previewer.final_offset["x"] if previewer.final_offset else None
                 y_offset = previewer.final_offset["y"] if previewer.final_offset else None
                 if not all(param is not None for param in [rows, columns, gap, x_offset, y_offset]):
-                    # TODO: Make into Error Pop-up in the future
+                    # TODO: This occurs when you select all text, and enter the first digit no matter what!
+                    #PopUp_Dialogue(app.window, popup_type="error", message="A Property was None!")
+                    print("A Property was None!")
                     return
             else:
                 return
@@ -1445,6 +1458,20 @@ class ButtonFunctions:
                     if widget:
                         widget.grid(sticky="n")
 
+    # Populates the 'Preset' dropdown with preset options with currently available presets.
+    # Then sets the Default preset as the selected one.
+    @staticmethod
+    def populate_property_presets_options(properties: list[DisplayKeys_Composite_Widget], presets: list['PresetData']):
+        widgets = properties
+        properties_dropdown_widget = next((widget for widget in widgets if widget.id == "PresetList"), None)
+
+        preset_names = []
+        for preset in presets:
+            preset_names.append(preset.name)
+            print(f"populate presets name: {preset_names}")
+        properties_dropdown_widget.dropdown['values'] = preset_names
+        properties_dropdown_widget.dropdown_var.set(preset_names[0])
+
     # --- Popup Windows: ---
     # Placeholder for the future...
 
@@ -1454,29 +1481,53 @@ class ButtonFunctions:
     def quit():
         app.window.destroy()
 
+    @staticmethod
+    def load_presets_file():
+        print("---Importing Presets---")
+        app.presets = []
+        app.presets.append(app.default_preset)
+        app.presets.extend(PresetData.load_presets_from_file())
+        ButtonFunctions.populate_property_presets_options(app.properties, app.presets)
+
+    @staticmethod
+    def save_presets_file():
+        PresetData.save_presets_to_file()
+
+    # This excludes the default preset
+    @staticmethod
+    def delete_all_presets():
+        app.presets = []
+        app.presets.append(app.default_preset)
+        ButtonFunctions.populate_property_presets_options(app.properties, app.presets)
+
 
 # TODO:
-#     A Presets
+#     A Presets                                         === DONE ===
 #        - Create Preset Data Structure
-#           === DONE ===
 #        - Import/Export Data functionality
-#           === DONE ===
 #        - Use Preset Data for splitting/previewing
-#           === WIP ===
 #        - De/Encode Image into profile?
-#          If yes, load image when loading profile into previewer?
-#          Then would also need to update data strucutre, and image needs to be optional
-#          (checkbox of keeping currently loaded image, unless its Preview image)
+#           --- No, because presets may be switched while having the wanted image already loaded.
+#               Dont want to make the user have to re-open that image just for switching presets.
 #     B Presets UI
-#       - Window Menu Bar Items:
+#       - Window Menu Bar Items:                        === DONE ===
 #           O Import Presets
 #           O Export Presets
 #           O Delete ALL Current (imported) Presets
 #        - In Properties Panel, 'Split Type' widget:
-#           O Replace current 'Defaults' Options with 'Presets', which will always on launch of application be populated with the 'Defaults' Preset
+#           O Replace current 'Defaults' Options with 'Presets', which will always on launch of application be populated
+#             with the 'Defaults' Preset
+#               === DONE ===
 #           O Add a dropdown widget (of presets) that is shown/hidden based on the 'Split Type' dropdown selection
+#               === DONE ===
+#           O Ensure the above mentioned preset dropdown is also automatically populated by available presets in the
+#             list will use same function to initially load the 'Default' preset, then all others when importing file.
+#               === DONE ===
 #           O Add buttons for [Create, Delte, Edit] functionality
-#           O Create apropriate pop-up windows for said buttons (will also need to add the 'name' input field for the preset itself
+#               === WIP ===
+#           O Create appropriate pop-up windows for said buttons (will also need to add the 'name' input field
+#             for the preset itself
+#
 
 # Defines the Data structure of Presets as well as contains all of its functionality.
 # Each Preset is able to independently preform its necessary operations once created.
@@ -1488,12 +1539,13 @@ class PresetData:
         self.gap = gap
 
     # Serialize Data to JSON
-    def to_json(self):
+    @staticmethod
+    def to_json(preset: 'PresetData'):
         return {
-            "name": self.name,
-            "rows": self.rows,
-            "cols": self.cols,
-            "gap": self.gap,
+            "name": preset.name,
+            "rows": preset.rows,
+            "cols": preset.cols,
+            "gap": preset.gap,
         }
 
     # De-Serialize from JSON to Data Struct
@@ -1509,32 +1561,57 @@ class PresetData:
     # Currently only saves itself to a selected/new file
     # Need to change to save all presets that are in the list to this file
     # and make this into a static method
-    def save_presets(self):
-        file_path = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON files", "*.json"), ("All files", "*.*")])
+    @staticmethod
+    def save_presets_to_file():
+        print("---Saving Preset---")
+        file_path = filedialog.asksaveasfilename(defaultextension=".json",
+                                                 filetypes=[("JSON files", "*.json"), ("All files", "*.*")])
         if not file_path:  # If user cancels the save dialog
             return
         with open(file_path, 'w') as file:
-            json.dump(self.to_json(), file)
+            if app.presets:
+                if len(app.presets) > 1:
+                    json_presets = []
+                    for current_preset in app.presets[1:]:  # Start from the second preset, skipping the first
+                        json_presets.append(PresetData.to_json(current_preset))
+                    print(json_presets)
+                    json.dump(json_presets, file)
+                else:
+                    PopUp_Dialogue(app.window, popup_type="error", message="No new Presets were found!", buttons=[{'OK': lambda: None}])
 
     # Currently only loads a single preset from a selected file
     # Need to change it to load all presets into a list
     @staticmethod
-    def load_presets():
-        file_path = filedialog.askopenfilename(defaultextension=".json", filetypes=[("JSON files", "*.json"), ("All files", "*.*")])
+    def load_presets_from_file():
+        print("---Loading Presets---")
+        file_path = filedialog.askopenfilename(defaultextension=".json", filetypes=[("JSON files", "*.json"),
+                                                                                    ("All files", "*.*")])
         if not file_path:  # If user cancels the open dialog
-            return PresetData()  # Return a default PresetData instance
+            return
         with open(file_path, 'r') as file:
-            data = json.load(file)
-            return PresetData.from_json(data)
+            loaded_presets = []
+            data_list = json.load(file)
+            for data_dict in data_list:
+                loaded_presets.append(PresetData.from_json(data_dict))
+
+            for preset in loaded_presets:
+                print(f"Imported Preset: {preset.name}")
+            return loaded_presets
 
     # Retrieves a single Preset by name from the list of currently existing Presets
     @staticmethod
-    def get_preset(preset_name):
-        # TODO:
-        #       Need to Ensure list is not empty, then retrieve the PresetData object and return it.
-        #       Maybe make this into a ButtonFunction?
-        pass
-
+    def get_preset(preset_name: str):
+        # Ensure there are Presets in array
+        if len(app.presets) > 0:
+            # Get Preset
+            preset = next(preset for preset in app.presets if preset_name == preset.name)
+            if preset:
+                print(f"Retrieved Preset {preset}")
+                return preset
+            else:
+                PopUp_Dialogue(app.window, popup_type='error', message=f"No Preset of the name '{preset_name}' found!")
+        else:
+            PopUp_Dialogue(app.window, popup_type='error', message=f"Presets list is empty!")
 
 ####################################################################################################################
 #                                                   Split Image
