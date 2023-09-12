@@ -268,7 +268,7 @@ class DisplayKeys_GUI:
         self.preset_menu.add_command(label="Load Presets File", command=lambda: ButtonFunctions.load_presets_file())
         self.preset_menu.add_command(label="Save Presets", command=lambda: ButtonFunctions.save_presets_file())
         self.preset_menu.add_separator()
-        self.preset_menu.add_command(label="Delete Current Presets", command=lambda: ButtonFunctions.delete_all_presets())
+        self.preset_menu.add_command(label="Delete Current Presets", command=lambda: PopUp_Dialogue(app.window, popup_type='warning', message="Delete ALL Presets?", buttons=[{'Yes': ButtonFunctions.delete_all_presets}, {'No': lambda: None}]))
         # --- Help
         self.help_menu = Menu(self.menu_bar, tearoff=False)
         self.help_menu.add_separator()
