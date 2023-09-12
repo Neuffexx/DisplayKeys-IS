@@ -60,7 +60,6 @@ class DisplayKeys_GUI:
         # Populate the properties frame with widgets
         self.properties = []
         self.properties = self.populate_column(self.properties_frame, self.get_properties_widgets())
-        #(next(widget for widget in self.properties if widget.id == "GetOutput").textbox, 'image').enable_dnd()
 
         print("---Creating Right Column---")
         # Create the Preview Frame
@@ -151,14 +150,33 @@ class DisplayKeys_GUI:
                 "dropdown_options": ["Preset", "User Defined"],
                 "dropdown_command": ButtonFunctions.property_options_visibility,
                 "dropdown_tooltip": "Preset: Saved selection of Splitting Parameters.\nUser Defined: Or Enter your own.",
-                "has_textbox": False,
             },
             {
                 "widget_id": "PresetList",
                 "dropdown_options": ["Default"],
                 "dropdown_command": ButtonFunctions.placeholder,
                 "dropdown_tooltip": "Default Values are: \n Rows         | 2 \nColumns   | 6 \n Gap            | 40",
-                "has_textbox": False,
+            },
+            {
+                "widget_id": "PresetAdd",
+                "button_label": "       Add       ",
+                "button_command": ButtonFunctions.create_preset_popup,
+                "button_tooltip": "Create a new Preset",
+                "button_fill": "Vertical",
+            },
+            {
+                "widget_id": "PresetEdit",
+                "button_label": "       Edit       ",
+                "button_command": ButtonFunctions.edit_preset_popup,
+                "button_tooltip": "Edit the currently selected Preset",
+                "button_fill": "Vertical",
+            },
+            {
+                "widget_id": "PresetDelete",
+                "button_label": "     Delete     ",
+                "button_command": ButtonFunctions.delete_preset_popup,
+                "button_tooltip": "Delete the currently selected Preset",
+                "button_fill": "Vertical",
             },
             {
                 "widget_id": "GetRows",
@@ -535,6 +553,7 @@ class DisplayKeys_Composite_Widget(tk.Frame):
         Optional Named Widget Params: All parameters not listed here are Optional and too many to list.
         :param parent: The Widget container
         :param widget_id: A Unique ID to Identify/Distinguish it from other Composite Widgets.
+        :param button_fill: The axis on which the button should fill a row/col.
     """
     def __init__(self, parent: tk.Frame, widget_id: str, label_text: str = None, label_tooltip: str = None,
                  dropdown_options: list[str] = None, dropdown_tooltip: str = None,
@@ -542,6 +561,7 @@ class DisplayKeys_Composite_Widget(tk.Frame):
                  has_textbox: bool = False, textbox_state: Literal["normal", "disabled", "readonly"] = "normal",
                  textbox_default_value: str = None, has_spinbox: bool = False, spinbox_default_value: int | str = 0,
                  button_label: str = None, button_command: Callable[[str], None] = None, button_tooltip: str = None,
+                 button_fill: Literal['none', 'horizontal', 'vertical', 'both'] = 'both',
                  updates_previewer: bool = False, label_colour: str = "white",
                  textbox_colour: str = "white", spinbox_colour: str = "white",
                  has_textbox_dnd: bool = False, has_spinbox_dnd: bool = False,
@@ -597,7 +617,6 @@ class DisplayKeys_Composite_Widget(tk.Frame):
             self.textbox = tk.Entry(self, textvariable=self.textbox_var, state=textbox_state, background=textbox_colour, readonlybackground=textbox_colour, disabledbackground=textbox_colour)
             if textbox_default_value:
                 self.textbox_var.set(textbox_default_value)
-                self.textbox.insert(tk.END, textbox_default_value)
             # Binds the Textbox to Call the DisplayKeys_Previewer Update function when any of the Image Splitting Properties are changed
             if updates_previewer:
                 self.textbox_trace = self.textbox_var.trace('w', lambda *args: ButtonFunctions.process_image(self.id))
@@ -615,8 +634,6 @@ class DisplayKeys_Composite_Widget(tk.Frame):
             self.spinbox_default = spinbox_default_value
             if spinbox_default_value:
                 self.spinbox_var.set(spinbox_default_value)
-                self.spinbox.delete(0, tk.END)
-                self.spinbox.insert(tk.END, spinbox_default_value)
             # Binds the Spinbox to Call the DisplayKeys_Previewer Update function when any of the Image Splitting Properties are changed
             if updates_previewer:
                 self.spinbox_trace = self.spinbox_var.trace('w', lambda *args: ButtonFunctions.process_image(self.id))
@@ -632,7 +649,14 @@ class DisplayKeys_Composite_Widget(tk.Frame):
         # Takes: Label Text, Command, Tooltip Text
         if button_label and button_command:
             self.button = tk.Button(self, text=button_label, background=label_colour, command=lambda: button_command(self.id))
-            self.button.grid(sticky="nsew", column=0, pady=3)
+            if button_fill == 'both':
+                self.button.grid(sticky="nsew", column=0, pady=3)
+            elif button_fill == 'horizontal':
+                self.button.grid(sticky="ew", column=0, pady=3)
+            elif button_fill == 'vertical':
+                self.button.grid(sticky="ns", column=0, pady=3)
+            else:
+                self.button.grid(sticky="", column=0, pady=3)
 
             if button_tooltip:
                 self.b_tooltip = DisplayKeys_Tooltip(self.button, button_tooltip)
@@ -704,6 +728,7 @@ class DisplayKeys_PopUp:
         self.parent = parent
         self.popup = tk.Toplevel(parent)
         self.popup.geometry(f"{self.popup_min_width}x{self.popup_min_height}")
+        self.popup.resizable(False, False)
 
         # Makes the popup act as a modal dialog and focused
         self.popup.grab_set()
@@ -817,7 +842,7 @@ class DisplayKeys_PopUp:
         print("Pop-up window closed!")
 
         # unbind events to avoid any accidental function triggers
-        self.popup.unbind_class("TopLevel", "<Map>")
+        self.popup.unbind_class("Toplevel", "<Map>")
         self.popup.unbind("<Destroy>")
 
         # Ensure main window becomes active after popup was closed
@@ -859,15 +884,14 @@ class PopUp_Dialogue(DisplayKeys_PopUp):
         super().__init__(parent)
 
         # Set / Determine Dialogue Type
+        self.popup.resizable(True, False)
         self.type = popup_type
         self.popup.title(self.type.upper())
 
         self.buttons_per_row = buttons_per_row
 
-        if self.type in ['confirm', 'warning', 'error']:
-            self.create_dialogue(message, buttons, buttons_per_row)
-        elif self.type == 'Preset':
-            print(f'Presets Pop-up...')
+        self.create_dialogue(message, buttons, buttons_per_row)
+        self.resize_popup_window(self.container)
 
     # Extends the Parent class on_open function
     def on_open(self, event: tk.Event):
@@ -880,12 +904,12 @@ class PopUp_Dialogue(DisplayKeys_PopUp):
     # Creates the necessary pop-up content for this class
     def create_dialogue(self, message, buttons, buttons_per_row):
         """
-            Creates all the widgets/content required for this class
+            Creates all the widgets/content required for displaying and interaction
         """
         # The message to display
         self.popup_message = message
 
-        self.message = tk.Label(self.container, text=self.popup_message)#, anchor='center', justify='left')
+        self.message = tk.Label(self.container, text=self.popup_message, justify='left')#, anchor='center')
         self.message.grid(sticky="nsew", row=1, column=1, columnspan=buttons_per_row, pady=15)
 
         # TODO:
@@ -918,8 +942,233 @@ class PopUp_Dialogue(DisplayKeys_PopUp):
         self.container.grid_columnconfigure(2, weight=2)
 
 
-class PopUp_Preset_Placeholder(DisplayKeys_PopUp):
-    pass
+class PopUp_Preset_Add(DisplayKeys_PopUp):
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        self.popup.title("Add Preset")
+        self.create_add_preset()
+
+    # Extends the Parent class on_open function
+    def on_open(self, event: tk.Event):
+        DisplayKeys_PopUp.on_open(self, event)
+
+    # Extends the Parent class on_close function
+    def on_close(self, event: tk.Event):
+        DisplayKeys_PopUp.on_close(self, event)
+
+    def get_add_widgets(self):
+        return [
+            {
+                "widget_id": "GetPresetName",
+                "label_text": "Preset Name:",
+                "label_colour": "#E9ECEF",
+                "has_textbox": True,
+                "textbox_colour": "#CED4DA",
+                "textbox_default_value": "PresetName",
+                "has_textbox_dnd": True,
+                "dnd_type": "text",
+                "updates_previewer": False,
+            },
+            {
+                "widget_id": "GetPresetRows",
+                "label_text": "Rows:",
+                "label_colour": "#E9ECEF",
+                "has_spinbox": True,
+                "spinbox_colour": "#CED4DA",
+                "spinbox_default_value": "2",
+                "has_spinbox_dnd": True,
+                "dnd_type": "text",
+                "updates_previewer": False,
+            },
+            {
+                "widget_id": "GetPresetColumns",
+                "label_text": "Columns:",
+                "label_colour": "#E9ECEF",
+                "has_spinbox": True,
+                "spinbox_colour": "#CED4DA",
+                "spinbox_default_value": "6",
+                "has_spinbox_dnd": True,
+                "dnd_type": "text",
+                "updates_previewer": False,
+            },
+            {
+                "widget_id": "GetPresetGap",
+                "label_text": "Gap (in Pixels):",
+                "label_colour": "#E9ECEF",
+                "has_spinbox": True,
+                "spinbox_colour": "#CED4DA",
+                "spinbox_default_value": "40",
+                "has_spinbox_dnd": True,
+                "dnd_type": "text",
+                "updates_previewer": False,
+            },
+        ]
+
+    def submit_preset(self):
+        name_input = next(widget for widget in self.preset_param_widgets if widget.id == "GetPresetName")
+        rows_input = next(widget for widget in self.preset_param_widgets if widget.id == "GetPresetRows")
+        cols_input = next(widget for widget in self.preset_param_widgets if widget.id == "GetPresetColumns")
+        gap_input = next(widget for widget in self.preset_param_widgets if widget.id == "GetPresetGap")
+        if all(widget is not None for widget in [name_input, rows_input, cols_input, gap_input]):
+            name = str(name_input.textbox.get())
+            rows = int(rows_input.spinbox.get())
+            cols = int(cols_input.spinbox.get())
+            gap = int(gap_input.spinbox.get())
+            ButtonFunctions.add_preset(name=name, rows=rows, cols=cols, gap=gap)
+        else:
+            PopUp_Dialogue(self.popup, popup_type='error', message="Missing a Field!", buttons=[{'OK': lambda: None}])
+
+    # Creates the necessary pop-up content for this class
+    def create_add_preset(self):
+        """
+            Creates all the widgets/content required to create a new Preset
+        """
+        self.preset_param_widgets = []
+
+        # Display Instructions
+        self.message = tk.Label(self.container, text="Set the Parameters for the new Preset.")  # , anchor='center', justify='left')
+        self.message.grid(sticky="nsew", row=1, column=0, pady=15)
+
+        # Create Necessary Edit Fields
+        self.preset_param_widgets = app.populate_column(parent=self.container, widgets=self.get_add_widgets())
+
+        # Interaction Buttons
+        self.button_container = tk.Frame(self.container)
+        self.button_container.grid(sticky="nsew", row=6, column=0)
+
+        self.confirm_button = tk.Button(self.button_container, text="           Confirm          ", command=self.button_command_destructive(lambda: self.submit_preset()))
+        self.confirm_button.grid(sticky="nsew", row=0, column=0)
+        self.confirm_button.rowconfigure(0, weight=1)
+        self.cancel_button = tk.Button(self.button_container, text="           Cancel           ", command=self.button_command_destructive(lambda:None))
+        self.cancel_button.grid(sticky="nsew", row=0, column=1)
+        self.cancel_button.rowconfigure(0, weight=1)
+
+        # White Space Blank
+        self.bottm_white_space = tk.Label(self.container)
+        self.bottm_white_space.grid(sticky="nsew", row=7, column=0)
+
+
+class PopUp_Preset_Edit(DisplayKeys_PopUp):
+    def __init__(self, parent, preset_name):
+        super().__init__(parent)
+
+        self.popup.title("Edit Preset")
+
+        self.current_preset = preset_name
+
+        self.create_edit_preset()
+        self.get_original_preset_values()
+
+    # Extends the Parent class on_open function
+    def on_open(self, event: tk.Event):
+        DisplayKeys_PopUp.on_open(self, event)
+
+    # Extends the Parent class on_close function
+    def on_close(self, event: tk.Event):
+        DisplayKeys_PopUp.on_close(self, event)
+
+    def get_edit_widgets(self):
+        return [
+            {
+                "widget_id": "GetPresetName",
+                "label_text": "Preset Name:",
+                "label_colour": "#E9ECEF",
+                "has_textbox": True,
+                "textbox_colour": "#CED4DA",
+                "has_textbox_dnd": True,
+                "dnd_type": "text",
+                "updates_previewer": False,
+            },
+            {
+                "widget_id": "GetPresetRows",
+                "label_text": "Rows:",
+                "label_colour": "#E9ECEF",
+                "has_spinbox": True,
+                "spinbox_colour": "#CED4DA",
+                "has_spinbox_dnd": True,
+                "dnd_type": "text",
+                "updates_previewer": False,
+            },
+            {
+                "widget_id": "GetPresetColumns",
+                "label_text": "Columns:",
+                "label_colour": "#E9ECEF",
+                "has_spinbox": True,
+                "spinbox_colour": "#CED4DA",
+                "has_spinbox_dnd": True,
+                "dnd_type": "text",
+                "updates_previewer": False,
+            },
+            {
+                "widget_id": "GetPresetGap",
+                "label_text": "Gap (in Pixels):",
+                "label_colour": "#E9ECEF",
+                "has_spinbox": True,
+                "spinbox_colour": "#CED4DA",
+                "has_spinbox_dnd": True,
+                "dnd_type": "text",
+                "updates_previewer": False,
+            },
+        ]
+
+    def submit_preset(self):
+        if all(widget is not None for widget in [self.name_input, self.rows_input, self.cols_input, self.gap_input]):
+            # Get Edited values
+            name = str(self.name_input.textbox.get())
+            rows = int(self.rows_input.spinbox.get())
+            cols = int(self.cols_input.spinbox.get())
+            gap = int(self.gap_input.spinbox.get())
+
+            # Save edited Preset
+            ButtonFunctions.edit_preset(current_preset=self.current_preset, new_name=name, rows=rows, cols=cols, gap=gap)
+        else:
+            PopUp_Dialogue(self.popup, popup_type='error', message="Missing a Field!", buttons=[{'OK': lambda: None}])
+
+    def get_original_preset_values(self):
+        original_preset = next(preset for preset in app.presets if preset.name == self.current_preset)
+
+        self.name_input = next(widget for widget in self.preset_param_widgets if widget.id == "GetPresetName")
+        self.rows_input = next(widget for widget in self.preset_param_widgets if widget.id == "GetPresetRows")
+        self.cols_input = next(widget for widget in self.preset_param_widgets if widget.id == "GetPresetColumns")
+        self.gap_input = next(widget for widget in self.preset_param_widgets if widget.id == "GetPresetGap")
+        if all(widget is not None for widget in [self.name_input, self.rows_input, self.cols_input, self.gap_input]):
+            self.name_input.textbox_var.set(original_preset.name)
+            self.rows_input.spinbox_var.set(original_preset.rows)
+            self.cols_input.spinbox_var.set(original_preset.cols)
+            self.gap_input.spinbox_var.set(original_preset.gap)
+
+    # Creates the necessary pop-up content for this class
+    def create_edit_preset(self):
+        """
+            Creates all the widgets/content required to edit a Preset
+        """
+        self.preset_param_widgets = []
+
+        # Display Instructions
+        self.message = tk.Label(self.container,
+                                text="Set the Parameters for the new Preset.")  # , anchor='center', justify='left')
+        self.message.grid(sticky="nsew", row=1, column=0, pady=15)
+
+        # Create Necessary Edit Fields
+        self.preset_param_widgets = app.populate_column(parent=self.container, widgets=self.get_edit_widgets())
+
+        # Interaction Buttons
+        self.button_container = tk.Frame(self.container)
+        self.button_container.grid(sticky="nsew", row=6, column=0)
+
+        self.confirm_button = tk.Button(self.button_container, text="           Confirm          ",
+                                        command=self.button_command_destructive(lambda: self.submit_preset()))
+        self.confirm_button.grid(sticky="nsew", row=0, column=0)
+        self.confirm_button.rowconfigure(0, weight=1)
+        self.cancel_button = tk.Button(self.button_container, text="           Cancel           ",
+                                       command=self.button_command_destructive(lambda: None))
+        self.cancel_button.grid(sticky="nsew", row=0, column=1)
+        self.cancel_button.rowconfigure(0, weight=1)
+
+        # White Space Blank
+        self.bottm_white_space = tk.Label(self.container)
+        self.bottm_white_space.grid(sticky="nsew", row=7, column=0)
 
 
 # A Drag&Drop latch-on class that can be used on any tk.Entry or tk.Spinbox widget
@@ -1167,7 +1416,7 @@ class DisplayKeys_Help:
 
 # A collection of button functions to be used throughout the UI
 class ButtonFunctions:
-    # --- Debug: ---
+    # ----- Debug: -----
     # For testing new UI without wanting any actual actions taken.
     @staticmethod
     def placeholder(widget_id):
@@ -1184,7 +1433,7 @@ class ButtonFunctions:
         print("Gap: " + gap)
         return
 
-    # --- Workarounds: ---
+    # ----- Workarounds: -----
     # For temporary in code workaround solutions
     @staticmethod
     def disable_binding(widget, event_name, function_name):
@@ -1231,8 +1480,8 @@ class ButtonFunctions:
 
         return False
 
-    # --- Main Window Functions: ---
-    # Buttons
+    # ----- Main Window Functions: -----
+    # --- Buttons ---
 
     # Grabs the Path to an Image, and if possible adds this into a widgets textbox
     @staticmethod
@@ -1367,9 +1616,6 @@ class ButtonFunctions:
             # Can later be expanded to Presets (i.e. 'CurrentPreset')
             if get_params_type_widget.dropdown_var.get() == "Preset":
                 if get_preset_list_widget.dropdown_var.get() and app.presets:
-                    # TODO:
-                    #       Get Variables from Selected Preset and use them instead
-
                     preset_name = get_preset_list_widget.dropdown_var.get()
                     print(f"Selected Preset: {preset_name}")
 
@@ -1416,6 +1662,37 @@ class ButtonFunctions:
         else:
             print("One or more required widgets are missing.")
 
+    # Calls the Popup class to Create a new Preset
+    @staticmethod
+    def create_preset_popup(widget_id: str):
+        PopUp_Preset_Add(app.window)
+
+    # Calls the Popup class to Edit an existing Preset
+    @staticmethod
+    def edit_preset_popup(widget_id: str):
+        preset_list = next(widget for widget in app.properties if widget.id == "PresetList")
+        current_preset_name = preset_list.dropdown_var.get()
+        if current_preset_name == "Default":
+            PopUp_Dialogue(app.window, popup_type='error', message="Cannot Edit 'Default' Preset!", buttons=[{'OK': lambda: None}])
+            return
+
+        PopUp_Preset_Edit(app.window, current_preset_name)
+
+    # Calls Dialogue Popup to confirm Preset Deletion
+    @staticmethod
+    def delete_preset_popup(widget_id: str):
+        preset_list = next(widget for widget in app.properties if widget.id == "PresetList")
+        current_preset = preset_list.dropdown_var.get()
+        if current_preset == "Default":
+            PopUp_Dialogue(app.window, popup_type='error', message="Cannot Delete 'Default' Preset!",
+                           buttons=[{'OK': lambda: None}])
+            return
+
+        PopUp_Dialogue(parent=app.window, popup_type='warning',
+                       message=f"Do you want to delete the profile: {current_preset}?",
+                       buttons=[{'Yes': ButtonFunctions.delete_preset}, {'No': lambda: None}])
+
+
     # --- Dropdowns: ---
     # Hides / Un-hides specific Widgets
     @staticmethod
@@ -1432,15 +1709,17 @@ class ButtonFunctions:
 
         # Get the widgets to show/hide
         get_preset_list = next((widget for widget in widgets if widget.id == "PresetList"), None)
-        get_preset_create = next((widget for widget in widgets if widget.id == "..."), None)
-        get_preset_edit = next((widget for widget in widgets if widget.id == "..."), None)
-        get_preset_delete = next((widget for widget in widgets if widget.id == "..."), None)
+        get_preset_create = next((widget for widget in widgets if widget.id == "PresetAdd"), None)
+        get_preset_edit = next((widget for widget in widgets if widget.id == "PresetEdit"), None)
+        get_preset_delete = next((widget for widget in widgets if widget.id == "PresetDelete"), None)
+
         get_rows_widget = next((widget for widget in widgets if widget.id == "GetRows"), None)
         get_columns_widget = next((widget for widget in widgets if widget.id == "GetColumns"), None)
         get_gap_widget = next((widget for widget in widgets if widget.id == "GetGap"), None)
 
         # Show/hide the widgets based on the selected option
-        if all(widget is not None for widget in [get_rows_widget, get_columns_widget, get_gap_widget]):
+        if all(widget is not None for widget in [get_rows_widget, get_columns_widget, get_gap_widget, get_preset_list,
+                                                 get_preset_create, get_preset_edit, get_preset_delete]):
             if option == "Preset":
                 for widget in (get_rows_widget, get_columns_widget, get_gap_widget):
                     if widget:
@@ -1459,7 +1738,7 @@ class ButtonFunctions:
     # Populates the 'Preset' dropdown with preset options with currently available presets.
     # Then sets the Default preset as the selected one.
     @staticmethod
-    def populate_property_presets_options(properties: list[DisplayKeys_Composite_Widget], presets: list['PresetData']):
+    def populate_property_presets_options(properties: list[DisplayKeys_Composite_Widget], presets: list['PresetData'], set_selection: [bool, str] = [False, ''], reset_selection: bool = True):
         widgets = properties
         properties_dropdown_widget = next((widget for widget in widgets if widget.id == "PresetList"), None)
 
@@ -1468,17 +1747,49 @@ class ButtonFunctions:
             preset_names.append(preset.name)
             print(f"populate presets name: {preset_names}")
         properties_dropdown_widget.dropdown['values'] = preset_names
-        properties_dropdown_widget.dropdown_var.set(preset_names[0])
+        if set_selection[0]:
+            properties_dropdown_widget.dropdown_var.set(set_selection[1])
+        elif reset_selection:
+            properties_dropdown_widget.dropdown_var.set(preset_names[0])
 
-    # --- Popup Windows: ---
-    # Placeholder for the future...
+    # ----- Popup Windows: -----
+    # Saves the Preset provided from the Popup_Preset_Add window
+    @staticmethod
+    def add_preset(name: str, rows: int, cols: int, gap: int):
+        app.presets.append(PresetData(name, rows, cols, gap))
+        ButtonFunctions.populate_property_presets_options(app.properties, app.presets, set_selection= [True, name])
 
-    # --- Menu Bar: ---
+    # Saves the Preset provided from the Popup_Preset_Edit window
+    @staticmethod
+    def edit_preset(current_preset: str, new_name: str, rows: int, cols: int, gap: int):
+        for preset in app.presets:
+            if preset.name == current_preset:
+                preset.name = new_name
+                preset.rows = rows
+                preset.cols = cols
+                preset.gap = gap
+
+        ButtonFunctions.populate_property_presets_options(app.properties, app.presets, set_selection= [True, new_name])
+
+    # Deletes the currently selected Preset
+    @staticmethod
+    def delete_preset():
+        preset_list = next(widget for widget in app.properties if widget.id == "PresetList")
+        current_preset = preset_list.dropdown_var.get()
+
+        for preset in app.presets:
+            if preset.name == current_preset:
+                # delete the preset that currently exists...
+                app.presets.remove(preset)
+        ButtonFunctions.populate_property_presets_options(app.properties, app.presets, reset_selection=True)
+
+    # ----- Menu Bar: -----
     # Closes Application
     @staticmethod
     def quit():
         app.window.destroy()
 
+    # Load all presets from file with Default, replacing existing ones
     @staticmethod
     def load_presets_file():
         print("---Importing Presets---")
@@ -1487,16 +1798,19 @@ class ButtonFunctions:
         app.presets.extend(PresetData.load_presets_from_file())
         ButtonFunctions.populate_property_presets_options(app.properties, app.presets)
 
+    # Save all presets to file, excluding the Default Preset
     @staticmethod
     def save_presets_file():
         PresetData.save_presets_to_file()
 
-    # This excludes the default preset
+    # Delete all currently existing Presets, excludes the Default Preset
     @staticmethod
     def delete_all_presets():
         app.presets = []
         app.presets.append(app.default_preset)
-        ButtonFunctions.populate_property_presets_options(app.properties, app.presets)
+        ButtonFunctions.populate_property_presets_options(app.properties, app.presets, reset_selection=True)
+        PopUp_Dialogue(app.window, popup_type='confirm', message="Deleted All Current Presets!",
+                       buttons=[{'OK': lambda: None}])
 
 
 # TODO:
@@ -1512,20 +1826,15 @@ class ButtonFunctions:
 #           O Import Presets
 #           O Export Presets
 #           O Delete ALL Current (imported) Presets
-#        - In Properties Panel, 'Split Type' widget:
+#        - In Properties Panel, 'Split Type' widget:    === DONE ===
 #           O Replace current 'Defaults' Options with 'Presets', which will always on launch of application be populated
 #             with the 'Defaults' Preset
-#               === DONE ===
 #           O Add a dropdown widget (of presets) that is shown/hidden based on the 'Split Type' dropdown selection
-#               === DONE ===
 #           O Ensure the above mentioned preset dropdown is also automatically populated by available presets in the
 #             list will use same function to initially load the 'Default' preset, then all others when importing file.
-#               === DONE ===
 #           O Add buttons for [Create, Delte, Edit] functionality
-#               === WIP ===
 #           O Create appropriate pop-up windows for said buttons (will also need to add the 'name' input field
 #             for the preset itself
-#
 
 # Defines the Data structure of Presets as well as contains all of its functionality.
 # Each Preset is able to independently preform its necessary operations once created.
@@ -1585,7 +1894,7 @@ class PresetData:
         file_path = filedialog.askopenfilename(defaultextension=".json", filetypes=[("JSON files", "*.json"),
                                                                                     ("All files", "*.*")])
         if not file_path:  # If user cancels the open dialog
-            return
+            return []
         with open(file_path, 'r') as file:
             loaded_presets = []
             data_list = json.load(file)
@@ -1607,9 +1916,9 @@ class PresetData:
                 print(f"Retrieved Preset {preset}")
                 return preset
             else:
-                PopUp_Dialogue(app.window, popup_type='error', message=f"No Preset of the name '{preset_name}' found!")
+                PopUp_Dialogue(app.window, popup_type='error', message=f"No Preset of the name '{preset_name}' found!", buttons=[{'OK': lambda: None}])
         else:
-            PopUp_Dialogue(app.window, popup_type='error', message=f"Presets list is empty!")
+            PopUp_Dialogue(app.window, popup_type='error', message=f"Presets list is empty!", buttons=[{'OK': lambda: None}])
 
 ####################################################################################################################
 #                                                   Split Image
