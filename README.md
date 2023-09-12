@@ -22,16 +22,19 @@ The only thing anyone probably cares to read on here, so let me make this simple
   		> _If you feel uncomfortable to download the .exe your free to go over the single code file that is the Application to ensure its safe (ProjectFiles/DisplayKeys-IS.py).  
   		  Or the action that builds & publishes it (.github/workflows/release.yml)_
 - Usage Instructions (Or watch the [Usage Demonstration Video](https://youtu.be/D6juk_5pe5Q))
-	- Select an Image to split, by selecing it via the 'Browse' button.
-	- Select the Save Location, again, by selecting it. (defualt save location if none is entered: _Desktop_)
+	- Select an Image to split, by selecting it via a 'Browse' button or Drag and Drop it onto the Text Field.
+	- Select the Save Location, in either of the same two methods. (Default save location if none is entered: _Desktop_)
 	- (Optionally) Set Image Splitting Parameters
-		- `Defaults:` Will Split the image in a 2x6 grid, using Spacing of **_40 (pixels)_**.
+		- `Presets:` Will Split the image in a pre-saved combo of variables
+          - There you will find a Dropdown with the currently existing Presets to select from
+            - Initially will automatically select a 'Default' profile, with a 2x6 grid, using Spacing of **_40 (pixels)_**.
+            - Can `add` / `edit` / `delete` presets with the buttons found beneath the Dropdown
+            - To Import/Export Presets, go to `(Menu Bar) File>Presets`
 		- `User Defined:` Will let you manually enter the amount of Rows/Columns, and the Spacing between Image-Cells.
-	- (Optionally) Click the `Update Preview` button to the right to see a preview representation of what is will be split/cut.
- 	- Click the `Split Image` button.
+	- Click the `Split Image` button.
   		- Settings will use defaults for any input not given.
-	- Just assign them in your DisplayPad Provided software.  
-	  And your done :D
+	- Just assign them in your Display Keypad's Provided software.  
+	  And you're done :D
 
 ## Whats Next?
 Well I plan to add/improve on the following (in no particular order):
@@ -39,13 +42,8 @@ Well I plan to add/improve on the following (in no particular order):
   - +Make Preview more accurate to final result
 - Improve Image Splitting Logic
 - Automate Image Assignment to Profiles ! BaseCamp Software ! (Need to look into how)
-- Add Saving/Loading presets aka. profiles  
-  (in case you find combos that work for you, ie. for specific resolutions/aspect ratios)
-- Add Grid Offset input, that can be seen and adjusted in the Previewer
 - Add GIF support, for the Previewer  
   (Splitting functionality already supports it)
-- Add Pop-up Windows in case of an error, required user confirmation, or to notify the user of any action (i.e. Action Completed)
-- Add Drag & Drop support, will let you drag your Image straight into the App if of a supported format
 
 <pre>
 
