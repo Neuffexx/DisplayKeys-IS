@@ -20,21 +20,27 @@ jobs:
   publish_release:
     runs-on: windows-latest
     env:
-      # Release Variables
+      # ---Release Variables---
       Release_Title: "DisplayKeys-IS | Patch | v0.3.1"
       Release_Body: ${{ github.workspace }}/ProjectFiles/config/releaselog.md
       Tag: "v0.3.1"
       Artifact_Title: "DisplayKeys-IS_v0.3.1.exe"
       
-      # Packaging Command Variables
-      Application_File_Path: ${{ github.workspace }}/ProjectFiles/DisplayKeys-IS.py
-      Application_Title: "DisplayKeys-IS"
-      Application_Icon_Path: ${{ github.workspace }}/ProjectFiles/assets/DisplayKeys-IS.ico
+      # ---Action Configuration---
       Artifact_Save_Dir: ${{ github.workspace }}/ProjectFiles/dist/
       Full_Artifact_Save_Path: "${{ github.workspace }}/ProjectFiles/dist/DisplayKeys-IS.exe"
-      Packaging_Add_Icon: "${{ github.workspace }}/ProjectFiles/assets/DisplayKeys-IS.ico;."
-      Packaging_Add_Preview: "${{ github.workspace }}/ProjectFiles/assets/Preview.png;."
+      # ---Packaging Command Variables---
+      # Application
+      Application_File_Path: ${{ github.workspace }}/ProjectFiles/DisplayKeys-IS.py
+      Application_Title: "DisplayKeys-IS"
+      Application_Icon_Path: ${{ github.workspace }}/ProjectFiles/assets/images/DisplayKeys-IS.ico
+      # Assets
+      Packaging_Add_Icon: "${{ github.workspace }}/ProjectFiles/assets/images/DisplayKeys-IS.ico;."
+      Packaging_Add_Preview: "${{ github.workspace }}/ProjectFiles/assets/images/Preview.png;."
+      Packaging_Add_Help: "${{ github.workspace }}/ProjectFiles/assets/images/Help.png;."
       Packaging_Add_Versioning: ${{ github.workspace }}/ProjectFiles/config/version.txt
+      # Modules
+      Hooks: ${{ github.workspace }}/ProjectFiles/modules/
       
     steps:
           
@@ -53,7 +59,7 @@ jobs:
       - name: Create EXE file
         run: | 
           # Command parameters for creating the .EXE file
-          pyinstaller $env:Application_File_Path --onefile --noconsole --debug all --name $env:Application_Title --distpath $env:Artifact_Save_Dir --icon $env:Application_Icon_Path --add-data $env:Packaging_Add_Icon --add-data $env:Packaging_Add_Preview --version-file $env:Packaging_Add_Versioning
+          pyinstaller $env:Application_File_Path --onefile --noconsole --debug all --name $env:Application_Title --distpath $env:Artifact_Save_Dir --icon $env:Application_Icon_Path --add-data $env:Packaging_Add_Icon --add-data $env:Packaging_Add_Preview --add-data $env:Packaging_Add_Help --version-file $env:Packaging_Add_Versioning --additional-hooks-dir $env:Hooks
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
