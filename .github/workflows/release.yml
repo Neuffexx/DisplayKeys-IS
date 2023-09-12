@@ -45,6 +45,9 @@ jobs:
     steps:
           
         ############## Create Artifact ############## 
+
+      - name: checkout repository
+        uses: actions/checkout@v3
         
       - name: Setup Python
         uses: actions/setup-python@v4
@@ -68,10 +71,7 @@ jobs:
           path: ${{ env.Full_Artifact_Save_Path }}
           
           
-        ############## Create Release ############## 
-        
-      - name: checkout repository
-        uses: actions/checkout@v3
+        ############## Create Release ##############
     
       - name: release
         uses: actions/create-release@v1
