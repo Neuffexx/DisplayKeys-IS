@@ -21,10 +21,10 @@ jobs:
     runs-on: windows-latest
     env:
       # ---Release Variables---
-      Release_Title: "DisplayKeys-IS | Patch | v0.3.1"
+      Release_Title: "DisplayKeys-IS| v0.4.0 | Presets"
       Release_Body: ${{ github.workspace }}/ProjectFiles/config/releaselog.md
-      Tag: "v0.3.1"
-      Artifact_Title: "DisplayKeys-IS_v0.3.1.exe"
+      Tag: "v0.4.0"
+      Artifact_Title: "DisplayKeys-IS_v0.4.0.exe"
       
       # ---Action Configuration---
       Artifact_Save_Dir: ${{ github.workspace }}/ProjectFiles/dist/
@@ -45,6 +45,9 @@ jobs:
     steps:
           
         ############## Create Artifact ############## 
+
+      - name: checkout repository
+        uses: actions/checkout@v3
         
       - name: Setup Python
         uses: actions/setup-python@v4
@@ -68,10 +71,7 @@ jobs:
           path: ${{ env.Full_Artifact_Save_Path }}
           
           
-        ############## Create Release ############## 
-        
-      - name: checkout repository
-        uses: actions/checkout@v3
+        ############## Create Release ##############
     
       - name: release
         uses: actions/create-release@v1
