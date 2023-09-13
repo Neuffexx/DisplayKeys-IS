@@ -598,18 +598,6 @@ class DisplayKeys_Composite_Widget(tk.Frame):
             if dropdown_tooltip:
                 self.d_tooltip = DisplayKeys_Tooltip(self.dropdown, dropdown_tooltip)
 
-            # TODO:
-            #   1.) Make dropdown update previewer when changing selections.
-            #       Simply make dropdown selections change the values in the textboxes that will be taken anyways.
-            #       Instead of manually checking for the dropdown selection in the Process_Image Function.
-            #       You just take whatever is in the textboxes at all times, and have all dropdown selections only,
-            #       update the textboxes based on 'saved' values from them (this will tie in nicely with presets)!
-            #                                           ----- DONE -----
-            #                             Still need dropdown selection for the time being
-            #                                           -----      -----
-            #   2.) Make generic so that dropdown button provides the list of WidgetID's its responsible for.
-            #       Will make life easier for future dropdown functions as well (namely Presets etc.).
-
         # Textbox - Mainly used for getting user input, but can also be used as a good place to dynamically show text
         # Takes: Default Text Value, Tooltip Text, State
         if has_textbox:
@@ -1015,7 +1003,12 @@ class PopUp_Preset_Add(DisplayKeys_PopUp):
             rows = int(rows_input.spinbox.get())
             cols = int(cols_input.spinbox.get())
             gap = int(gap_input.spinbox.get())
-            ButtonFunctions.add_preset(name=name, rows=rows, cols=cols, gap=gap)
+
+            if not any(preset.name == name for preset in app.presets):
+                ButtonFunctions.add_preset(name=name, rows=rows, cols=cols, gap=gap)
+            else:
+                PopUp_Dialogue(app.window, popup_type='error', message="Preset with this Name already exists!",
+                               buttons=[{'OK': lambda: None}])
         else:
             PopUp_Dialogue(self.popup, popup_type='error', message="Missing a Field!", buttons=[{'OK': lambda: None}])
 
@@ -1040,7 +1033,7 @@ class PopUp_Preset_Add(DisplayKeys_PopUp):
         self.confirm_button = tk.Button(self.button_container, text="           Confirm          ", command=self.button_command_destructive(lambda: self.submit_preset()))
         self.confirm_button.grid(sticky="nsew", row=0, column=0)
         self.confirm_button.rowconfigure(0, weight=1)
-        self.cancel_button = tk.Button(self.button_container, text="           Cancel           ", command=self.button_command_destructive(lambda:None))
+        self.cancel_button = tk.Button(self.button_container, text="           Cancel           ", command=self.button_command_destructive(lambda: None))
         self.cancel_button.grid(sticky="nsew", row=0, column=1)
         self.cancel_button.rowconfigure(0, weight=1)
 
@@ -1781,6 +1774,7 @@ class ButtonFunctions:
             if preset.name == current_preset:
                 # delete the preset that currently exists...
                 app.presets.remove(preset)
+                continue
         ButtonFunctions.populate_property_presets_options(app.properties, app.presets, reset_selection=True)
 
     # ----- Menu Bar: -----
@@ -1966,14 +1960,7 @@ class split:
 
         # Is not of a supported image format
         except TypeError as error_message:
-            # In the future simply open a Pop-Up Window with an error message:
-            # |----------------------------------------|
-            # | File Format not supported \n           |
-            # | Currently supported formats are: \n    |
-            # | - Image     | get_supported_types()[0] |
-            # | - Animated  | get_supported_types()[1] |
-            # |----------------------------------------|
-            PopUp_Dialogue(app.window, 'error', f"File Format not supporte\nCurrenlty supported formats are:\n- Image     | {split.get_supported_types()[0]}\n- Animated  | {split.get_supported_types()[1]}")
+            PopUp_Dialogue(app.window, 'error', f"File Format not supporte\nCurrenlty supported formats are:\n- Static     | {split.get_supported_types()[0]}\n- Animated  | {split.get_supported_types()[1]}")
             print("Wrong File Type: ", type(error_message).__name__, str(error_message))
             return None
 
