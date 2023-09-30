@@ -40,11 +40,14 @@ The only thing anyone probably cares to read on here, so let me make this simple
 Well I plan to add/improve on the following (in no particular order):
 - Clean Up UI
   - +Make Preview more accurate to final result
+  - Pop-up Windows need polish
 - Improve Image Splitting Logic
-  - Add Percentage option to Gap/Split input
-- Automate Image Assignment to Profiles ! BaseCamp Software ! (Need to look into how)
+  - Add Percentage option to Gap input
+- Automate Image Assignment to Profiles
+  - ! BaseCamp Software ! SDK has been released, looking into it
 - Add GIF support, for the Previewer  
   (Splitting functionality already supports it)
+- Add Different Previewing Modes
 
 <pre>
 
