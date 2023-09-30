@@ -28,6 +28,21 @@ import webbrowser
 import json
 
 ####################################################################################################################
+#                                                    App Paths
+####################################################################################################################
+
+# For Local Environments
+#sys_icon_img = "./assets/images/DisplayKeys-IS.ico"
+#sys_help_img = "./assets/images/Help.png"
+#sys_preview_img = "./assets/images/Preview.png"
+
+# For Packaging
+sys_icon_img = sys._MEIPASS + "./DisplayKeys-IS.ico"
+sys_help_img = sys._MEIPASS + "./Help.png"
+sys_preview_img = sys._MEIPASS + "./Preview.png"
+
+
+####################################################################################################################
 #                                                    App Window
 ####################################################################################################################
 
@@ -43,7 +58,7 @@ class DisplayKeys_GUI:
         print("---Creating Window---")
         self.window = tkdnd.Tk()
         self.window.title("DisplayKeys-IS")
-        icon_path = sys._MEIPASS + "./DisplayKeys-IS.ico"
+        icon_path = sys_icon_img
         self.window.iconbitmap(icon_path)
         self.window.geometry("600x600")
         self.window.resizable(False, False)
@@ -295,7 +310,7 @@ class DisplayKeys_Previewer:
         # Initialize Image
         self.width = width
         self.height = height
-        self.placeholder_path = sys._MEIPASS + "./Preview.png"
+        self.placeholder_path = sys_preview_img
         self.image_path = None
 
         # Initialize canvas
@@ -1395,7 +1410,7 @@ class DisplayKeys_Help:
                  percentage_size: int = 100, help_tooltip: str = "Placeholder Help",
                  tooltip_justification: Literal["left", "center", "right"] = "center",
                  tooltip_anchor: Literal["nw", "n", "ne", "w", "center", "e", "sw", "s", "se"] = "center"):
-        self.image = Image.open(sys._MEIPASS + "./Help.png")
+        self.image = Image.open(sys_help_img)
         new_size = int( self.image.height * (percentage_size / 100) )
         self.resized_image = ImageTk.PhotoImage( self.image.resize((new_size, new_size)))
 
@@ -1580,7 +1595,7 @@ class ButtonFunctions:
             image_path = get_image_widget.textbox.get() if get_image_widget.textbox.get() else None
             output_dir = get_output_widget.textbox.get() if get_output_widget.textbox.get() else None
             if not image_path:
-                image_path = sys._MEIPASS + "./Preview.png"
+                image_path = sys_preview_img
 
                 # Disable Trace temporarily to not call this function again mid-execution
                 ButtonFunctions.disable_trace(get_image_widget.textbox_var, get_image_widget.textbox_trace)
