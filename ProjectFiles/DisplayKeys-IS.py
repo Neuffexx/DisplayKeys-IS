@@ -1145,7 +1145,11 @@ class PopUp_Preset_Edit(DisplayKeys_PopUp):
             gap = int(self.gap_input.spinbox.get())
 
             # Save edited Preset
-            ButtonFunctions.edit_preset(current_preset=self.current_preset, new_name=name, rows=rows, cols=cols, gap=gap)
+            if not any(preset.name == name for preset in app.presets):
+                ButtonFunctions.edit_preset(current_preset=self.current_preset, new_name=name, rows=rows, cols=cols, gap=gap)
+            else:
+                PopUp_Dialogue(app.window, popup_type='error', message="Preset with this Name already exists!",
+                               buttons=[{'OK': lambda: None}])
         else:
             PopUp_Dialogue(self.popup, popup_type='error', message="Missing a Field!", buttons=[{'OK': lambda: None}])
 
