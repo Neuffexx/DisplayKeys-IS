@@ -559,7 +559,13 @@ class DisplayKeys_Previewer:
         # Update the Previewer
         ButtonFunctions.process_image("ResetPreviewer")
 
-
+# TODO: Change class to check the order of widgets to be inside of the composite widget
+#       Will split the widget construction into sub-functions, that will be called by a loop for each composite widget,
+#       whenever the loop comes across the correct type of Widget to put inside of the composite widget.
+#       Meaning there can now be multiple of the same type of widget inside a single composite widget at a time,
+#       with Order being purely defined by the input array.
+#       However, it will for now always be in a fixed linear centered top-to-bottom layout, maybe I will come up
+#       with a way to work around that in the future. But not a priority for now.
 # Generic Widgets used throughout the Applications UI (ie. Labels, Textboxes, Buttons, etc.)
 class DisplayKeys_Composite_Widget(tk.Frame):
     """
@@ -612,6 +618,19 @@ class DisplayKeys_Composite_Widget(tk.Frame):
 
             if dropdown_tooltip:
                 self.d_tooltip = DisplayKeys_Tooltip(self.dropdown, dropdown_tooltip)
+
+            # TODO:
+            #   1.) Make dropdown update previewer when changing selections.
+            #       Simply make dropdown selections change the values in the textboxes that will be taken anyways.
+            #       Instead of manually checking for the dropdown selection in the Process_Image Function.
+            #       You just take whatever is in the textboxes at all times, and have all dropdown selections only,
+            #       update the textboxes based on 'saved' values from them (this will tie in nicely with presets)!
+            #                                           ----- DONE -----
+            #                             Still need dropdown selection for the time being
+            #                                           -----      -----
+            #   2.) Make generic so that dropdown button provides the list of WidgetID's its responsible for.
+            #       Will make life easier for future dropdown functions as well (namely Presets etc.).
+            #                                       Might Reconsider this
 
         # Textbox - Mainly used for getting user input, but can also be used as a good place to dynamically show text
         # Takes: Default Text Value, Tooltip Text, State
@@ -684,6 +703,7 @@ class DisplayKeys_Tooltip:
         self.text_anchor = anchor
         self.parent.bind("<Enter>", self.show_tooltip)
         self.parent.bind("<Leave>", self.hide_tooltip)
+        self.parent.bind("<Button>", self.hide_tooltip)
         self.parent.bind("<Motion>", self.move_tooltip)
 
     # Creates the Tooltip whenever the Cursor hovers over its Parent Widget
@@ -1061,7 +1081,7 @@ class PopUp_Preset_Edit(DisplayKeys_PopUp):
     def __init__(self, parent, preset_name):
         super().__init__(parent)
 
-        self.popup.title("Edit Preset")
+        self.popup.title(f"Edit {preset_name}")
 
         self.current_preset = preset_name
 
@@ -1086,7 +1106,6 @@ class PopUp_Preset_Edit(DisplayKeys_PopUp):
                 "textbox_colour": "#CED4DA",
                 "has_textbox_dnd": True,
                 "dnd_type": "text",
-                "updates_previewer": False,
             },
             {
                 "widget_id": "GetPresetRows",
@@ -1096,7 +1115,6 @@ class PopUp_Preset_Edit(DisplayKeys_PopUp):
                 "spinbox_colour": "#CED4DA",
                 "has_spinbox_dnd": True,
                 "dnd_type": "text",
-                "updates_previewer": False,
             },
             {
                 "widget_id": "GetPresetColumns",
@@ -1106,7 +1124,6 @@ class PopUp_Preset_Edit(DisplayKeys_PopUp):
                 "spinbox_colour": "#CED4DA",
                 "has_spinbox_dnd": True,
                 "dnd_type": "text",
-                "updates_previewer": False,
             },
             {
                 "widget_id": "GetPresetGap",
@@ -1116,7 +1133,6 @@ class PopUp_Preset_Edit(DisplayKeys_PopUp):
                 "spinbox_colour": "#CED4DA",
                 "has_spinbox_dnd": True,
                 "dnd_type": "text",
-                "updates_previewer": False,
             },
         ]
 
@@ -1239,8 +1255,8 @@ class DisplayKeys_DragDrop:
                 print("The data path:", data_path)
 
                 if self.type == "image":
-                    # Attempt to open image file, to ensure it is an image
                     try:
+                        # Attempt to open image file, to ensure it is an image
                         Image.open(data_path)
                         # Show Can Drop
                         self.set_background(event.widget, 'green')
@@ -1259,8 +1275,8 @@ class DisplayKeys_DragDrop:
                         self.set_background(event.widget, 'red')
                         print("Not a Folder DnD!")
             elif self.accept_type == self.type_legend["text"]:
-                # Ensure that dropped item is text
                 try:
+                    # Ensure that dropped item is text
                     event.data.encode('utf-8')
                     # Show Can Drop
                     self.set_background(event.widget, 'green')
@@ -1821,29 +1837,6 @@ class ButtonFunctions:
         PopUp_Dialogue(app.window, popup_type='confirm', message="Deleted All Current Presets!",
                        buttons=[{'OK': lambda: None}])
 
-
-# TODO:
-#     A Presets                                         === DONE ===
-#        - Create Preset Data Structure
-#        - Import/Export Data functionality
-#        - Use Preset Data for splitting/previewing
-#        - De/Encode Image into profile?
-#           --- No, because presets may be switched while having the wanted image already loaded.
-#               Dont want to make the user have to re-open that image just for switching presets.
-#     B Presets UI
-#       - Window Menu Bar Items:                        === DONE ===
-#           O Import Presets
-#           O Export Presets
-#           O Delete ALL Current (imported) Presets
-#        - In Properties Panel, 'Split Type' widget:    === DONE ===
-#           O Replace current 'Defaults' Options with 'Presets', which will always on launch of application be populated
-#             with the 'Defaults' Preset
-#           O Add a dropdown widget (of presets) that is shown/hidden based on the 'Split Type' dropdown selection
-#           O Ensure the above mentioned preset dropdown is also automatically populated by available presets in the
-#             list will use same function to initially load the 'Default' preset, then all others when importing file.
-#           O Add buttons for [Create, Delte, Edit] functionality
-#           O Create appropriate pop-up windows for said buttons (will also need to add the 'name' input field
-#             for the preset itself
 
 # Defines the Data structure of Presets as well as contains all of its functionality.
 # Each Preset is able to independently preform its necessary operations once created.
