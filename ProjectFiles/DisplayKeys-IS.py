@@ -728,23 +728,31 @@ class DisplayKeys_Composite_Widget(tk.Frame):
                 self.b_tooltip = DisplayKeys_Tooltip(self.button, button_tooltip)
 
 
-# A Tooltip that can be assigned to any of the DisplayKeys_Composite_Widget sub widgets
+# A custom Tooltip class based on tk.Toplevel
 class DisplayKeys_Tooltip:
     """
         A Tooltip that can be assigned to any of the DisplayKeys_Composite_Widget sub widgets
+
+        This tooltip will be stored within the actual Composite Widget, and will keep reference
+        to the widget that will trigger it.
+
         :param parent: Widget that the Tooltip is Bound to.
         :param text: The Tooltip text to show.
         :param justify: The Relative Alignment of Text to itself when broken into a new line.
         :param anchor: The Alignment of Text in general Relative to the Tooltips Widget Space
+        :param lifetime: How long the Tooltip should exist for while hovering over its Parent, in seconds.
     """
     def __init__(self, parent: tk.Label | tk.Entry | tk.Spinbox | tk.Button | ttk.Combobox, text: str,
                  justify: Literal["left", "center", "right"] = "center",
-                 anchor: Literal["nw", "n", "ne", "w", "center", "e", "sw", "s", "se"] = "center"):
+                 anchor: Literal["nw", "n", "ne", "w", "center", "e", "sw", "s", "se"] = "center",
+                 lifetime: int = 5):
         self.parent = parent
         self.text = text
-        self.tooltip = None
         self.text_justification = justify
         self.text_anchor = anchor
+        self.tooltip = None
+        self.tooltip_lifetime = lifetime * 1000
+        self.tooltip_lifetime_id = None
         self.parent.bind("<Enter>", self.show_tooltip)
         self.parent.bind("<Leave>", self.hide_tooltip)
         self.parent.bind("<Button>", self.hide_tooltip)
@@ -754,6 +762,7 @@ class DisplayKeys_Tooltip:
         """
             Creates the Tooltip whenever the Cursor hovers over its Parent Widget
         """
+        # Create Window
         self.tooltip = tk.Toplevel(self.parent)
         self.tooltip.wm_overrideredirect(True)
         self.tooltip_position(event)
@@ -763,10 +772,14 @@ class DisplayKeys_Tooltip:
         )
         label.grid(sticky="n")
 
+        # Start lifetime countdown to avoid tooltip getting bugged and not disappearing
+        self.tooltip_lifetime_destructor()
+
     def move_tooltip(self, event):
         """
             Updates the Tooltips position based on mouse movement
         """
+
         if self.tooltip:
             self.tooltip_position(event)
 
@@ -774,6 +787,7 @@ class DisplayKeys_Tooltip:
         """
             Positions the Tooltip to the Bottom Right of the Cursor
         """
+
         x = self.parent.winfo_pointerx()
         y = self.parent.winfo_pointery()
         self.tooltip.wm_geometry(f"+{x+20}+{y+20}")
@@ -783,13 +797,25 @@ class DisplayKeys_Tooltip:
     #       When Clicking on the dropdown to open it, but then click on it again without moving the mouse off of it
     #       The dropdown remains until either a File Dialogue window is opened or a click-drag action is initiated.
     #       At which point the tooltip isn't destroyed, just moved beneath ALL windows. And remains on Desktop.
-    def hide_tooltip(self, event):
+    #                           Need to find a way to destroy it when Dropdown is closed?
+    def hide_tooltip(self, event=None):
         """
             Destroys the Tooltip whenever the Cursor leaves the region of the Parent Widget
         """
         if self.tooltip:
+            if self._lifetime_id:
+                self.tooltip.after_cancel(self._lifetime_id)
+
+            if event:
+                print('Function called via event')
+            else:
+                print('Function called via Timer')
+
             self.tooltip.destroy()
             self.tooltip = None
+
+    def tooltip_lifetime_destructor(self):
+        self._lifetime_id = self.tooltip.after(self.tooltip_lifetime, self.hide_tooltip)
 
 
 class DisplayKeys_PopUp:
