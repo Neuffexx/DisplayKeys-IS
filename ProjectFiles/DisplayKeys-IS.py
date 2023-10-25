@@ -26,6 +26,7 @@ import tkinterdnd2 as tkdnd
 from tkinterdnd2 import *
 import webbrowser
 import json
+from enum import Enum
 
 ####################################################################################################################
 #                                                    App Paths
@@ -53,6 +54,7 @@ class DisplayKeys_GUI:
         The Main Class of the Application.
         It Creates the Window and all of its UI Elements within it when Initialized.
     """
+
     def __init__(self):
         # Window Properties
         print("---Creating Window---")
@@ -123,6 +125,244 @@ class DisplayKeys_GUI:
             created_widgets.append(DisplayKeys_Composite_Widget(parent, **widget))
 
         return created_widgets
+
+    @staticmethod
+    def get_properties_widgets_reworked():
+        """
+            Returns an array of [DisplayKeys_Composite_Widget]'s, used to split Images.
+        """
+
+        # Example of a Blank Composite Widget, on how to define what type of sub-widget to be added:
+        # {
+        #     "composite_id": "",
+        #     "widgets": [
+        #         {
+        #             "type": WidgetTypes.LABEL,
+        #             "widget_id": "",
+        #         },
+        #         {
+        #             "type": WidgetTypes.DROPDOWN,
+        #             "widget_id": "",
+        #         },
+        #         {
+        #             "type": WidgetTypes.TEXTBOX,
+        #             "widget_id": "",
+        #         },
+        #         {
+        #             "type": WidgetTypes.SPINBOX,
+        #             "widget_id": "",
+        #         },
+        #         {
+        #             "type": WidgetTypes.BUTTON,
+        #             "widget_id": "",
+        #         },
+        #     ],
+        # },
+
+        ToolProperties = [
+            {
+                "composite_id": "Credits",
+                "widgets": [
+                    {
+                        "type": WidgetTypes.LABEL,
+                        "widget_id": "CreditsLabel",
+                        "text": "Image Splitter made by Neuffexx",
+                    },
+                ],
+            },
+            {
+                "composite_id": "GetImage",
+                "widgets": [
+                    {
+                        "type": WidgetTypes.LABEL,
+                        "widget_id": "GetImageLabel",
+                        "text": "Choose Image:",
+                    },
+                    {
+                        "type": WidgetTypes.TEXTBOX,
+                        "widget_id": "GetImageTextbox",
+                        "state": "readonly",
+                        "dnd_type": "image",
+                        "updates_previewer": True,
+                    },
+                    {
+                        "type": WidgetTypes.BUTTON,
+                        "widget_id": "GetImageButton",
+                        "label": "Browse Image",
+                        "command": ButtonFunctions.browse_image,
+                        "tooltip": "Select the Image you want to be split.",
+                    },
+                ],
+            },
+            {
+                "composite_id": "GetOutput",
+                "widgets": [
+                    {
+                        "type": WidgetTypes.LABEL,
+                        "widget_id": "GetOutputLabel",
+                        "text": "Choose Output Location:",
+                    },
+                    {
+                        "type": WidgetTypes.TEXTBOX,
+                        "widget_id": "GetOutputTextbox",
+                        "state": "readonly",
+                        "dnd_type": "folder",
+                    },
+                    {
+                        "type": WidgetTypes.BUTTON,
+                        "label": "Browse Folder",
+                        "command": ButtonFunctions.browse_directory,
+                        "tooltip": "Select the Folder to save the split image to.",
+                    },
+                ],
+            },
+            {
+                "composite_id": "TopDivider",
+                "widgets": [
+                    {
+                        "type": WidgetTypes.LABEL,
+                        "widget_id": "TopDividerLabel",
+                        "text": "-------------------------------------",
+                    },
+                ],
+            },
+            {
+                "composite_id": "GetParamsType",
+                "widgets": [
+                    {
+                        "type": WidgetTypes.LABEL,
+                        "widget_id": "GetParamsLabel",
+                        "text": "Set Splitting Parameters:",
+                    },
+                    {
+                        "type": WidgetTypes.DROPDOWN,
+                        "widget_id": "GetParamsDropdown",
+                        "options": ["Presets", "User Defined"],
+                        "command": ButtonFunctions.property_options_visibility,
+                        "tooltip": "Preset: Saved selection of Splitting Parameters.\nUser Defined: Or Enter your own.",
+                    },
+                ],
+            },
+            {
+                "composite_id": "PresetList",
+                "widgets": [
+                    {
+                        "type": WidgetTypes.DROPDOWN,
+                        "widget_id": "PresetListDropdown",
+                        "options": ["Default"],
+                        "command": ButtonFunctions.placeholder,
+                        "tooltip": "Default Values are: \n Rows         | 2 \nColumns   | 6 \n Gap            | 40",
+                    },
+                ],
+            },
+            {
+                "composite_id": "PresetAdd",
+                "widgets": [
+                    {
+                        "type": WidgetTypes.BUTTON,
+                        "widget_id": "PressetAddButton",
+                        "label": "       Add       ",
+                        "command": ButtonFunctions.create_preset_popup,
+                        "tooltip": "Create a new Preset.",
+                        "fill": "Vertical",
+                    },
+                ],
+            },
+            {
+                "composite_id": "PresetEdit",
+                "widgets": [
+                    {
+                        "type": WidgetTypes.BUTTON,
+                        "widget_id": "PresetEditButton",
+                        "label": "       Edit       ",
+                        "command": ButtonFunctions.edit_preset_popup,
+                        "tooltip": "Edit the currently selected Preset.",
+                        "fill": "Vertical",
+                    },
+                ],
+            },
+            {
+                "composite_id": "PresetDelete",
+                "widgets": [
+                    {
+                        "type": WidgetTypes.BUTTON,
+                        "widget_id": "PresetDeleteButton",
+                        "label": "     Delete     ",
+                        "command": ButtonFunctions.delete_preset_popup,
+                        "tooltip": "Delete the currently selected Preset.",
+                        "fill": "Vertical",
+                    },
+                ],
+            },
+            {
+                "composite_id": "GetRows",
+                "widgets": [
+                    {
+                        "type": WidgetTypes.LABEL,
+                        "widget_id": "GetRowsLabel",
+                        "text": "Rows:",
+                    },
+                    {
+                        "type": WidgetTypes.SPINBOX,
+                        "widget_id": "GetRowsSpinbox",
+                        "default_value": 2,
+                        "dnd_type": "text",
+                    },
+                ],
+            },
+            {
+                "composite_id": "GetColumns",
+                "widgets": [
+                    {
+                        "type": WidgetTypes.LABEL,
+                        "widget_id": "GetColumnsLabel",
+                        "text": "Columns:",
+                    },
+                    {
+                        "type": WidgetTypes.SPINBOX,
+                        "widget_id": "GetColumnsSpinbox",
+                        "default_value": "6",
+                        "dnd_type": "text"
+                    },
+                ],
+            },
+            {
+                "composite_id": "GetGap",
+                "widgets": [
+                    {
+                        "type": WidgetTypes.LABEL,
+                        "widget_id": "GetGapLabel",
+                        "text": "Gap (in Pixels):",
+                    },
+                    {
+                        "type": WidgetTypes.SPINBOX,
+                        "widget_id": "GetGapSpinbox",
+                        "default_value": 40,
+                        "dnd_type": "text",
+                    },
+                ],
+            },
+            {
+                "composite_id": "BottomDivider",
+                "widgets": [
+                    {
+                        "type": WidgetTypes.LABEL,
+                        "widget_id": "BottomDividerLabel",
+                        "label_text": "-------------------------------------",
+                    },
+                ],
+            },
+            {
+                "composite_id": "SplitImage",
+                "widgets": [
+                    {
+                        "type": WidgetTypes.BUTTON,
+                        "label": "Split Image",
+                        "command": ButtonFunctions.process_image,
+                    },
+                ],
+            },
+        ]
 
     @staticmethod
     def get_properties_widgets():
@@ -262,7 +502,7 @@ class DisplayKeys_GUI:
                 "widget_id": "PreviewDivider",
                 "label_text": "",
                 "label_colour": "#E9ECEF",
-             },
+            },
             {
                 "widget_id": "OutputDetails",
                 "label_text": "Results :",
@@ -329,6 +569,7 @@ class DisplayKeys_Previewer:
         :param width: The Width of the Previewer Canvas.
         :param height: The Height of the Previewer Canvas.
     """
+
     def __init__(self, parent, width, height):
         # Initialize Image
         self.width = width
@@ -463,7 +704,7 @@ class DisplayKeys_Previewer:
                                                                                                             column_index + 1) * cell_width + self.x_offset
                 overlay_top = self.y_offset if row_index == 0 else row_index * cell_height + self.y_offset
                 overlay_bottom = self.y_offset + image_height if row_index == num_rows - 1 else (
-                                                                                                            row_index + 1) * cell_height + self.y_offset
+                                                                                                        row_index + 1) * cell_height + self.y_offset
 
                 self.canvas.create_rectangle(overlay_left, crop_top, crop_right, overlay_top, fill="gray",
                                              stipple=stipple_pattern)
@@ -487,13 +728,14 @@ class DisplayKeys_Previewer:
 
         # Draw Blackout Lines (hides out-of-grid pixels)
         blackout_rectangles = [
-            self.canvas.create_rectangle(0, 0, self.width + 15, self.y_offset, fill='black'), # Top
-            self.canvas.create_rectangle(0, self.y_offset + self.resized_image.height, self.width + 15, self.height + 15,
-                                         fill='black'), # Bottom
+            self.canvas.create_rectangle(0, 0, self.width + 15, self.y_offset, fill='black'),  # Top
+            self.canvas.create_rectangle(0, self.y_offset + self.resized_image.height, self.width + 15,
+                                         self.height + 15,
+                                         fill='black'),  # Bottom
             self.canvas.create_rectangle(0, self.y_offset, self.x_offset, self.y_offset + self.resized_image.height,
-                                         fill='black'), # Left
+                                         fill='black'),  # Left
             self.canvas.create_rectangle(self.x_offset + self.resized_image.width, self.y_offset, self.width + 15,
-                                         self.y_offset + self.resized_image.height, fill='black'), # Right
+                                         self.y_offset + self.resized_image.height, fill='black'),  # Right
         ]
 
     # noinspection PyTypedDict
@@ -546,7 +788,6 @@ class DisplayKeys_Previewer:
                 delta_y = min(delta_y, self.allowed_drag_distance_cropping["y"])
             else:
                 delta_y = max(delta_y, -self.allowed_drag_distance_cropping["y"])
-
 
         # Update the position in Canvas Space, given the new delta_x and delta_y
         self.image_current_position["x"] = self.image_reset_position["x"] + delta_x * self.scale_factor
@@ -601,6 +842,7 @@ class DisplayKeys_Previewer:
         # Update the Previewer
         ButtonFunctions.process_image("ResetPreviewer")
 
+
 # TODO: Change class to check the order of widgets to be inside of the composite widget
 #       Will split the widget construction into sub-functions, that will be called by a loop for each composite widget,
 #       whenever the loop comes across the correct type of Widget to put inside of the composite widget.
@@ -610,34 +852,60 @@ class DisplayKeys_Previewer:
 #       with a way to work around that in the future. But not a priority for now.
 # TODO: Get colours to display from Preferences menu/popup
 
+class WidgetTypes(Enum):
+    LABEL = 1
+    DROPDOWN = 2
+    TEXTBOX = 3
+    SPINBOX = 4
+    BUTTON = 5
+
+
 # Generic Widgets used throughout the Applications UI (ie. Labels, Textboxes, Buttons, etc.)
 class DisplayKeys_Composite_Widget(tk.Frame):
     """
         Generic Widgets used throughout the Applications UI (ie. Labels, Textboxes, Buttons, etc.)
+        Designed to be used in a Vertical Layout
 
         Optional Named Widget Params: All parameters not listed here are Optional and too many to list.
         :param parent: The Widget container
-        :param widget_id: A Unique ID to Identify/Distinguish it from other Composite Widgets.
+        :param composite_id: A Unique ID to Identify/Distinguish it from other Composite Widgets.
         :param button_fill: The axis on which the button should fill a row/col.
     """
-    def __init__(self, parent: tk.Frame, widget_id: str, label_text: str = None, label_tooltip: str = None,
-                 dropdown_options: list[str] = None, dropdown_tooltip: str = None,
-                 dropdown_command: Callable[[list['DisplayKeys_Composite_Widget']], None] = None,
-                 has_textbox: bool = False, textbox_state: Literal["normal", "disabled", "readonly"] = "normal",
-                 textbox_default_value: str = None, has_spinbox: bool = False, spinbox_default_value: int | str = 0,
-                 button_label: str = None, button_command: Callable[[str], None] = None, button_tooltip: str = None,
-                 button_fill: Literal['none', 'horizontal', 'vertical', 'both'] = 'both',
-                 updates_previewer: bool = False, label_colour: str = "white",
-                 textbox_colour: str = "white", spinbox_colour: str = "white",
-                 has_textbox_dnd: bool = False, has_spinbox_dnd: bool = False,
-                 dnd_type: Literal['image', 'folder'] = 'image'):
+
+    def __init__(self, parent: tk.Frame, composite_id: str, widgets: list[list]):
         super().__init__(parent, bg="#343A40")
         self.grid(sticky="nsew", padx=5, pady=5)
         self.columnconfigure(0, weight=1)
 
         # The reference name by which button functions will find this widget
-        self.id = widget_id
+        self.id = composite_id
 
+        # The widgets contained by this Composite widget
+        self.child_widgets = self.populate_composite(widgets)
+
+    def populate_composite(self, widgets):
+        child_widgets = []
+
+        for widget in widgets:
+            if widget.type == WidgetTypes.LABEL:
+                child_widgets.append(self.create_label())
+            elif widget.type == WidgetTypes.DROPDOWN:
+                child_widgets.append(self.create_combobox())
+                pass
+            elif widget.type == WidgetTypes.TEXTBOX:
+                child_widgets.append(self.create_textbox())
+                pass
+            elif widget.type == WidgetTypes.SPINBOX:
+                child_widgets.append(self.create_spinbox())
+                pass
+            elif widget.type == WidgetTypes.BUTTON:
+                child_widgets.append(self.create_button())
+                pass
+
+        return child_widgets
+
+    def create_label(self, widget_id: str, text: str = None, tooltip: str = None,
+                     colour: str = "white"):
         # Text Label - Text that is non-interactive (ie. A Tittle)
         # Takes: Label Text, Label Tooltip
         if label_text:
@@ -647,6 +915,8 @@ class DisplayKeys_Composite_Widget(tk.Frame):
             if label_tooltip:
                 self.l_tooltip = DisplayKeys_Tooltip(self.label, label_tooltip)
 
+    def create_combobox(self, widget_id: str, options: list[str] = None, tooltip: str = None,
+                        command: Callable[[list['DisplayKeys_Composite_Widget']], None] = None, ):
         # Dropdown Button - This is set up to be used with anything
         # All it needs is options and what command that will use the widgets to perform operations on.
         # Takes: Options Text Array, Command, Tooltip Text
@@ -676,27 +946,39 @@ class DisplayKeys_Composite_Widget(tk.Frame):
             #       Will make life easier for future dropdown functions as well (namely Presets etc.).
             #                                       Might Reconsider this
 
+    def create_textbox(self, widget_id: str, state: Literal["normal", "disabled", "readonly"] = "normal",
+                       default_value: str = None,
+                       dnd_type: Literal['image', 'folder', 'text', 'any'] | None = None, colour: str = "white",
+                       updates_previewer: bool = False, ):
         # Textbox - Mainly used for getting user input, but can also be used as a good place to dynamically show text
         # Takes: Default Text Value, Tooltip Text, State
         if has_textbox:
             self.textbox_var = tk.StringVar()
-            self.textbox = tk.Entry(self, textvariable=self.textbox_var, state=textbox_state, background=textbox_colour, readonlybackground=textbox_colour, disabledbackground=textbox_colour)
+            self.textbox = tk.Entry(self, textvariable=self.textbox_var, state=textbox_state, background=textbox_colour,
+                                    readonlybackground=textbox_colour, disabledbackground=textbox_colour)
             if textbox_default_value:
                 self.textbox_var.set(textbox_default_value)
             # Binds the Textbox to Call the DisplayKeys_Previewer Update function when any of the Image Splitting Properties are changed
             if updates_previewer:
                 self.textbox_trace = self.textbox_var.trace('w', lambda *args: ButtonFunctions.process_image(self.id))
             if (has_textbox_dnd and not has_spinbox_dnd) and dnd_type:
-                self.dnd = DisplayKeys_DragDrop(self.textbox, drop_type=dnd_type, parent_widget=self, traced_callback=lambda *args: ButtonFunctions.process_image(self.id) if updates_previewer else None)
+                self.dnd = DisplayKeys_DragDrop(self.textbox, drop_type=dnd_type, parent_widget=self,
+                                                traced_callback=lambda *args: ButtonFunctions.process_image(
+                                                    self.id) if updates_previewer else None)
 
             self.textbox.grid(sticky="nsew", column=0)
 
+    def create_spinbox(self, widget_id: str, default_value: int = 0,
+                       dnd_type: Literal['image', 'folder', 'text', 'any'] | None = None, colour: str = "white",
+                       updates_previewer: bool = False, ):
         # Spinbox - Only added for the functionality of incremental user input buttons
         # spinbox_default_value + 1, to avoid 'from=0, to=0' cases
         # Takes: Default Spinbox Value, Tooltip Text
         if has_spinbox:
             self.spinbox_var = tk.IntVar()
-            self.spinbox = tk.Spinbox(self, from_=0, to=(int(spinbox_default_value) + 1) * 100, textvariable=self.spinbox_var, background=spinbox_colour, readonlybackground=spinbox_colour, disabledbackground=spinbox_colour, )
+            self.spinbox = tk.Spinbox(self, from_=0, to=(int(spinbox_default_value) + 1) * 100,
+                                      textvariable=self.spinbox_var, background=spinbox_colour,
+                                      readonlybackground=spinbox_colour, disabledbackground=spinbox_colour, )
             self.spinbox_default = spinbox_default_value
             if spinbox_default_value:
                 self.spinbox_var.set(spinbox_default_value)
@@ -710,11 +992,15 @@ class DisplayKeys_Composite_Widget(tk.Frame):
 
             self.spinbox.grid(sticky="nsew", column=0)
 
+    def create_button(self, widget_id: str, label: str = None, command: Callable[[str], None] = None,
+                      tooltip: str = None,
+                      fill: Literal['none', 'horizontal', 'vertical', 'both'] = 'both', ):
         # Button - Used specifically to call any function in the Application
         # Provides the function with its own ID in case the function needs to access its parents.
         # Takes: Label Text, Command, Tooltip Text
         if button_label and button_command:
-            self.button = tk.Button(self, text=button_label, background=label_colour, command=lambda: button_command(self.id))
+            self.button = tk.Button(self, text=button_label, background=label_colour,
+                                    command=lambda: button_command(self.id))
             if button_fill == 'both':
                 self.button.grid(sticky="nsew", column=0, pady=3)
             elif button_fill == 'horizontal':
@@ -742,6 +1028,7 @@ class DisplayKeys_Tooltip:
         :param anchor: The Alignment of Text in general Relative to the Tooltips Widget Space
         :param lifetime: How long the Tooltip should exist for while hovering over its Parent, in seconds.
     """
+
     def __init__(self, parent: tk.Label | tk.Entry | tk.Spinbox | tk.Button | ttk.Combobox, text: str,
                  justify: Literal["left", "center", "right"] = "center",
                  anchor: Literal["nw", "n", "ne", "w", "center", "e", "sw", "s", "se"] = "center",
@@ -790,7 +1077,7 @@ class DisplayKeys_Tooltip:
 
         x = self.parent.winfo_pointerx()
         y = self.parent.winfo_pointery()
-        self.tooltip.wm_geometry(f"+{x+20}+{y+20}")
+        self.tooltip.wm_geometry(f"+{x + 20}+{y + 20}")
 
     # TODO:
     #       Tooltips dont disappear in some instances when used with Drop-down menus.
@@ -822,6 +1109,7 @@ class DisplayKeys_PopUp:
     """
         A custom Pop-Up Window Parent class built on tk.Toplevel.
     """
+
     def __init__(self, parent):
         # --- Create Window Setup ---
         self.popup_min_width = 225
@@ -853,6 +1141,7 @@ class DisplayKeys_PopUp:
             Destructive version of the Button command execution.
             Use if popup is to close after Button usage.
         """
+
         def execute_function():
             print("---Destructive Popup Button---")
             function()
@@ -860,6 +1149,7 @@ class DisplayKeys_PopUp:
             self.popup.master.attributes('-disabled', False)
             # Close the popup when the function is done executing
             self.popup.destroy()
+
         return execute_function
 
     @staticmethod
@@ -869,9 +1159,11 @@ class DisplayKeys_PopUp:
             Use if popup is to stay open after the button press.
             Useful simply for operations that may update the popup.
         """
+
         def execute_function():
             print("---Non-Destructive Popup Button---")
             function()
+
         return execute_function
 
     def center_window(self, parent):
@@ -1014,7 +1306,7 @@ class PopUp_Dialogue(DisplayKeys_PopUp):
         # The message to display
         self.popup_message = message
 
-        self.message = tk.Label(self.container, text=self.popup_message, justify='left')#, anchor='center')
+        self.message = tk.Label(self.container, text=self.popup_message, justify='left')  # , anchor='center')
         self.message.grid(sticky="nsew", row=1, column=1, columnspan=buttons_per_row, pady=15)
 
         # TODO:
@@ -1028,7 +1320,7 @@ class PopUp_Dialogue(DisplayKeys_PopUp):
 
         # Loop over the buttons to populate with as many as needed
         self.button_container = tk.Frame(self.container)
-        self.button_container.grid(sticky="nsew", row=2, column=1)#, columnspan=len(buttons))
+        self.button_container.grid(sticky="nsew", row=2, column=1)  # , columnspan=len(buttons))
         self.container.grid_columnconfigure(1, weight=1)
 
         self.buttons = buttons
@@ -1280,6 +1572,7 @@ class PopUp_Preset_Edit(DisplayKeys_PopUp):
         self.bottm_white_space = tk.Label(self.container)
         self.bottm_white_space.grid(sticky="nsew", row=7, column=0)
 
+
 # TODO: Implement a Preferences Pop-Up to adjust colours, etc.
 #       Main UI Structure should be:
 #       -------------------------------------------------------
@@ -1305,7 +1598,9 @@ class DisplayKeys_DragDrop:
     :param widget: The Widget to which to attach the Drag n Drop functionality.
     :param drop_type: Specifies the type of Data that is expected to be received and handled by this widget.
     """
-    def __init__(self, widget: tk.Entry | tk.Spinbox, parent_widget, drop_type: Literal["image", "folder", "text", "any"], traced_callback=None):
+
+    def __init__(self, widget: tk.Entry | tk.Spinbox, parent_widget,
+                 drop_type: Literal["image", "folder", "text", "any"], traced_callback=None):
         self.widget = widget
         self.parent_widget = parent_widget
         self.trace_callback = traced_callback
@@ -1388,9 +1683,9 @@ class DisplayKeys_DragDrop:
                 # Show Can Drop
                 self.set_background(event.widget, 'green')
 
-        #self.set_background(event.widget)
+        # self.set_background(event.widget)
 
-        #print("Background was:", self.original_bg)
+        # print("Background was:", self.original_bg)
 
         return event.action
 
@@ -1427,7 +1722,7 @@ class DisplayKeys_DragDrop:
 
             # Set widget to editable
             self.widget.configure(state='normal')
-            widget_current_text = self.widget.get() # Backup if needed
+            widget_current_text = self.widget.get()  # Backup if needed
             self.widget.delete(0, tk.END)
 
             # Re-Enable Trace if one existed
@@ -1448,8 +1743,8 @@ class DisplayKeys_DragDrop:
                     except IOError:
                         self.widget.insert(tk.END, widget_current_text)
                         PopUp_Dialogue(app.window, popup_type='error',
-                                          message=f'Not an Image or supported Type!\nSupported Types are:\n- Static |  {split.get_supported_types()[0]}\n- Animated |  {split.get_supported_types()[1]}',
-                                          buttons=[{'OK': lambda: None}])
+                                       message=f'Not an Image or supported Type!\nSupported Types are:\n- Static |  {split.get_supported_types()[0]}\n- Animated |  {split.get_supported_types()[1]}',
+                                       buttons=[{'OK': lambda: None}])
                         print("Not an Image DnD!")
 
                 elif self.type == "folder":
@@ -1459,8 +1754,8 @@ class DisplayKeys_DragDrop:
                     else:
                         self.widget.insert(tk.END, widget_current_text)
                         PopUp_Dialogue(app.window, popup_type='error',
-                                          message='Not an Folder!',
-                                          buttons=[{'OK': lambda: None}, {'CANCEL': lambda: None},])
+                                       message='Not an Folder!',
+                                       buttons=[{'OK': lambda: None}, {'CANCEL': lambda: None}, ])
                         print("Not a Folder DnD!")
 
             elif self.accept_type == self.type_legend["text"]:
@@ -1470,8 +1765,8 @@ class DisplayKeys_DragDrop:
                     self.widget.insert(tk.END, event.data)
                 except UnicodeDecodeError:
                     PopUp_Dialogue(app.window, popup_type='error',
-                                      message='Not Text!',
-                                      buttons=[{'OK': lambda: None}])
+                                   message='Not Text!',
+                                   buttons=[{'OK': lambda: None}])
                     print("Not a Text DnD!")
 
             elif self.accept_type == self.type_legend["any"]:
@@ -1522,13 +1817,14 @@ class DisplayKeys_Help:
         :param tooltip_justification: See DisplayKeys_Tooltip for clarification.
         :param tooltip_anchor: See DisplayKeys_Tooltip for clarification.
     """
+
     def __init__(self, parent: tk.Frame, row: int = 0, col: int = 0, alignment: str = "nsew",
                  percentage_size: int = 100, help_tooltip: str = "Placeholder Help",
                  tooltip_justification: Literal["left", "center", "right"] = "center",
                  tooltip_anchor: Literal["nw", "n", "ne", "w", "center", "e", "sw", "s", "se"] = "center"):
         self.image = Image.open(sys_help_img)
-        new_size = int( self.image.height * (percentage_size / 100) )
-        self.resized_image = ImageTk.PhotoImage( self.image.resize((new_size, new_size)))
+        new_size = int(self.image.height * (percentage_size / 100))
+        self.resized_image = ImageTk.PhotoImage(self.image.resize((new_size, new_size)))
 
         self.label = tk.Label(master=parent, image=self.resized_image, background=parent.cget("bg"))
         self.label.grid(sticky=alignment, column=col, row=row)
@@ -1617,7 +1913,8 @@ class ButtonFunctions:
         """
         print("---Browsing for Image---")
         print("Widget ID: " + widget_id)
-        widget: DisplayKeys_Composite_Widget = next((widget for widget in app.properties if widget.id == widget_id), None)
+        widget: DisplayKeys_Composite_Widget = next((widget for widget in app.properties if widget.id == widget_id),
+                                                    None)
 
         if widget:
             # Ask the user to select an Image
@@ -1747,7 +2044,7 @@ class ButtonFunctions:
                     selected_preset = PresetData.get_preset(preset_name)
                     rows = selected_preset.rows
                     columns = selected_preset.cols
-                    gap =  selected_preset.gap
+                    gap = selected_preset.gap
                     x_offset = previewer.final_offset["x"] if previewer.final_offset else None
                     y_offset = previewer.final_offset["y"] if previewer.final_offset else None
                 else:
@@ -1815,7 +2112,6 @@ class ButtonFunctions:
         PopUp_Dialogue(parent=app.window, popup_type='warning',
                        message=f"Do you want to delete the profile: {current_preset}?",
                        buttons=[{'Yes': ButtonFunctions.delete_preset}, {'No': lambda: None}])
-
 
     # --- Dropdowns: ---
     # Hides / Un-hides specific Widgets
@@ -1893,7 +2189,7 @@ class ButtonFunctions:
                 preset.cols = cols
                 preset.gap = gap
 
-        ButtonFunctions.populate_property_presets_options(app.properties, app.presets, set_selection= [True, new_name])
+        ButtonFunctions.populate_property_presets_options(app.properties, app.presets, set_selection=[True, new_name])
 
     # Deletes the currently selected Preset
     @staticmethod
