@@ -850,6 +850,8 @@ class DisplayKeys_Previewer:
 #       with Order being purely defined by the input array.
 #       However, it will for now always be in a fixed linear centered top-to-bottom layout, maybe I will come up
 #       with a way to work around that in the future. But not a priority for now.
+#       - Need to figure out a way to keep each widget unique, meaning that if there are 3 textboxes used in a single
+#         composite widget, then I need to be able to tell which one is which. But still needs to be easy to access.
 # TODO: Get colours to display from Preferences menu/popup
 
 class WidgetTypes(Enum):
@@ -908,43 +910,38 @@ class DisplayKeys_Composite_Widget(tk.Frame):
                      colour: str = "white"):
         # Text Label - Text that is non-interactive (ie. A Tittle)
         # Takes: Label Text, Label Tooltip
-        if label_text:
-            self.label = tk.Label(self, text=label_text, background=label_colour)
-            self.label.grid(sticky="nsew", column=0)
+        self.label = tk.Label(self, text=text, background=colour)
+        self.label.grid(sticky="nsew", column=0)
 
-            if label_tooltip:
-                self.l_tooltip = DisplayKeys_Tooltip(self.label, label_tooltip)
+        if tooltip:
+            self.l_tooltip = DisplayKeys_Tooltip(self.label, tooltip)
 
     def create_combobox(self, widget_id: str, options: list[str] = None, tooltip: str = None,
-                        command: Callable[[list['DisplayKeys_Composite_Widget']], None] = None, ):
+                        command: Callable[[list['DisplayKeys_Composite_Widget']], None] = None,
+                        update_previewer: bool = False):
         # Dropdown Button - This is set up to be used with anything
         # All it needs is options and what command that will use the widgets to perform operations on.
         # Takes: Options Text Array, Command, Tooltip Text
-        if dropdown_options and dropdown_command:
+        if options and options:
             self.dropdown_var = tk.StringVar()
-            self.dropdown_var.set(dropdown_options[0])  # Set default value
-            self.dropdown = ttk.Combobox(self, textvariable=self.dropdown_var, values=dropdown_options,
+            self.dropdown_var.set(options[0])  # Set default value
+            self.dropdown = ttk.Combobox(self, textvariable=self.dropdown_var, values=options,
                                          state="readonly", justify="left")
             self.dropdown.grid(sticky="nsew", column=0)
             # Bind the selection change event to the dropdown command
-            self.dropdown.bind("<<ComboboxSelected>>", lambda event: dropdown_command(app.properties))
-            self.dropdown_trace = self.dropdown_var.trace('w', lambda *args: ButtonFunctions.process_image(self.id))
+            self.dropdown.bind("<<ComboboxSelected>>", lambda event: command(app.properties))
+            # Update Previewer on change
+            if update_previewer:
+                self.dropdown_trace = self.dropdown_var.trace('w', lambda *args: ButtonFunctions.process_image(self.id))
 
-            if dropdown_tooltip:
-                self.d_tooltip = DisplayKeys_Tooltip(self.dropdown, dropdown_tooltip)
+            if tooltip:
+                self.d_tooltip = DisplayKeys_Tooltip(self.dropdown, tooltip)
 
             # TODO:
-            #   1.) Make dropdown update previewer when changing selections.
-            #       Simply make dropdown selections change the values in the textboxes that will be taken anyways.
-            #       Instead of manually checking for the dropdown selection in the Process_Image Function.
-            #       You just take whatever is in the textboxes at all times, and have all dropdown selections only,
-            #       update the textboxes based on 'saved' values from them (this will tie in nicely with presets)!
-            #                                           ----- DONE -----
-            #                             Still need dropdown selection for the time being
-            #                                           -----      -----
-            #   2.) Make generic so that dropdown button provides the list of WidgetID's its responsible for.
+            #   1.) Make generic so that dropdown button provides the list of WidgetID's its responsible for.
             #       Will make life easier for future dropdown functions as well (namely Presets etc.).
             #                                       Might Reconsider this
+            #                                           -----      -----
 
     def create_textbox(self, widget_id: str, state: Literal["normal", "disabled", "readonly"] = "normal",
                        default_value: str = None,
@@ -952,21 +949,22 @@ class DisplayKeys_Composite_Widget(tk.Frame):
                        updates_previewer: bool = False, ):
         # Textbox - Mainly used for getting user input, but can also be used as a good place to dynamically show text
         # Takes: Default Text Value, Tooltip Text, State
-        if has_textbox:
-            self.textbox_var = tk.StringVar()
-            self.textbox = tk.Entry(self, textvariable=self.textbox_var, state=textbox_state, background=textbox_colour,
-                                    readonlybackground=textbox_colour, disabledbackground=textbox_colour)
-            if textbox_default_value:
-                self.textbox_var.set(textbox_default_value)
-            # Binds the Textbox to Call the DisplayKeys_Previewer Update function when any of the Image Splitting Properties are changed
-            if updates_previewer:
-                self.textbox_trace = self.textbox_var.trace('w', lambda *args: ButtonFunctions.process_image(self.id))
-            if (has_textbox_dnd and not has_spinbox_dnd) and dnd_type:
-                self.dnd = DisplayKeys_DragDrop(self.textbox, drop_type=dnd_type, parent_widget=self,
-                                                traced_callback=lambda *args: ButtonFunctions.process_image(
-                                                    self.id) if updates_previewer else None)
 
-            self.textbox.grid(sticky="nsew", column=0)
+        self.textbox_var = tk.StringVar()
+        self.textbox = tk.Entry(self, textvariable=self.textbox_var, state=state, background=colour,
+                                readonlybackground=colour, disabledbackground=colour)
+        if default_value:
+            self.textbox_var.set(default_value)
+        # Binds the Textbox to Call the DisplayKeys_Previewer Update function
+        # when any of the Image Splitting Properties are changed
+        if updates_previewer:
+            self.textbox_trace = self.textbox_var.trace('w', lambda *args: ButtonFunctions.process_image(self.id))
+        if dnd_type:
+            self.dnd = DisplayKeys_DragDrop(self.textbox, drop_type=dnd_type, parent_widget=self,
+                                            traced_callback=lambda *args: ButtonFunctions.process_image(
+                                                self.id) if updates_previewer else None)
+
+        self.textbox.grid(sticky="nsew", column=0)
 
     def create_spinbox(self, widget_id: str, default_value: int = 0,
                        dnd_type: Literal['image', 'folder', 'text', 'any'] | None = None, colour: str = "white",
@@ -974,44 +972,52 @@ class DisplayKeys_Composite_Widget(tk.Frame):
         # Spinbox - Only added for the functionality of incremental user input buttons
         # spinbox_default_value + 1, to avoid 'from=0, to=0' cases
         # Takes: Default Spinbox Value, Tooltip Text
-        if has_spinbox:
-            self.spinbox_var = tk.IntVar()
-            self.spinbox = tk.Spinbox(self, from_=0, to=(int(spinbox_default_value) + 1) * 100,
-                                      textvariable=self.spinbox_var, background=spinbox_colour,
-                                      readonlybackground=spinbox_colour, disabledbackground=spinbox_colour, )
-            self.spinbox_default = spinbox_default_value
-            if spinbox_default_value:
-                self.spinbox_var.set(spinbox_default_value)
-            # Binds the Spinbox to Call the DisplayKeys_Previewer Update function when any of the Image Splitting Properties are changed
-            if updates_previewer:
-                self.spinbox_trace = self.spinbox_var.trace('w', lambda *args: ButtonFunctions.process_image(self.id))
-            if (has_spinbox_dnd and not has_textbox_dnd) and dnd_type:
-                self.dnd = DisplayKeys_DragDrop(self.spinbox, drop_type=dnd_type, parent_widget=self,
-                                                traced_callback=lambda *args: ButtonFunctions.process_image(
-                                                    self.id) if updates_previewer else None)
+        self.spinbox_var = tk.IntVar()
+        self.spinbox = tk.Spinbox(self, from_=0, to=(int(default_value) + 1) * 100,
+                                  textvariable=self.spinbox_var, background=colour,
+                                  readonlybackground=colour, disabledbackground=colour, )
+        self.spinbox_default = default_value
+        if default_value:
+            self.spinbox_var.set(default_value)
+        # Binds the Spinbox to Call the DisplayKeys_Previewer Update function when any of the Image Splitting Properties are changed
+        if updates_previewer:
+            self.spinbox_trace = self.spinbox_var.trace('w', lambda *args: ButtonFunctions.process_image(self.id))
+        if dnd_type:
+            self.dnd = DisplayKeys_DragDrop(self.spinbox, drop_type=dnd_type, parent_widget=self,
+                                            traced_callback=lambda *args: ButtonFunctions.process_image(
+                                                self.id) if updates_previewer else None)
 
-            self.spinbox.grid(sticky="nsew", column=0)
+        self.spinbox.grid(sticky="nsew", column=0)
 
     def create_button(self, widget_id: str, label: str = None, command: Callable[[str], None] = None,
-                      tooltip: str = None,
+                      tooltip: str = None, colour: str = "white",
                       fill: Literal['none', 'horizontal', 'vertical', 'both'] = 'both', ):
         # Button - Used specifically to call any function in the Application
         # Provides the function with its own ID in case the function needs to access its parents.
         # Takes: Label Text, Command, Tooltip Text
-        if button_label and button_command:
-            self.button = tk.Button(self, text=button_label, background=label_colour,
-                                    command=lambda: button_command(self.id))
-            if button_fill == 'both':
-                self.button.grid(sticky="nsew", column=0, pady=3)
-            elif button_fill == 'horizontal':
-                self.button.grid(sticky="ew", column=0, pady=3)
-            elif button_fill == 'vertical':
-                self.button.grid(sticky="ns", column=0, pady=3)
-            else:
-                self.button.grid(sticky="", column=0, pady=3)
+        self.button = tk.Button(self, text=label, background=colour, borderwidth=3,
+                                command=lambda: command(self.id))
+        if fill == 'both':
+            self.button.grid(sticky="nsew", column=0, pady=3)
+        elif fill == 'horizontal':
+            self.button.grid(sticky="ew", column=0, pady=3)
+        elif fill == 'vertical':
+            self.button.grid(sticky="ns", column=0, pady=3)
+        else:
+            self.button.grid(sticky="", column=0, pady=3)
 
-            if button_tooltip:
-                self.b_tooltip = DisplayKeys_Tooltip(self.button, button_tooltip)
+        if tooltip:
+            self.b_tooltip = DisplayKeys_Tooltip(self.button, tooltip)
+
+    # Create child class widgets to hold all this information themselves, so as to not store it in arrays or anything
+    # with some convoluted way to keeping track of what widget has what tooltip etc.
+    class Comp_Label(tk.Label):
+        def __init__(self, widget_id: str, label: tk.Label, tooltip: 'DisplayKeys_Tooltip'):
+            super.__init__(self)
+            self.id = widget_id
+            self.label = label
+            self.tooltip = tooltip
+
 
 
 # A custom Tooltip class based on tk.Toplevel
