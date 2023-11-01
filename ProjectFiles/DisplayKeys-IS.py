@@ -96,13 +96,13 @@ class DisplayKeys_GUI:
         # TODO: Add Results Widget's and populate content (ie. cell resolution, % of lost pixels?, etc.)
         #       Also check if there is any actual meaningful information that can be shown.
         #self.preview_info = self.populate_column(self.preview_frame, self.get_preview_widgets())
-        self.previewer_info_help = DisplayKeys_Help(parent=self.preview_frame, row=10, alignment="se", percentage_size=40,
-                                               help_tooltip="Further Information on the Results!")
+        #self.previewer_info_help = DisplayKeys_Help(parent=self.preview_frame, row=10, alignment="se", percentage_size=40,
+        #                                       help_tooltip="Further Information on the Results!")
 
         # Additional grid configuration for main window
         self.window.grid_rowconfigure(0, weight=1)
-        self.window.grid_columnconfigure(0, weight=1)  # Keeps the left column fixed
-        self.window.grid_columnconfigure(1, weight=2)  # Allows the right column to expand
+        self.window.grid_columnconfigure(0, weight=1)
+        self.window.grid_columnconfigure(1, weight=2)
 
         #########################
 
@@ -112,7 +112,7 @@ class DisplayKeys_GUI:
         self.presets.append(self.default_preset)
 
         # Initially Hide Property Column Widget's Based on Dropdown Selection
-        #ButtonFunctions.property_options_visibility(self.properties)
+        ButtonFunctions.property_options_visibility(self.properties)
 
         # Set focus to Application Window, to stop it being hidden behind others on launch
         self.window.focus_force()
@@ -902,12 +902,7 @@ class CompWidgetTypes(Enum):
 class DisplayKeys_Composite_Widget_reworked(tk.Frame):
     """
         Generic Widgets used throughout the Applications UI (ie. Labels, Textboxes, Buttons, etc.)
-        Designed to be used in a Vertical Layout
-
-        Optional Named Widget Params: All parameters not listed here are Optional and too many to list.
-        :param parent: The Widget container
-        :param composite_id: A Unique ID to Identify/Distinguish it from other Composite Widgets.
-        :param button_fill: The axis on which the button should fill a row/col.
+        Designed to be used in a Vertical Layout.
     """
 
     def __init__(self, parent: tk.Frame, composite_id: str, widgets: list[list]):
@@ -919,10 +914,11 @@ class DisplayKeys_Composite_Widget_reworked(tk.Frame):
         self.id = composite_id
 
         # The widgets contained by this Composite widget
-        self.child_widgets = self.create_composite(widgets)
+        self.child_widgets = self.create_children(widgets)
+        # Place child widgets
         self.populate_composite()
 
-    def create_composite(self, widgets):
+    def create_children(self, widgets):
         child_widgets = []
 
         for widget_dict in widgets:
@@ -947,8 +943,18 @@ class DisplayKeys_Composite_Widget_reworked(tk.Frame):
 
     def populate_composite(self):
         for i, widget in enumerate(self.child_widgets):
-            #widget.pack(fill=tk.BOTH, expand=True)
-            widget.grid(row=i, column=0, sticky="nsew")
+            if widget.__class__ == self.Comp_Button:
+                match widget.fill:
+                    case 'both':
+                        widget.grid(sticky="nsew", column=0, pady=3)
+                    case 'horizontal':
+                        widget.grid(sticky="ew", column=0, pady=3)
+                    case 'vertical':
+                        widget.grid(sticky="ns", column=0, pady=3)
+                    case "":
+                        widget.grid(sticky="", column=0, pady=3)
+            else:
+                widget.grid(row=i, column=0, sticky="nsew")
 
     # Create child class widgets to hold all this information themselves, so as to not store it in arrays or anything
     # with some convoluted way to keeping track of what widget has what tooltip etc.
@@ -1018,16 +1024,7 @@ class DisplayKeys_Composite_Widget_reworked(tk.Frame):
             self.id = widget_id
             if tooltip:
                 self.tooltip = DisplayKeys_Tooltip(parent=self, text=tooltip)
-
-            # match fill:
-            #     case 'both':
-            #         self.grid(sticky="nsew", column=0, pady=3)
-            #     case 'horizontal':
-            #         self.grid(sticky="ew", column=0, pady=3)
-            #     case 'vertical':
-            #         self.grid(sticky="ns", column=0, pady=3)
-            #     case "":
-            #         self.grid(sticky="", column=0, pady=3)
+            self.fill = fill
 
 
 class DisplayKeys_Composite_Widget(tk.Frame):
@@ -1226,10 +1223,10 @@ class DisplayKeys_Tooltip:
             if self._lifetime_id:
                 self.tooltip.after_cancel(self._lifetime_id)
 
-            if event:
-                print('Function called via event')
-            else:
-                print('Function called via Timer')
+            # if event:
+            #     print('Function called via event')
+            # else:
+            #     print('Function called via Timer')
 
             self.tooltip.destroy()
             self.tooltip = None
