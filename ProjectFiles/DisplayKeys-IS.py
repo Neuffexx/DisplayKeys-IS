@@ -41,6 +41,11 @@ sys_icon_img = sys._MEIPASS + "./DisplayKeys-IS.ico"
 sys_help_img = sys._MEIPASS + "./Help.png"
 sys_preview_img = sys._MEIPASS + "./Preview.png"
 
+PRESETS_DIR = os.path.join(os.environ['LOCALAPPDATA'], 'Neuffexx', 'DisplayKeys-IS', 'presets')
+OUTPUT_DIR = os.path.join(os.environ['LOCALAPPDATA'], 'Neuffexx', 'DisplayKeys-IS', 'output')
+SETTINGS_DIR = os.path.join(os.environ['LOCALAPPDATA'], 'Neuffexx', 'DisplayKeys-IS', 'config')
+SETTINGS_FILE = 'settings.json'
+
 
 ####################################################################################################################
 #                                                    App Window
@@ -62,6 +67,12 @@ class DisplayKeys_GUI:
         self.window.iconbitmap(icon_path)
         self.window.geometry("600x600")
         self.window.resizable(False, False)
+
+        #########################
+
+        self.settings: 'SettingsData'
+
+        #########################
 
         self.create_menu_bar()
 
@@ -92,6 +103,7 @@ class DisplayKeys_GUI:
                                                tooltip_justification="left", tooltip_anchor="center")
         # TODO: Add Results Widget's and populate content (ie. cell resolution, % of lost pixels?, etc.)
         #       Also check if there is any actual meaningful information that can be shown.
+        #self.preview_info = []
         #self.preview_info = self.populate_column(self.preview_frame, self.get_preview_widgets())
         #self.previewer_info_help = DisplayKeys_Help(parent=self.preview_frame, row=10, alignment="se", percentage_size=40,
         #                                       help_tooltip="Further Information on the Results!")
@@ -100,7 +112,7 @@ class DisplayKeys_GUI:
 
         # Initially Create Object to hold reference to all Presets in the future.
         self.presets: list[PresetData] = []
-        self.default_preset = PresetData(name="Default", rows=2, cols=6, gap=40)
+        self.default_preset = PresetData.get_default_preset()
         self.presets.append(self.default_preset)
 
         # Initially Hide Property Column Widget's Based on Dropdown Selection
@@ -282,7 +294,7 @@ class DisplayKeys_GUI:
 
         return PreviewWidgets
 
-    # TODO: Create Prefernces menu
+    # TODO: Create Preferences menu
     #       - For now only to house colour settings for the Composite widgets and application backgrounds
     #       - In the future also for Previewer colours, etc.
     # To keep the code more encapsulated and clean
@@ -292,27 +304,47 @@ class DisplayKeys_GUI:
             Will house Import/Export, Settings, Preferences, Help, etc. Menus.
         """
 
-        # Main Window Menu Bar
+        # Main-Window Menu Bar
         self.menu_bar = Menu()
         self.window.configure(menu=self.menu_bar)
         # --- File
-        self.app_menu = Menu(self.menu_bar, tearoff=False)
-        self.preset_menu = Menu(self.app_menu, tearoff=False)
-        self.app_menu.add_cascade(label="Presets", menu=self.preset_menu)
-        self.app_menu.add_separator()
-        self.app_menu.add_command(label="Exit", command=ButtonFunctions.quit)
-        # ---
+        self.file_menu = Menu(self.menu_bar, tearoff=False)
+        self.preset_menu = Menu(self.file_menu, tearoff=False)
+        self.file_menu.add_command(label="Settings", command=lambda: ButtonFunctions.edit_settings_popup())
+        self.file_menu.add_cascade(label="Presets", menu=self.preset_menu)
+        self.file_menu.add_separator()
+        self.file_menu.add_command(label="Exit", command=ButtonFunctions.quit)
+        # --- --- Presets
         self.preset_menu.add_command(label="Load Presets File", command=lambda: ButtonFunctions.load_presets_file())
         self.preset_menu.add_command(label="Save Presets", command=lambda: ButtonFunctions.save_presets_file())
         self.preset_menu.add_separator()
-        self.preset_menu.add_command(label="Delete Current Presets", command=lambda: PopUp_Dialogue(app.window, popup_type='warning', message="Delete ALL Presets?", buttons=[{'Yes': ButtonFunctions.delete_all_presets}, {'No': lambda: None}]))
+        self.preset_menu.add_command(label="Delete Current Presets",
+                                     command=lambda: PopUp_Dialogue(app.window, popup_type='warning', message="Delete ALL Presets?", buttons=[{'Yes': ButtonFunctions.delete_all_presets}, {'No': lambda: None}]))
         # --- Help
         self.help_menu = Menu(self.menu_bar, tearoff=False)
-        self.help_menu.add_separator()
-        self.help_menu.add_command(label="Help",
-                                   command=lambda: webbrowser.open("https://www.github.com/Neuffexx/DisplayKeys-IS"))
-        # Add to Menu Bar
-        self.menu_bar.add_cascade(label="File", menu=self.app_menu)
+        self.links_menu = Menu(self.help_menu, tearoff=False)
+        self.local_files_menu = Menu(self.help_menu, tearoff=False)
+        self.help_menu.add_cascade(label="Useful Links", menu=self.links_menu)
+        self.help_menu.add_cascade(label="Local Files", menu=self.local_files_menu)
+        # --- --- Useful Links
+        self.links_menu.add_command(label="Info",
+                                   command=lambda: webbrowser.open("https://github.com/Neuffexx/DisplayKeys-IS#displaykeys-is"))
+        self.links_menu.add_separator()
+        self.links_menu.add_command(label="Forum",
+                                   command=lambda: webbrowser.open("https://github.com/Neuffexx/DisplayKeys-IS/discussions"))
+        self.links_menu.add_command(label="Report Bug",
+                                   command=lambda: webbrowser.open("https://github.com/Neuffexx/DisplayKeys-IS/blob/main/CONTRIBUTING.md#report-bugs-using-githubs-issues"))
+        self.links_menu.add_command(label="Contributing",
+                                   command=lambda: webbrowser.open("https://github.com/Neuffexx/DisplayKeys-IS/blob/main/CONTRIBUTING.md#contributing-to-displaykeys-is"))
+        self.links_menu.add_command(label="Releases",
+                                   command=lambda: webbrowser.open("https://github.com/Neuffexx/DisplayKeys-IS/releases"))
+        # --- --- Local Files
+        self.local_files_menu.add_command(label="Settings File", command=lambda: ButtonFunctions.open_folder_location(SETTINGS_DIR))
+        self.local_files_menu.add_command(label="Presets File", command=lambda: ButtonFunctions.open_folder_location(PRESETS_DIR))
+        self.local_files_menu.add_command(label="Output Folder", command=lambda: ButtonFunctions.open_folder_location(OUTPUT_DIR))
+
+        # Add Menus to Menu Bar
+        self.menu_bar.add_cascade(label="File", menu=self.file_menu)
         self.menu_bar.add_cascade(label="Help", menu=self.help_menu)
 
     # Starts the Window loop
@@ -320,7 +352,6 @@ class DisplayKeys_GUI:
         self.window.mainloop()
 
 
-# The Widget that show's all changes done to the Image within the Application
 class DisplayKeys_Previewer:
     """
         The Widget that show's all changes done to the Image within the Application.
@@ -610,10 +641,9 @@ class DisplayKeys_Previewer:
 #       with a way to work around that in the future. But not a priority for now.
 # TODO: Get colours to display from Preferences menu/popup
 
-# Generic Widgets used throughout the Applications UI (ie. Labels, Textboxes, Buttons, etc.)
 class DisplayKeys_Composite_Widget(tk.Frame):
     """
-        Generic Widgets used throughout the Applications UI (ie. Labels, Textboxes, Buttons, etc.)
+        Generic Widgets used throughout the Applications UI (i.e. Labels, Textboxes, Buttons, etc.)
 
         Optional Named Widget Params: All parameters not listed here are Optional and too many to list.
         :param parent: The Widget container
@@ -806,10 +836,10 @@ class DisplayKeys_Tooltip:
             if self._lifetime_id:
                 self.tooltip.after_cancel(self._lifetime_id)
 
-            if event:
-                print('Function called via event')
-            else:
-                print('Function called via Timer')
+            # if event:
+            #     print('Function called via event')
+            # else:
+            #     print('Function called via Timer')
 
             self.tooltip.destroy()
             self.tooltip = None
@@ -822,7 +852,7 @@ class DisplayKeys_PopUp:
     """
         A custom Pop-Up Window Parent class built on tk.Toplevel.
     """
-    def __init__(self, parent):
+    def __init__(self, parent: tk.Toplevel):
         # --- Create Window Setup ---
         self.popup_min_width = 225
         self.popup_min_height = 100
@@ -831,6 +861,7 @@ class DisplayKeys_PopUp:
         self.popup = tk.Toplevel(parent)
         self.popup.geometry(f"{self.popup_min_width}x{self.popup_min_height}")
         self.popup.resizable(False, False)
+        self.popup.attributes('-toolwindow', True)
 
         # Makes the popup act as a modal dialog and focused
         self.popup.grab_set()
@@ -842,7 +873,7 @@ class DisplayKeys_PopUp:
         # Bind functionality to the deletion of the window
         self.popup.bind("<Destroy>", self.on_close)
 
-        # Primary Content Container ( will be used by all 'types' )
+        # Primary Content Container ( will be used by all pop-up`s )
         self.container = tk.Frame(self.popup)
         self.container.pack(expand=True, fill=tk.BOTH)
         self.container.grid_columnconfigure(0, weight=1)
@@ -874,7 +905,7 @@ class DisplayKeys_PopUp:
             function()
         return execute_function
 
-    def center_window(self, parent):
+    def center_window(self, parent: tk.Toplevel):
         """
             Centers the Pop-Up to the Parent Window.
         """
@@ -983,19 +1014,20 @@ class DisplayKeys_PopUp:
 
 
 class PopUp_Dialogue(DisplayKeys_PopUp):
-    def __init__(self, parent, popup_type: Literal['confirm', 'warning', 'error'], message: str,
+    def __init__(self, parent: tk.Toplevel, popup_type: Literal['confirm', 'warning', 'error'], message: str,
                  buttons: list[dict[str, Callable[[], None]]] = [{'OK': lambda: None}, {'CANCEL': lambda: None}],
                  buttons_per_row: int = 2):
         super().__init__(parent)
 
         # Set / Determine Dialogue Type
-        self.popup.resizable(True, False)
+        #self.popup.resizable(True, False)
         self.type = popup_type
         self.popup.title(self.type.upper())
+        self.popup.bind('<Configure>', self.update_wrap_length)
 
         self.buttons_per_row = buttons_per_row
 
-        self.create_dialogue(message, buttons, buttons_per_row)
+        self.create_dialogue_ui(message, buttons, buttons_per_row)
         self.resize_popup_window(self.container)
 
     # Extends the Parent class on_open function
@@ -1006,15 +1038,20 @@ class PopUp_Dialogue(DisplayKeys_PopUp):
     def on_close(self, event: tk.Event):
         DisplayKeys_PopUp.on_close(self, event)
 
+    # Ensures word wrap after creation
+    def update_wrap_length(self, event):
+        self.message.configure(wraplength=self.popup.winfo_width() - 10)
+
     # Creates the necessary pop-up content for this class
-    def create_dialogue(self, message, buttons, buttons_per_row):
+    def create_dialogue_ui(self, message: str, buttons: tk.Button, buttons_per_row: int):
         """
             Creates all the widgets/content required for displaying and interaction
         """
         # The message to display
         self.popup_message = message
 
-        self.message = tk.Label(self.container, text=self.popup_message, justify='left')#, anchor='center')
+        wwrap_length = self.popup.winfo_width() - 10
+        self.message = tk.Label(self.container, text=self.popup_message, wraplength=wwrap_length, justify='left')#, anchor='center')
         self.message.grid(sticky="nsew", row=1, column=1, columnspan=buttons_per_row, pady=15)
 
         # TODO:
@@ -1048,11 +1085,14 @@ class PopUp_Dialogue(DisplayKeys_PopUp):
 
 
 class PopUp_Preset_Add(DisplayKeys_PopUp):
-    def __init__(self, parent):
+    def __init__(self, parent: tk.Toplevel):
         super().__init__(parent)
 
+        # Pop-Up Configuration
         self.popup.title("Add Preset")
-        self.create_add_preset()
+
+        # Preset Setup
+        self.create_add_preset_ui()
 
     # Extends the Parent class on_open function
     def on_open(self, event: tk.Event):
@@ -1130,7 +1170,7 @@ class PopUp_Preset_Add(DisplayKeys_PopUp):
             PopUp_Dialogue(self.popup, popup_type='error', message="Missing a Field!", buttons=[{'OK': lambda: None}])
 
     # Creates the necessary pop-up content for this class
-    def create_add_preset(self):
+    def create_add_preset_ui(self):
         """
             Creates all the widgets/content required to create a new Preset
         """
@@ -1160,11 +1200,13 @@ class PopUp_Preset_Add(DisplayKeys_PopUp):
 
 
 class PopUp_Preset_Edit(DisplayKeys_PopUp):
-    def __init__(self, parent, preset_name):
+    def __init__(self, parent: tk.Toplevel, preset_name: str):
         super().__init__(parent)
 
-        self.popup.title(f"Edit {preset_name}")
+        # Pop-Up Configuration
+        self.popup.title(f"Edit '{preset_name}'")
 
+        # Preset Setup
         self.current_preset = preset_name
 
         self.create_edit_preset()
@@ -1280,19 +1322,274 @@ class PopUp_Preset_Edit(DisplayKeys_PopUp):
         self.bottm_white_space = tk.Label(self.container)
         self.bottm_white_space.grid(sticky="nsew", row=7, column=0)
 
+
 # TODO: Implement a Preferences Pop-Up to adjust colours, etc.
 #       Main UI Structure should be:
 #       -------------------------------------------------------
-#       |                                                     |
-#       | Colours  I        Colours         | Reset | Save |  |
-#       | Option 2 I  --------------------------------------  |
-#       | Option 3 I    Category                              |
-#       | ...      I  Option                ['Hex' / String]  |
-#       |          I  ...                                     |
-#       |                                                     |
+#       |                                                        |
+#       | Preferences I        Colours         | Reset | Save |  |
+#       | Options     I  --------------------------------------  |
+#       | ...         I  Background            ['Hex' / String]  |
+#       | ...         I  Option                [   Dropdown   ]  |
+#       |             I  ...                                     |
+#       |                                                        |
 #       -------------------------------------------------------
-class PopUp_Preferences(DisplayKeys_PopUp):
-    pass
+class PopUp_Settings(DisplayKeys_PopUp):
+    def __init__(self, parent: tk.Toplevel):
+        super().__init__(parent)
+
+        # Pop-Up Configuration
+        self.popup.title(f"Edit Settings")
+        self.popup.geometry('400x500')
+
+        # Settings Setup
+        # TODO: Load current Settings from file (probably will set AppData/Local/Neuffexx/DisplayKeys-IS as save path)
+        # For now load TEMP save locations from main window
+        #if(True):  # Saved Preference File can be opened
+            #self.colours_background = app.preference_saved_background_color
+            #self.previewer_mode = app.preference_saved_preview_mode
+            #self.input_split_mode = app.preference_saved_input_mode
+        #else:
+        #    pass
+        #self.colours_background = app.preference_default_background_color
+            #self.previewer_mode = app.preference_default_preview_mode
+            #self.input_split_mode = app.preference_default_input_mode
+
+        # Create UI
+        self.create_Settings_ui()
+        self.center_window(parent)
+
+    def create_Settings_ui(self):
+        """
+            Creates the entire Structure and UI interface for the Settings
+        """
+        # --- Categories ---
+        self.settings_category_container = tk.Frame(self.container, width=150, height=500, background='red')
+        self.settings_category_container.pack(expand=True, side=tk.LEFT)
+        self.settings_category_container.grid_rowconfigure(0, weight=1)
+        self.settings_category_container.grid_columnconfigure(0, weight=1)
+        self.category_placement_frame = tk.Frame(self.settings_category_container, width='150', height='500')
+        self.category_placement_frame.place(relx=0.5, rely=0.104, anchor=tk.CENTER)
+        self.populate_categories(self.category_placement_frame)
+
+        # --- Options ---
+        self.settings_container = tk.Frame(self.container, width=250, height=450, background='green')
+        self.settings_container.pack(expand=False, side=tk.TOP)
+        self.settings_container.grid_rowconfigure(0, weight=1)
+        self.settings_container.grid_columnconfigure(0, weight=1)
+
+        # Create Option Placement Frames
+        self.settings_placement_frame_preferences = tk.Frame(self.settings_container, width='150', height='450')
+        self.settings_placement_frame_preferences.grid(row=0, column=0, sticky='new')
+        self.settings_placement_frame_appearance = tk.Frame(self.settings_container, width='150', height='450')
+        self.settings_placement_frame_appearance.grid(row=0, column=0, sticky='new')
+        # Populate Frames
+        self.populate_options_frame(self.settings_placement_frame_preferences)
+        self.populate_options_frame(self.settings_placement_frame_appearance)
+
+        # --- Window Interaction ---
+        self.window_interactions_container = tk.Frame(self.container, width=250, height=50, background='blue')
+        self.window_interactions_container.pack(expand=False, side=tk.BOTTOM)
+        self.apply_button = tk.Button(self.window_interactions_container, text='    Apply    ', command=lambda: None)  # self.save_options())
+        self.apply_button.place(relx=0.2, rely=0.5, anchor=tk.CENTER)
+        self.cancel_button = tk.Button(self.window_interactions_container, text='   Default    ', command=lambda: SettingsData.get_default_settings)
+        self.cancel_button.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
+        self.cancel_button = tk.Button(self.window_interactions_container, text='    Cancel    ', command=lambda: None)
+        self.cancel_button.place(relx=0.8, rely=0.5, anchor=tk.CENTER)
+
+        # Set Initial Option Values
+        #self.validate_options(self.current_options)
+
+        # Set Default Visible Options Frame
+        self.toggle_frame_visibility(self.settings_placement_frame_preferences)
+
+        #for child in self.settings_category_container.winfo_children()[0].winfo_children():
+        #    print(child.cget('text'))
+
+    # TODO:
+    #                       --- DONE ---
+    #       - Create a Placement Frame (for each category)
+    #       - Fill Placement Frame with Relevant Options
+    #       - Hide/Un-hide Placement Frames based on Category
+    def toggle_frame_visibility(self, frame_to_show: tk.Frame):
+        """
+            Hides all Options Frame's, and un-hides wanted Frame.
+
+            :param frame_to_show: The Frame that is to be interacted with by the user.
+        """
+        # Hide all frames
+        for frame in [self.settings_placement_frame_preferences, self.settings_placement_frame_appearance]:
+            frame.grid_remove()
+
+        # Show wanted frame
+        frame_to_show.grid(sticky='new')
+
+    def populate_categories(self, parent):
+        """
+            Gets the Buttons for the Categories and packs them into a placement frame.
+            This frame is then added to the Parent frame in the popup-window.
+        """
+
+        categories = self.get_categories(parent)
+        for index, category in enumerate(categories):
+            category.grid(row=index, column=0, sticky="new")
+        return categories
+
+    def get_categories(self, parent):
+        """
+            Creates and Returns the List of the Settings Category Buttons
+        """
+        categories = [
+            tk.Button(parent, text='Preferences', command=lambda: self.toggle_frame_visibility(self.settings_placement_frame_preferences), padx=50),#self.populate_options(parent, self.get_preference_options(self.settings_placement_frame)), padx=50),
+            tk.Button(parent, text='Appearance', command=lambda: self.toggle_frame_visibility(self.settings_placement_frame_appearance)),#self.populate_options(parent, self.get_appearance_options(self.settings_placement_frame))),
+            tk.Button(parent, text='Integrations', command=lambda: None),
+            tk.Button(parent, text='...', command=lambda: None),
+        ]
+
+        return categories
+
+    def populate_options_frame(self, parent):
+        """
+            Populates the Options Frame's with the relevant Widgets.
+
+            :param parent: The Options Frame.
+        """
+
+        # Create Frame's Columns
+        parent.grid_columnconfigure(0, weight=2)
+        parent.grid_columnconfigure(1, weight=1)
+
+        # Get Relevant Options
+        options = []
+
+        if parent == self.settings_placement_frame_preferences:
+            options = self.get_preference_options(parent)
+        elif parent == self.settings_placement_frame_appearance:
+            options = self.get_appearance_options(parent)
+        elif parent == self.settings_placement_frame_preferences:
+            options = self.get_integration_options(parent)
+
+        # Add Option Widgets
+        for row, packed_option in enumerate(options):
+            for col, option in enumerate(packed_option):
+                if option:
+                    option.grid(row=row, column=col, sticky='nsew')
+                    if option.winfo_class() == 'Label' and row != 0:
+                        option.configure(bd=1, relief='solid')
+
+            self.validate_loaded_options(options)
+
+    def get_preference_options(self, parent):
+        """
+            Creates and Returns the actual Preferences Widgets
+        """
+        # Column 1 - Name | Column 2 - Option
+        # Will be iterated with the same assumption.
+        # Everything is a name, unless its n / 2 those are options of the same row.
+
+        # Preview Modes, Input Modes, Save Locations,
+        preferences = [
+            [tk.Label(parent, text='PREFERENCES'), None],
+            [tk.Label(parent, text='Preview Mode:', padx=22), ttk.Combobox(parent, values=["Full", "Crop Only", "Split Only"], state='readonly', justify='left')],
+            [tk.Label(parent, text='Input Mode:', padx=22), ttk.Combobox(parent, values=["Pixel", "Percentage"], state='readonly', justify='left')],
+            #{},
+        ]
+        return preferences
+
+    def get_appearance_options(self, parent):
+        # Colors, ...
+        appearances = [
+            [tk.Label(parent, text='COLORS'), None],
+            [tk.Label(parent, text='Main'), None],
+            [tk.Label(parent, text='Text Colour:', padx=22), tk.Entry(parent, textvariable=tk.StringVar(value="Placeholder"))],
+            [tk.Label(parent, text='Background Colour:', padx=22), tk.Entry(parent, textvariable=tk.StringVar(value="Placeholder"))],
+            [tk.Label(parent, text='Primary Colour:', padx=22), tk.Entry(parent)],
+            [tk.Label(parent, text='Secondary Colour:', padx=22), tk.Entry(parent)],
+            [tk.Label(parent, text='Buttons'), None],
+            [tk.Label(parent, text='Text Colour:', padx=22), tk.Entry(parent)],
+            [tk.Label(parent, text='Background Colour:'), tk.Entry(parent, textvariable=tk.StringVar(value="Placeholder"))],
+            [tk.Label(parent, text='Colour:', padx=22), tk.Entry(parent)],
+            # {},
+        ]
+        return appearances
+
+    def get_integration_options(self, parent):
+        pass
+
+    def validate_loaded_options(self, options: list[list]):
+        """
+            Populates the Created Widgets with actual states/options.
+            Either Default or from User's locally saved file.
+        """
+        # Will receive the array of options that is currently populated.
+        # Then set their values according to the equivalent stored in the preferences file.
+        # Will have to check 'option type' to ensure I am looking for the correct values and setting them correctly
+        # for each equivalent widget (ie. checkbox vs dropdown)
+
+        # USE TEMP SAVE LOCATION FROM MAIN WINDOW FOR TESTING
+        # IN FUTURE WILL BE USING ALREADY RETRIEVED SAVED FILE
+        pass
+
+    def save_options(self):
+        """
+            Saves the actual values to their XML or JSON Category Object.
+        """
+
+        # To get Category Name
+        # category_name = options[0][0].cget('text')
+
+        # Save options per Category
+        preferences = self.settings_placement_frame_preferences.winfo_children()
+        appearances = self.settings_placement_frame_appearance.winfo_children()
+
+        # TODO:
+        #       Figure out how to serialize to JSON.
+        #       Specifically ensuring that I store categories as objects in the 'Settings' file.
+        #       Where the actual options are saved as member variables of the Category objects.
+
+        # Figure out how to create / save the values in the Category Objects variables
+        for row, preferences_packed in enumerate(preferences):
+            for col, preference in enumerate(preferences_packed):
+                if col % 2 == 0:  # Ensure its second column
+                    if not preference:  # Ensure it's not a title/sub-category row
+                        continue
+
+                    # Serialize Preferences to XML or JSON
+                    # variable name to serialize is preferences_packed[col-1].cget('text')
+                    # variable value is preference.cget('variable specific to this type of widget')
+                    pass
+
+        for row, appearances_packed in enumerate(appearances):
+            for col, appearance in enumerate(appearances_packed):
+                if col % 2 == 0:  # Ensure its second column
+                    if not appearance:  # Ensure it's not a title/sub-category row
+                        continue
+
+                    # Serialize Appearance to XML or JSON
+                    # variable name to serialize is appearances_packed[col-1].cget('text')
+                    # variable value is appearance.cget('variable specific to this type of widget')
+                    pass
+
+        # Save to File
+        # SomeLibrary.save_function(JSON_Settings_Object)
+        pass
+
+    @staticmethod
+    def load_options():
+        """
+            Loads the JSON Object variables into a class struct and returns it.
+        """
+
+        return None
+
+    def get_default_values(self):
+        """
+            Default values for the creation of the Settings file.
+        """
+        pass
+
+    def save_default_values(self):
+        pass
 
 
 # A Drag&Drop latch-on class that can be used on any tk.Entry or tk.Spinbox widget
@@ -1540,7 +1837,9 @@ class DisplayKeys_Help:
 
 # A collection of button functions to be used throughout the UI
 class ButtonFunctions:
+
     # ----- Debug: -----
+
     # For testing new UI without wanting any actual actions taken.
     @staticmethod
     def placeholder(widget_id):
@@ -1558,6 +1857,7 @@ class ButtonFunctions:
         return
 
     # ----- Workarounds: -----
+
     # For temporary in code workaround solutions
     @staticmethod
     def disable_binding(widget, event_name, function_name):
@@ -1604,6 +1904,7 @@ class ButtonFunctions:
 
         return False
 
+    # ----------------------------------
     # ----- Main Window Functions: -----
     # --- Buttons ---
 
@@ -1813,11 +2114,11 @@ class ButtonFunctions:
             return
 
         PopUp_Dialogue(parent=app.window, popup_type='warning',
-                       message=f"Do you want to delete the profile: {current_preset}?",
+                       message=f"Do you want to delete the profile: '{current_preset}'?",
                        buttons=[{'Yes': ButtonFunctions.delete_preset}, {'No': lambda: None}])
 
-
     # --- Dropdowns: ---
+
     # Hides / Un-hides specific Widgets
     @staticmethod
     def property_options_visibility(properties: list[DisplayKeys_Composite_Widget]):
@@ -1876,7 +2177,10 @@ class ButtonFunctions:
         elif reset_selection:
             properties_dropdown_widget.dropdown_var.set(preset_names[0])
 
+    # ----------------------------------
     # ----- Popup Windows: -----
+    # --- Buttons ---
+
     # Saves the Preset provided from the Popup_Preset_Add window
     @staticmethod
     def add_preset(name: str, rows: int, cols: int, gap: int):
@@ -1908,7 +2212,10 @@ class ButtonFunctions:
                 continue
         ButtonFunctions.populate_property_presets_options(app.properties, app.presets, reset_selection=True)
 
+    # ----------------------------------
     # ----- Menu Bar: -----
+    # --- Buttons ---
+
     # Closes Application
     @staticmethod
     def quit():
@@ -1937,6 +2244,19 @@ class ButtonFunctions:
         PopUp_Dialogue(app.window, popup_type='confirm', message="Deleted All Current Presets!",
                        buttons=[{'OK': lambda: None}])
 
+    #
+    @staticmethod
+    def edit_settings_popup():
+        PopUp_Settings(app.window)
+
+    #
+    @staticmethod
+    def open_folder_location(directory):
+        try:
+            os.startfile(directory)
+        except Exception as e:
+            PopUp_Dialogue(parent=app.window, popup_type='error',
+                           message=f"The following directory could not be opened: '{directory}'", buttons=[{'OK': lambda: None}])
 
 # Defines the Data structure of Presets as well as contains all of its functionality.
 # Each Preset is able to independently preform its necessary operations once created.
@@ -2021,6 +2341,155 @@ class PresetData:
                 PopUp_Dialogue(app.window, popup_type='error', message=f"No Preset of the name '{preset_name}' found!", buttons=[{'OK': lambda: None}])
         else:
             PopUp_Dialogue(app.window, popup_type='error', message=f"Presets list is empty!", buttons=[{'OK': lambda: None}])
+
+    @staticmethod
+    def get_default_preset():
+        return PresetData(name="Default", rows=2, cols=6, gap=40)
+
+
+# Defines the Data Structure of the Settings, as well as contains all of its functionality.
+class SettingsData:
+    """
+        Parameter 'categories' Legend:
+            list[
+                Category[
+                        Row[ Label, Value ],
+                        Row[ Label, Value ],
+                        ...
+                ]
+            ]
+    """
+    def __init__(self, settings_categories: list[list[list[tk.Label, tk.Entry | ttk.Combobox]]]):
+        # System save path
+        self.SETTINGS_DIR = os.path.join(os.environ['LOCALAPPDATA'], 'Neuffexx', 'DisplayKeys-IS', 'config')
+        self.SETTINGS_FILE = 'settings.json'
+
+        self.categories = []
+        for category_data in settings_categories:
+            category_name = category_data[0][0].cget("text")
+            category = self.Category(category_name)
+            for row in category_data:
+                label_text = row[0].cget("text")
+                widget = row[1]
+                value = widget.get() if isinstance(widget, tk.Entry) else widget.get()
+                option = self.Option(label_text, value)
+                category.add_option(option)
+            self.categories.append(category)
+
+    ###############################
+
+    class Option:
+        def __init__(self, label, value):
+            self.label = label
+            self.value = value
+
+    class Category:
+        def __init__(self, name):
+            self.name = name
+            self.options = []
+
+        def add_option(self, option):
+            self.options.append(option)
+
+        def to_dict(self):
+            return {
+                'name': self.name,
+                'options': {option.label: option.value for option in self.options}
+            }
+
+    ###############################
+
+
+    @staticmethod
+    def to_dict(settings_data: 'SettingsData'):
+        return [category.to_dict() for category in settings_data.categories]
+
+    @classmethod
+    def from_dict(cls, data_dict):
+        categories = []
+        for category_data in data_dict:
+            category = cls.Category(category_data['name'])
+            for label, value in category_data['options'].items():
+                option = cls.Option(label, value)
+                category.add_option(option)
+            categories.append(category)
+        return cls(categories)
+
+    @staticmethod
+    def get_settings_path():
+        if not os.path.exists(SETTINGS_DIR):
+            os.makedirs(SETTINGS_DIR)
+        return os.path.join(SETTINGS_DIR, SETTINGS_FILE)
+
+    @staticmethod
+    def save_settings_to_file(settings_data: 'SettingsData'):
+        file_path = SettingsData.get_settings_path()
+        with open(file_path, 'w') as file:
+            json.dump(SettingsData.to_dict(settings_data), file, indent=4)
+
+    @staticmethod
+    def load_settings_from_file():
+        file_path = SettingsData.get_settings_path()
+        try:
+            with open(file_path, 'r') as file:
+                data_dict = json.load(file)
+                return SettingsData.from_dict(data_dict)
+        except FileNotFoundError:
+            print(f"Settings file not found at {file_path}")
+            with open(file_path, 'w') as file:
+                json.dump(SettingsData.to_dict(SettingsData.get_default_settings()), file, indent=4)
+            return None
+
+    @staticmethod
+    def set_setting(category_name, option_name):
+        pass
+
+    @staticmethod
+    def get_setting(category_name, option_name):
+        pass
+
+    @staticmethod
+    def get_category(category_name):
+        pass
+
+    @classmethod
+    def get_default_settings(cls):
+        defaults = {
+            'categories': [
+                {
+                    'name': 'Preferences',
+                    'options': {
+                            'PREFERENCES': None,
+                            'Preview Mode': 'Full',
+                            'Input Mode': 'Pixel',
+                        }
+                },
+                {
+                    'name': 'Appearance',
+                    'options': {
+                        'APPEARANCE': None,
+                        'Colors - App': None,
+                        'Primary Color': '#212529',
+                        'Secondary Color': '#343A40',
+                        'Colors - Widgets': None,
+                        'Labels': '#E9ECEF',
+                        'Buttons': '#D8DBDE',
+                        'Textbox': '#ADB5BD',
+                        'Spinbox': '#CED4DA',
+                        'Colors - Previewer': None,
+                        'Backdrop': '#151515',
+                        'Split Lines': '#CC0000',
+                        'Crop Stipple': 'gray',
+                        'Colors - Tooltips': None,
+                        'Background': '#ffffe0',
+                    }
+                },
+            ]
+        }
+        print(cls.from_dict(defaults))
+        return cls.from_dict(defaults)
+
+
 
 ####################################################################################################################
 #                                                   Split Image
