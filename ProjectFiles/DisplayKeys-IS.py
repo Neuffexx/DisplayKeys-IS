@@ -58,7 +58,7 @@ class DisplayKeys_GUI:
     def __init__(self):
         # Window Properties
         print("---Creating Window---")
-        self.window = tkdnd.Tk()
+        self.window = tkdnd.Tk()  # Use tkdnd to support drag & drop events
         self.window.title("DisplayKeys-IS")
         icon_path = sys_icon_img
         self.window.iconbitmap(icon_path)
@@ -72,16 +72,17 @@ class DisplayKeys_GUI:
         print("---Creating Left Column---")
         # Create the Properties Frame
         self.properties_frame = tk.Frame(self.window, width=200, height=500, background="#343A40")
-        self.properties_frame.pack(side=tk.LEFT, fill=tk.BOTH)
+        self.properties_frame.grid(row=0, column=0, sticky="nsew")  # Updated this line
         self.properties_frame.grid_columnconfigure(0, weight=1)
         # Populate the properties frame with widgets
         self.properties = []
         self.properties = self.populate_column(self.properties_frame, self.get_properties_widgets())
+        #self.properties = self.populate_column_reworked(self.properties_frame, self.get_properties_widgets_reworked())
 
         print("---Creating Right Column---")
         # Create the Preview Frame
         self.preview_frame = tk.Frame(self.window, height=500, background="#212529")
-        self.preview_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+        self.preview_frame.grid(row=0, column=1, sticky="nsew")  # Updated this line
         self.preview_frame.grid_columnconfigure(0, weight=1)
         # Create the Preview Widget and place it in the right column
         self.preview = DisplayKeys_Previewer(self.preview_frame, width=350, height=350)
@@ -95,8 +96,13 @@ class DisplayKeys_GUI:
         # TODO: Add Results Widget's and populate content (ie. cell resolution, % of lost pixels?, etc.)
         #       Also check if there is any actual meaningful information that can be shown.
         #self.preview_info = self.populate_column(self.preview_frame, self.get_preview_widgets())
-        #self.previewer_info_help = DisplayKeys_Help(parent=self.preview_frame, row=10, alignment="se", percentage_size=40,
-        #                                       help_tooltip="Further Information on the Results!")
+        self.previewer_info_help = DisplayKeys_Help(parent=self.preview_frame, row=10, alignment="se", percentage_size=40,
+                                               help_tooltip="Further Information on the Results!")
+
+        # Additional grid configuration for main window
+        self.window.grid_rowconfigure(0, weight=1)
+        self.window.grid_columnconfigure(0, weight=1)  # Keeps the left column fixed
+        self.window.grid_columnconfigure(1, weight=2)  # Allows the right column to expand
 
         #########################
 
@@ -106,10 +112,34 @@ class DisplayKeys_GUI:
         self.presets.append(self.default_preset)
 
         # Initially Hide Property Column Widget's Based on Dropdown Selection
-        ButtonFunctions.property_options_visibility(self.properties)
+        #ButtonFunctions.property_options_visibility(self.properties)
 
         # Set focus to Application Window, to stop it being hidden behind others on launch
         self.window.focus_force()
+
+        #########################
+        # Test window for reworked composite widgets
+        #self.test_popup = DisplayKeys_PopUp(self.window)
+        #self.populate_column_reworked(self.test_popup.container, self.get_properties_widgets_reworked())
+        #self.test_popup.resize_popup_window(self.test_popup.container)
+
+    # Used to populate a column(Frame) with DisplayKeys_Composite_Widget's
+    @staticmethod
+    def populate_column_reworked(parent, widgets):
+        """
+            Adds [DisplayKeys_Composite_Widget]'s to a parent container.
+            :param parent: The Container to fill with Widgets
+            :param widgets: The list of widgets to add to the Parent
+        """
+
+        created_widgets = []
+        for widget in widgets:
+            created_widgets.append(DisplayKeys_Composite_Widget_reworked(parent, **widget))
+
+        for i, widget in enumerate(created_widgets):
+            widget.grid(row=i, column=0, sticky="nsew")
+
+        return created_widgets
 
     # Used to populate a column(Frame) with DisplayKeys_Composite_Widget's
     @staticmethod
@@ -164,7 +194,7 @@ class DisplayKeys_GUI:
                 "composite_id": "Credits",
                 "widgets": [
                     {
-                        "type": WidgetTypes.LABEL,
+                        "type": CompWidgetTypes.LABEL,
                         "widget_id": "CreditsLabel",
                         "text": "Image Splitter made by Neuffexx",
                     },
@@ -174,19 +204,19 @@ class DisplayKeys_GUI:
                 "composite_id": "GetImage",
                 "widgets": [
                     {
-                        "type": WidgetTypes.LABEL,
+                        "type": CompWidgetTypes.LABEL,
                         "widget_id": "GetImageLabel",
                         "text": "Choose Image:",
                     },
                     {
-                        "type": WidgetTypes.TEXTBOX,
+                        "type": CompWidgetTypes.TEXTBOX,
                         "widget_id": "GetImageTextbox",
                         "state": "readonly",
                         "dnd_type": "image",
                         "updates_previewer": True,
                     },
                     {
-                        "type": WidgetTypes.BUTTON,
+                        "type": CompWidgetTypes.BUTTON,
                         "widget_id": "GetImageButton",
                         "label": "Browse Image",
                         "command": ButtonFunctions.browse_image,
@@ -198,18 +228,18 @@ class DisplayKeys_GUI:
                 "composite_id": "GetOutput",
                 "widgets": [
                     {
-                        "type": WidgetTypes.LABEL,
+                        "type": CompWidgetTypes.LABEL,
                         "widget_id": "GetOutputLabel",
                         "text": "Choose Output Location:",
                     },
                     {
-                        "type": WidgetTypes.TEXTBOX,
+                        "type": CompWidgetTypes.TEXTBOX,
                         "widget_id": "GetOutputTextbox",
                         "state": "readonly",
                         "dnd_type": "folder",
                     },
                     {
-                        "type": WidgetTypes.BUTTON,
+                        "type": CompWidgetTypes.BUTTON,
                         "label": "Browse Folder",
                         "command": ButtonFunctions.browse_directory,
                         "tooltip": "Select the Folder to save the split image to.",
@@ -220,7 +250,7 @@ class DisplayKeys_GUI:
                 "composite_id": "TopDivider",
                 "widgets": [
                     {
-                        "type": WidgetTypes.LABEL,
+                        "type": CompWidgetTypes.LABEL,
                         "widget_id": "TopDividerLabel",
                         "text": "-------------------------------------",
                     },
@@ -230,12 +260,12 @@ class DisplayKeys_GUI:
                 "composite_id": "GetParamsType",
                 "widgets": [
                     {
-                        "type": WidgetTypes.LABEL,
+                        "type": CompWidgetTypes.LABEL,
                         "widget_id": "GetParamsLabel",
                         "text": "Set Splitting Parameters:",
                     },
                     {
-                        "type": WidgetTypes.DROPDOWN,
+                        "type": CompWidgetTypes.DROPDOWN,
                         "widget_id": "GetParamsDropdown",
                         "options": ["Presets", "User Defined"],
                         "command": ButtonFunctions.property_options_visibility,
@@ -247,7 +277,7 @@ class DisplayKeys_GUI:
                 "composite_id": "PresetList",
                 "widgets": [
                     {
-                        "type": WidgetTypes.DROPDOWN,
+                        "type": CompWidgetTypes.DROPDOWN,
                         "widget_id": "PresetListDropdown",
                         "options": ["Default"],
                         "command": ButtonFunctions.placeholder,
@@ -259,7 +289,7 @@ class DisplayKeys_GUI:
                 "composite_id": "PresetAdd",
                 "widgets": [
                     {
-                        "type": WidgetTypes.BUTTON,
+                        "type": CompWidgetTypes.BUTTON,
                         "widget_id": "PressetAddButton",
                         "label": "       Add       ",
                         "command": ButtonFunctions.create_preset_popup,
@@ -272,7 +302,7 @@ class DisplayKeys_GUI:
                 "composite_id": "PresetEdit",
                 "widgets": [
                     {
-                        "type": WidgetTypes.BUTTON,
+                        "type": CompWidgetTypes.BUTTON,
                         "widget_id": "PresetEditButton",
                         "label": "       Edit       ",
                         "command": ButtonFunctions.edit_preset_popup,
@@ -285,7 +315,7 @@ class DisplayKeys_GUI:
                 "composite_id": "PresetDelete",
                 "widgets": [
                     {
-                        "type": WidgetTypes.BUTTON,
+                        "type": CompWidgetTypes.BUTTON,
                         "widget_id": "PresetDeleteButton",
                         "label": "     Delete     ",
                         "command": ButtonFunctions.delete_preset_popup,
@@ -298,12 +328,12 @@ class DisplayKeys_GUI:
                 "composite_id": "GetRows",
                 "widgets": [
                     {
-                        "type": WidgetTypes.LABEL,
+                        "type": CompWidgetTypes.LABEL,
                         "widget_id": "GetRowsLabel",
                         "text": "Rows:",
                     },
                     {
-                        "type": WidgetTypes.SPINBOX,
+                        "type": CompWidgetTypes.SPINBOX,
                         "widget_id": "GetRowsSpinbox",
                         "default_value": 2,
                         "dnd_type": "text",
@@ -314,12 +344,12 @@ class DisplayKeys_GUI:
                 "composite_id": "GetColumns",
                 "widgets": [
                     {
-                        "type": WidgetTypes.LABEL,
+                        "type": CompWidgetTypes.LABEL,
                         "widget_id": "GetColumnsLabel",
                         "text": "Columns:",
                     },
                     {
-                        "type": WidgetTypes.SPINBOX,
+                        "type": CompWidgetTypes.SPINBOX,
                         "widget_id": "GetColumnsSpinbox",
                         "default_value": "6",
                         "dnd_type": "text"
@@ -330,12 +360,12 @@ class DisplayKeys_GUI:
                 "composite_id": "GetGap",
                 "widgets": [
                     {
-                        "type": WidgetTypes.LABEL,
+                        "type": CompWidgetTypes.LABEL,
                         "widget_id": "GetGapLabel",
                         "text": "Gap (in Pixels):",
                     },
                     {
-                        "type": WidgetTypes.SPINBOX,
+                        "type": CompWidgetTypes.SPINBOX,
                         "widget_id": "GetGapSpinbox",
                         "default_value": 40,
                         "dnd_type": "text",
@@ -346,9 +376,9 @@ class DisplayKeys_GUI:
                 "composite_id": "BottomDivider",
                 "widgets": [
                     {
-                        "type": WidgetTypes.LABEL,
+                        "type": CompWidgetTypes.LABEL,
                         "widget_id": "BottomDividerLabel",
-                        "label_text": "-------------------------------------",
+                        "text": "-------------------------------------",
                     },
                 ],
             },
@@ -356,13 +386,15 @@ class DisplayKeys_GUI:
                 "composite_id": "SplitImage",
                 "widgets": [
                     {
-                        "type": WidgetTypes.BUTTON,
+                        "type": CompWidgetTypes.BUTTON,
                         "label": "Split Image",
                         "command": ButtonFunctions.process_image,
                     },
                 ],
             },
         ]
+
+        return ToolProperties
 
     @staticmethod
     def get_properties_widgets():
@@ -854,7 +886,11 @@ class DisplayKeys_Previewer:
 #         composite widget, then I need to be able to tell which one is which. But still needs to be easy to access.
 # TODO: Get colours to display from Preferences menu/popup
 
-class WidgetTypes(Enum):
+
+class CompWidgetTypes(Enum):
+    """
+        Enum of the widget types supported by the 'DisplayKeys_Composite_Widget' class.
+    """
     LABEL = 1
     DROPDOWN = 2
     TEXTBOX = 3
@@ -863,7 +899,7 @@ class WidgetTypes(Enum):
 
 
 # Generic Widgets used throughout the Applications UI (ie. Labels, Textboxes, Buttons, etc.)
-class DisplayKeys_Composite_Widget(tk.Frame):
+class DisplayKeys_Composite_Widget_reworked(tk.Frame):
     """
         Generic Widgets used throughout the Applications UI (ie. Labels, Textboxes, Buttons, etc.)
         Designed to be used in a Vertical Layout
@@ -883,141 +919,232 @@ class DisplayKeys_Composite_Widget(tk.Frame):
         self.id = composite_id
 
         # The widgets contained by this Composite widget
-        self.child_widgets = self.populate_composite(widgets)
+        self.child_widgets = self.create_composite(widgets)
+        self.populate_composite()
 
-    def populate_composite(self, widgets):
+    def create_composite(self, widgets):
         child_widgets = []
 
-        for widget in widgets:
-            if widget.type == WidgetTypes.LABEL:
-                child_widgets.append(self.create_label())
-            elif widget.type == WidgetTypes.DROPDOWN:
-                child_widgets.append(self.create_combobox())
-                pass
-            elif widget.type == WidgetTypes.TEXTBOX:
-                child_widgets.append(self.create_textbox())
-                pass
-            elif widget.type == WidgetTypes.SPINBOX:
-                child_widgets.append(self.create_spinbox())
-                pass
-            elif widget.type == WidgetTypes.BUTTON:
-                child_widgets.append(self.create_button())
-                pass
+        for widget_dict in widgets:
+            widget_type = widget_dict.get("type")
+            widget_id = widget_dict.get("widget_id")
+            # Remove keys that are not widget parameters
+            widget_params = {k: v for k, v in widget_dict.items() if k not in ["type", "widget_id"]}
+
+            match widget_type:
+                case CompWidgetTypes.LABEL:
+                    child_widgets.append(self.Comp_Label(widget_id=widget_id, **widget_params))
+                case CompWidgetTypes.DROPDOWN:
+                    child_widgets.append(self.Comp_Combobox(widget_id=widget_id, **widget_params))
+                case CompWidgetTypes.TEXTBOX:
+                    child_widgets.append(self.Comp_Entry(widget_id=widget_id, **widget_params))
+                case CompWidgetTypes.SPINBOX:
+                    child_widgets.append(self.Comp_Spinbox(widget_id=widget_id, **widget_params))
+                case CompWidgetTypes.BUTTON:
+                    child_widgets.append(self.Comp_Button(widget_id=widget_id, **widget_params))
 
         return child_widgets
 
-    def create_label(self, widget_id: str, text: str = None, tooltip: str = None,
-                     colour: str = "white"):
-        # Text Label - Text that is non-interactive (ie. A Tittle)
-        # Takes: Label Text, Label Tooltip
-        self.label = tk.Label(self, text=text, background=colour)
-        self.label.grid(sticky="nsew", column=0)
-
-        if tooltip:
-            self.l_tooltip = DisplayKeys_Tooltip(self.label, tooltip)
-
-    def create_combobox(self, widget_id: str, options: list[str] = None, tooltip: str = None,
-                        command: Callable[[list['DisplayKeys_Composite_Widget']], None] = None,
-                        update_previewer: bool = False):
-        # Dropdown Button - This is set up to be used with anything
-        # All it needs is options and what command that will use the widgets to perform operations on.
-        # Takes: Options Text Array, Command, Tooltip Text
-        if options and options:
-            self.dropdown_var = tk.StringVar()
-            self.dropdown_var.set(options[0])  # Set default value
-            self.dropdown = ttk.Combobox(self, textvariable=self.dropdown_var, values=options,
-                                         state="readonly", justify="left")
-            self.dropdown.grid(sticky="nsew", column=0)
-            # Bind the selection change event to the dropdown command
-            self.dropdown.bind("<<ComboboxSelected>>", lambda event: command(app.properties))
-            # Update Previewer on change
-            if update_previewer:
-                self.dropdown_trace = self.dropdown_var.trace('w', lambda *args: ButtonFunctions.process_image(self.id))
-
-            if tooltip:
-                self.d_tooltip = DisplayKeys_Tooltip(self.dropdown, tooltip)
-
-            # TODO:
-            #   1.) Make generic so that dropdown button provides the list of WidgetID's its responsible for.
-            #       Will make life easier for future dropdown functions as well (namely Presets etc.).
-            #                                       Might Reconsider this
-            #                                           -----      -----
-
-    def create_textbox(self, widget_id: str, state: Literal["normal", "disabled", "readonly"] = "normal",
-                       default_value: str = None,
-                       dnd_type: Literal['image', 'folder', 'text', 'any'] | None = None, colour: str = "white",
-                       updates_previewer: bool = False, ):
-        # Textbox - Mainly used for getting user input, but can also be used as a good place to dynamically show text
-        # Takes: Default Text Value, Tooltip Text, State
-
-        self.textbox_var = tk.StringVar()
-        self.textbox = tk.Entry(self, textvariable=self.textbox_var, state=state, background=colour,
-                                readonlybackground=colour, disabledbackground=colour)
-        if default_value:
-            self.textbox_var.set(default_value)
-        # Binds the Textbox to Call the DisplayKeys_Previewer Update function
-        # when any of the Image Splitting Properties are changed
-        if updates_previewer:
-            self.textbox_trace = self.textbox_var.trace('w', lambda *args: ButtonFunctions.process_image(self.id))
-        if dnd_type:
-            self.dnd = DisplayKeys_DragDrop(self.textbox, drop_type=dnd_type, parent_widget=self,
-                                            traced_callback=lambda *args: ButtonFunctions.process_image(
-                                                self.id) if updates_previewer else None)
-
-        self.textbox.grid(sticky="nsew", column=0)
-
-    def create_spinbox(self, widget_id: str, default_value: int = 0,
-                       dnd_type: Literal['image', 'folder', 'text', 'any'] | None = None, colour: str = "white",
-                       updates_previewer: bool = False, ):
-        # Spinbox - Only added for the functionality of incremental user input buttons
-        # spinbox_default_value + 1, to avoid 'from=0, to=0' cases
-        # Takes: Default Spinbox Value, Tooltip Text
-        self.spinbox_var = tk.IntVar()
-        self.spinbox = tk.Spinbox(self, from_=0, to=(int(default_value) + 1) * 100,
-                                  textvariable=self.spinbox_var, background=colour,
-                                  readonlybackground=colour, disabledbackground=colour, )
-        self.spinbox_default = default_value
-        if default_value:
-            self.spinbox_var.set(default_value)
-        # Binds the Spinbox to Call the DisplayKeys_Previewer Update function when any of the Image Splitting Properties are changed
-        if updates_previewer:
-            self.spinbox_trace = self.spinbox_var.trace('w', lambda *args: ButtonFunctions.process_image(self.id))
-        if dnd_type:
-            self.dnd = DisplayKeys_DragDrop(self.spinbox, drop_type=dnd_type, parent_widget=self,
-                                            traced_callback=lambda *args: ButtonFunctions.process_image(
-                                                self.id) if updates_previewer else None)
-
-        self.spinbox.grid(sticky="nsew", column=0)
-
-    def create_button(self, widget_id: str, label: str = None, command: Callable[[str], None] = None,
-                      tooltip: str = None, colour: str = "white",
-                      fill: Literal['none', 'horizontal', 'vertical', 'both'] = 'both', ):
-        # Button - Used specifically to call any function in the Application
-        # Provides the function with its own ID in case the function needs to access its parents.
-        # Takes: Label Text, Command, Tooltip Text
-        self.button = tk.Button(self, text=label, background=colour, borderwidth=3,
-                                command=lambda: command(self.id))
-        if fill == 'both':
-            self.button.grid(sticky="nsew", column=0, pady=3)
-        elif fill == 'horizontal':
-            self.button.grid(sticky="ew", column=0, pady=3)
-        elif fill == 'vertical':
-            self.button.grid(sticky="ns", column=0, pady=3)
-        else:
-            self.button.grid(sticky="", column=0, pady=3)
-
-        if tooltip:
-            self.b_tooltip = DisplayKeys_Tooltip(self.button, tooltip)
+    def populate_composite(self):
+        for i, widget in enumerate(self.child_widgets):
+            #widget.pack(fill=tk.BOTH, expand=True)
+            widget.grid(row=i, column=0, sticky="nsew")
 
     # Create child class widgets to hold all this information themselves, so as to not store it in arrays or anything
     # with some convoluted way to keeping track of what widget has what tooltip etc.
     class Comp_Label(tk.Label):
-        def __init__(self, widget_id: str, label: tk.Label, tooltip: 'DisplayKeys_Tooltip'):
-            super.__init__(self)
+        def __init__(self, widget_id: str, text: str, tooltip: str = None,
+                     master=None, **kwargs):
+            super().__init__(master, text=text, **kwargs)
             self.id = widget_id
-            self.label = label
-            self.tooltip = tooltip
+            if tooltip:
+                self.tooltip = DisplayKeys_Tooltip(parent=self, text=tooltip)
 
+    class Comp_Combobox(ttk.Combobox):
+        def __init__(self, widget_id: str, options: list[str], tooltip: str = None,
+                     command: Callable[[list['DisplayKeys_Composite_Widget']], None] = None,
+                     update_previewer: bool = False,
+                     master=None, **kwargs):
+            self.dropdown_var = tk.StringVar()
+            self.dropdown_var.set(options[0])  # Set default value
+
+            super().__init__(master, textvariable=self.dropdown_var, values=options, **kwargs)
+            self.id = widget_id
+            self.bind("<<ComboboxSelected>>", lambda event: command(app.properties))
+            if tooltip:
+                self.tooltip = DisplayKeys_Tooltip(parent=self, text=tooltip)
+
+    class Comp_Entry(tk.Entry):
+        def __init__(self, widget_id: str, state: Literal["normal", "disabled", "readonly"] = "normal", default_value: str = None,
+                     dnd_type: Literal['image', 'folder', 'text', 'any'] | None = None,
+                     colour: str = "white", updates_previewer: bool = False,
+                     master=None, **kwargs):
+            self.textbox_var = tk.StringVar()
+            if default_value:
+                self.textbox_var.set(default_value)
+
+            super().__init__(master, textvariable=self.textbox_var, state=state, bg=colour, **kwargs)
+            self.id = widget_id
+            if updates_previewer:
+                self.textbox_trace = self.textbox_var.trace('w', lambda *args: ButtonFunctions.process_image(self.id))
+            if dnd_type:
+                self.dnd = DisplayKeys_DragDrop(self, drop_type=dnd_type, parent_widget=self,
+                                                traced_callback=lambda *args: ButtonFunctions.process_image(
+                                                    self.id) if updates_previewer else None)
+
+    class Comp_Spinbox(tk.Spinbox):
+        def __init__(self, widget_id: str, default_value: int = 0, dnd_type: Literal['image', 'folder', 'text', 'any'] | None = None,
+                     colour: str = "white", updates_previewer: bool = False,
+                     master=None, **kwargs):
+            self.spinbox_var = tk.IntVar()
+            if default_value:
+                self.spinbox_var.set(default_value)
+
+            super().__init__(master, from_=0, to=(int(default_value) + 1) * 100, textvariable=self.spinbox_var,
+                             bg=colour, **kwargs)
+            self.id = widget_id
+            if updates_previewer:
+                self.spinbox_trace = self.spinbox_var.trace('w', lambda *args: ButtonFunctions.process_image(self.id))
+            if dnd_type:
+                self.dnd = DisplayKeys_DragDrop(self, drop_type=dnd_type, parent_widget=self,
+                                                traced_callback=lambda *args: ButtonFunctions.process_image(
+                                                    self.id) if updates_previewer else None)
+
+    class Comp_Button(tk.Button):
+        def __init__(self, widget_id: str, label: str = None, command: Callable[[str], None] = None,
+                     tooltip: str = None, colour: str = "white", border: int = 3, fill: str = 'both',
+                     master=None, **kwargs):
+            super().__init__(master, text=label, command=lambda: command(self.id), borderwidth=border, bg=colour, **kwargs)
+            self.id = widget_id
+            if tooltip:
+                self.tooltip = DisplayKeys_Tooltip(parent=self, text=tooltip)
+
+            # match fill:
+            #     case 'both':
+            #         self.grid(sticky="nsew", column=0, pady=3)
+            #     case 'horizontal':
+            #         self.grid(sticky="ew", column=0, pady=3)
+            #     case 'vertical':
+            #         self.grid(sticky="ns", column=0, pady=3)
+            #     case "":
+            #         self.grid(sticky="", column=0, pady=3)
+
+
+class DisplayKeys_Composite_Widget(tk.Frame):
+    """
+        Generic Widgets used throughout the Applications UI (ie. Labels, Textboxes, Buttons, etc.)
+
+        Optional Named Widget Params: All parameters not listed here are Optional and too many to list.
+        :param parent: The Widget container
+        :param widget_id: A Unique ID to Identify/Distinguish it from other Composite Widgets.
+        :param button_fill: The axis on which the button should fill a row/col.
+    """
+    def __init__(self, parent: tk.Frame, widget_id: str, label_text: str = None, label_tooltip: str = None,
+                 dropdown_options: list[str] = None, dropdown_tooltip: str = None,
+                 dropdown_command: Callable[[list['DisplayKeys_Composite_Widget']], None] = None,
+                 has_textbox: bool = False, textbox_state: Literal["normal", "disabled", "readonly"] = "normal",
+                 textbox_default_value: str = None, has_spinbox: bool = False, spinbox_default_value: int | str = 0,
+                 button_label: str = None, button_command: Callable[[str], None] = None, button_tooltip: str = None,
+                 button_fill: Literal['none', 'horizontal', 'vertical', 'both'] = 'both',
+                 updates_previewer: bool = False, label_colour: str = "white",
+                 textbox_colour: str = "white", spinbox_colour: str = "white",
+                 has_textbox_dnd: bool = False, has_spinbox_dnd: bool = False,
+                 dnd_type: Literal['image', 'folder'] = 'image'):
+        super().__init__(parent, bg="#343A40")
+        self.grid(sticky="nsew", padx=5, pady=5)
+        self.columnconfigure(0, weight=1)
+
+        # The reference name by which button functions will find this widget
+        self.id = widget_id
+
+        # Text Label - Text that is non-interactive (ie. A Tittle)
+        # Takes: Label Text, Label Tooltip
+        if label_text:
+            self.label = tk.Label(self, text=label_text, background=label_colour)
+            self.label.grid(sticky="nsew", column=0)
+
+            if label_tooltip:
+                self.l_tooltip = DisplayKeys_Tooltip(self.label, label_tooltip)
+
+        # Dropdown Button - This is set up to be used with anything
+        # All it needs is options and what command that will use the widgets to perform operations on.
+        # Takes: Options Text Array, Command, Tooltip Text
+        if dropdown_options and dropdown_command:
+            self.dropdown_var = tk.StringVar()
+            self.dropdown_var.set(dropdown_options[0])  # Set default value
+            self.dropdown = ttk.Combobox(self, textvariable=self.dropdown_var, values=dropdown_options,
+                                         state="readonly", justify="left")
+            self.dropdown.grid(sticky="nsew", column=0)
+            # Bind the selection change event to the dropdown command
+            self.dropdown.bind("<<ComboboxSelected>>", lambda event: dropdown_command(app.properties))
+            self.dropdown_trace = self.dropdown_var.trace('w', lambda *args: ButtonFunctions.process_image(self.id))
+
+            if dropdown_tooltip:
+                self.d_tooltip = DisplayKeys_Tooltip(self.dropdown, dropdown_tooltip)
+
+            # TODO:
+            #   1.) Make dropdown update previewer when changing selections.
+            #       Simply make dropdown selections change the values in the textboxes that will be taken anyways.
+            #       Instead of manually checking for the dropdown selection in the Process_Image Function.
+            #       You just take whatever is in the textboxes at all times, and have all dropdown selections only,
+            #       update the textboxes based on 'saved' values from them (this will tie in nicely with presets)!
+            #                                           ----- DONE -----
+            #                             Still need dropdown selection for the time being
+            #                                           -----      -----
+            #   2.) Make generic so that dropdown button provides the list of WidgetID's its responsible for.
+            #       Will make life easier for future dropdown functions as well (namely Presets etc.).
+            #                                       Might Reconsider this
+
+        # Textbox - Mainly used for getting user input, but can also be used as a good place to dynamically show text
+        # Takes: Default Text Value, Tooltip Text, State
+        if has_textbox:
+            self.textbox_var = tk.StringVar()
+            self.textbox = tk.Entry(self, textvariable=self.textbox_var, state=textbox_state, background=textbox_colour, readonlybackground=textbox_colour, disabledbackground=textbox_colour)
+            if textbox_default_value:
+                self.textbox_var.set(textbox_default_value)
+            # Binds the Textbox to Call the DisplayKeys_Previewer Update function when any of the Image Splitting Properties are changed
+            if updates_previewer:
+                self.textbox_trace = self.textbox_var.trace('w', lambda *args: ButtonFunctions.process_image(self.id))
+            if (has_textbox_dnd and not has_spinbox_dnd) and dnd_type:
+                self.dnd = DisplayKeys_DragDrop(self.textbox, drop_type=dnd_type, parent_widget=self, traced_callback=lambda *args: ButtonFunctions.process_image(self.id) if updates_previewer else None)
+
+            self.textbox.grid(sticky="nsew", column=0)
+
+        # Spinbox - Only added for the functionality of incremental user input buttons
+        # spinbox_default_value + 1, to avoid 'from=0, to=0' cases
+        # Takes: Default Spinbox Value, Tooltip Text
+        if has_spinbox:
+            self.spinbox_var = tk.IntVar()
+            self.spinbox = tk.Spinbox(self, from_=0, to=(int(spinbox_default_value) + 1) * 100, textvariable=self.spinbox_var, background=spinbox_colour, readonlybackground=spinbox_colour, disabledbackground=spinbox_colour, )
+            self.spinbox_default = spinbox_default_value
+            if spinbox_default_value:
+                self.spinbox_var.set(spinbox_default_value)
+            # Binds the Spinbox to Call the DisplayKeys_Previewer Update function when any of the Image Splitting Properties are changed
+            if updates_previewer:
+                self.spinbox_trace = self.spinbox_var.trace('w', lambda *args: ButtonFunctions.process_image(self.id))
+            if (has_spinbox_dnd and not has_textbox_dnd) and dnd_type:
+                self.dnd = DisplayKeys_DragDrop(self.spinbox, drop_type=dnd_type, parent_widget=self,
+                                                traced_callback=lambda *args: ButtonFunctions.process_image(
+                                                    self.id) if updates_previewer else None)
+
+            self.spinbox.grid(sticky="nsew", column=0)
+
+        # Button - Used specifically to call any function in the Application
+        # Provides the function with its own ID in case the function needs to access its parents.
+        # Takes: Label Text, Command, Tooltip Text
+        if button_label and button_command:
+            self.button = tk.Button(self, text=button_label, background=label_colour, command=lambda: button_command(self.id))
+            if button_fill == 'both':
+                self.button.grid(sticky="nsew", column=0, pady=3)
+            elif button_fill == 'horizontal':
+                self.button.grid(sticky="ew", column=0, pady=3)
+            elif button_fill == 'vertical':
+                self.button.grid(sticky="ns", column=0, pady=3)
+            else:
+                self.button.grid(sticky="", column=0, pady=3)
+
+            if button_tooltip:
+                self.b_tooltip = DisplayKeys_Tooltip(self.button, button_tooltip)
 
 
 # A custom Tooltip class based on tk.Toplevel
