@@ -218,6 +218,7 @@ class DisplayKeys_GUI:
                     },
                     {
                         "type": CompWidgetTypes.BUTTON,
+                        "widget_id": "GetOutputButton",
                         "label": "Browse Folder",
                         "command": ButtonFunctions.browse_directory,
                         "tooltip": "Select the Folder to save the split image to.",
@@ -370,6 +371,7 @@ class DisplayKeys_GUI:
                 "widgets": [
                     {
                         "type": CompWidgetTypes.BUTTON,
+                        "widget_id": "SplitImage",
                         "label": "Split Image",
                         "command": ButtonFunctions.process_image,
                     },
