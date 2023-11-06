@@ -28,6 +28,21 @@ import webbrowser
 import json
 
 ####################################################################################################################
+#                                                    App Paths
+####################################################################################################################
+
+# For Local Environments
+#sys_icon_img = "./assets/images/DisplayKeys-IS.ico"
+#sys_help_img = "./assets/images/Help.png"
+#sys_preview_img = "./assets/images/Preview.png"
+
+# For Packaging
+sys_icon_img = sys._MEIPASS + "./DisplayKeys-IS.ico"
+sys_help_img = sys._MEIPASS + "./Help.png"
+sys_preview_img = sys._MEIPASS + "./Preview.png"
+
+
+####################################################################################################################
 #                                                    App Window
 ####################################################################################################################
 
@@ -43,7 +58,7 @@ class DisplayKeys_GUI:
         print("---Creating Window---")
         self.window = tkdnd.Tk()
         self.window.title("DisplayKeys-IS")
-        icon_path = sys._MEIPASS + "./DisplayKeys-IS.ico"
+        icon_path = sys_icon_img
         self.window.iconbitmap(icon_path)
         self.window.geometry("600x600")
         self.window.resizable(False, False)
@@ -76,7 +91,7 @@ class DisplayKeys_GUI:
                                                help_tooltip="Previewer is not 100% Accurate!\n\nPreviewer Legend:\n  - Red Lines: Image Split\n  - Red Line Thickness: Gap\n  - Black Stipped: Cell Cropping",
                                                tooltip_justification="left", tooltip_anchor="center")
         # TODO: Add Results Widget's and populate content (ie. cell resolution, % of lost pixels?, etc.)
-        #       Also check if there is any actual meaningful information that can be added.
+        #       Also check if there is any actual meaningful information that can be shown.
         #self.preview_info = self.populate_column(self.preview_frame, self.get_preview_widgets())
         #self.previewer_info_help = DisplayKeys_Help(parent=self.preview_frame, row=10, alignment="se", percentage_size=40,
         #                                       help_tooltip="Further Information on the Results!")
@@ -97,6 +112,12 @@ class DisplayKeys_GUI:
     # Used to populate a column(Frame) with DisplayKeys_Composite_Widget's
     @staticmethod
     def populate_column(parent, widgets):
+        """
+            Adds [DisplayKeys_Composite_Widget]'s to a parent container.
+            :param parent: The Container to fill with Widgets
+            :param widgets: The list of widgets to add to the Parent
+        """
+
         created_widgets = []
         for widget in widgets:
             created_widgets.append(DisplayKeys_Composite_Widget(parent, **widget))
@@ -105,6 +126,10 @@ class DisplayKeys_GUI:
 
     @staticmethod
     def get_properties_widgets():
+        """
+            Returns an array of [DisplayKeys_Composite_Widget]'s, used to split Images.
+        """
+
         ToolProperties = [
             {
                 "widget_id": "Credits",
@@ -228,6 +253,10 @@ class DisplayKeys_GUI:
 
     @staticmethod
     def get_preview_widgets():
+        """
+            Returns an array of [DisplayKeys_Composit_Widgets]'s and the [DisplayKeys_Previewer].
+            Used to Preview the changes done by the Property Widgets, along with some meaningful information.
+        """
         PreviewWidgets = [
             {
                 "widget_id": "PreviewDivider",
@@ -253,8 +282,16 @@ class DisplayKeys_GUI:
 
         return PreviewWidgets
 
+    # TODO: Create Prefernces menu
+    #       - For now only to house colour settings for the Composite widgets and application backgrounds
+    #       - In the future also for Previewer colours, etc.
     # To keep the code more encapsulated and clean
     def create_menu_bar(self):
+        """
+            Creates the Main Window Menu Bar.
+            Will house Import/Export, Settings, Preferences, Help, etc. Menus.
+        """
+
         # Main Window Menu Bar
         self.menu_bar = Menu()
         self.window.configure(menu=self.menu_bar)
@@ -287,6 +324,7 @@ class DisplayKeys_GUI:
 class DisplayKeys_Previewer:
     """
         The Widget that show's all changes done to the Image within the Application.
+
         :param parent: The Widget Container holding this Previewer.
         :param width: The Width of the Previewer Canvas.
         :param height: The Height of the Previewer Canvas.
@@ -295,7 +333,7 @@ class DisplayKeys_Previewer:
         # Initialize Image
         self.width = width
         self.height = height
-        self.placeholder_path = sys._MEIPASS + "./Preview.png"
+        self.placeholder_path = sys_preview_img
         self.image_path = None
 
         # Initialize canvas
@@ -363,10 +401,13 @@ class DisplayKeys_Previewer:
         self.drag_data["x"] = x_offset
         self.drag_data["y"] = y_offset
 
-    # This calculates an approximate version of the split_image function,
-    # to preview the Splitting and Cropping of an image provided.
-    # Also calls the 'display_preview_image' to refresh the image.
     def update_preview(self, image_path, num_rows, num_columns, gap):
+        """
+            This calculates an approximate representation of the split_image function,
+            to preview the Splitting and Cropping of an image provided.
+            Also calls the 'display_preview_image' to refresh the image.
+        """
+
         # Clear the canvas to prepare for new content
         self.canvas.delete("all")
 
@@ -457,6 +498,10 @@ class DisplayKeys_Previewer:
 
     # noinspection PyTypedDict
     def start_drag(self, event):
+        """
+            Record the position of the cursor.
+        """
+
         # record the item and its location
         self.drag_data["item"] = self.canvas.find_closest(event.x, event.y)[0]
         self.drag_data["x"] = event.x
@@ -464,6 +509,10 @@ class DisplayKeys_Previewer:
         #print("Start Drag Position:", event.x, event.y)
 
     def end_drag(self, event):
+        """
+            Finalized the Drag event, storing / converting position coordinates, and calculating clamping.
+        """
+
         # Save the end position of the drag
         self.image_current_position["x"], self.image_current_position["y"] = self.canvas.coords(self.preview_image)
 
@@ -521,6 +570,10 @@ class DisplayKeys_Previewer:
         ButtonFunctions.process_image("DragPreviewImage")
 
     def do_drag(self, event):
+        """
+            Update the Preview Image to match the cursor position.
+        """
+
         # compute how much the mouse has moved
         delta_x = event.x - self.drag_data["x"]
         delta_y = event.y - self.drag_data["y"]
@@ -533,6 +586,10 @@ class DisplayKeys_Previewer:
 
     # Move the preview image back to its original position
     def reset_drag(self):
+        """
+            Set the preview image back to its original position.
+        """
+
         # Reset Position / Save
         self.canvas.coords(self.preview_image, self.image_reset_position["x"], self.image_reset_position["y"])
         self.image_current_position["x"], self.image_current_position["y"] = self.canvas.coords(self.preview_image)
@@ -551,6 +608,8 @@ class DisplayKeys_Previewer:
 #       with Order being purely defined by the input array.
 #       However, it will for now always be in a fixed linear centered top-to-bottom layout, maybe I will come up
 #       with a way to work around that in the future. But not a priority for now.
+# TODO: Get colours to display from Preferences menu/popup
+
 # Generic Widgets used throughout the Applications UI (ie. Labels, Textboxes, Buttons, etc.)
 class DisplayKeys_Composite_Widget(tk.Frame):
     """
@@ -669,30 +728,41 @@ class DisplayKeys_Composite_Widget(tk.Frame):
                 self.b_tooltip = DisplayKeys_Tooltip(self.button, button_tooltip)
 
 
-# A Tooltip that can be assigned to any of the DisplayKeys_Composite_Widget sub widgets
+# A custom Tooltip class based on tk.Toplevel
 class DisplayKeys_Tooltip:
     """
         A Tooltip that can be assigned to any of the DisplayKeys_Composite_Widget sub widgets
+
+        This tooltip will be stored within the actual Composite Widget, and will keep reference
+        to the widget that will trigger it.
+
         :param parent: Widget that the Tooltip is Bound to.
         :param text: The Tooltip text to show.
         :param justify: The Relative Alignment of Text to itself when broken into a new line.
         :param anchor: The Alignment of Text in general Relative to the Tooltips Widget Space
+        :param lifetime: How long the Tooltip should exist for while hovering over its Parent, in seconds.
     """
     def __init__(self, parent: tk.Label | tk.Entry | tk.Spinbox | tk.Button | ttk.Combobox, text: str,
                  justify: Literal["left", "center", "right"] = "center",
-                 anchor: Literal["nw", "n", "ne", "w", "center", "e", "sw", "s", "se"] = "center"):
+                 anchor: Literal["nw", "n", "ne", "w", "center", "e", "sw", "s", "se"] = "center",
+                 lifetime: int = 5):
         self.parent = parent
         self.text = text
-        self.tooltip = None
         self.text_justification = justify
         self.text_anchor = anchor
+        self.tooltip = None
+        self.tooltip_lifetime = lifetime * 1000
+        self.tooltip_lifetime_id = None
         self.parent.bind("<Enter>", self.show_tooltip)
         self.parent.bind("<Leave>", self.hide_tooltip)
         self.parent.bind("<Button>", self.hide_tooltip)
         self.parent.bind("<Motion>", self.move_tooltip)
 
-    # Creates the Tooltip whenever the Cursor hovers over its Parent Widget
     def show_tooltip(self, event):
+        """
+            Creates the Tooltip whenever the Cursor hovers over its Parent Widget
+        """
+        # Create Window
         self.tooltip = tk.Toplevel(self.parent)
         self.tooltip.wm_overrideredirect(True)
         self.tooltip_position(event)
@@ -702,26 +772,56 @@ class DisplayKeys_Tooltip:
         )
         label.grid(sticky="n")
 
-    # Updates the Tooltips position based on mouse movement
+        # Start lifetime countdown to avoid tooltip getting bugged and not disappearing
+        self.tooltip_lifetime_destructor()
+
     def move_tooltip(self, event):
+        """
+            Updates the Tooltips position based on mouse movement
+        """
+
         if self.tooltip:
             self.tooltip_position(event)
 
-    # Positions the Tooltip to the Bottom Right of the Cursor
     def tooltip_position(self, event):
+        """
+            Positions the Tooltip to the Bottom Right of the Cursor
+        """
+
         x = self.parent.winfo_pointerx()
         y = self.parent.winfo_pointery()
         self.tooltip.wm_geometry(f"+{x+20}+{y+20}")
 
-    # Destroys the Tooltip whenever the Cursor leaves the region of the Parent Widget
-    def hide_tooltip(self, event):
+    # TODO:
+    #       Tooltips dont disappear in some instances when used with Drop-down menus.
+    #       When Clicking on the dropdown to open it, but then click on it again without moving the mouse off of it
+    #       The dropdown remains until either a File Dialogue window is opened or a click-drag action is initiated.
+    #       At which point the tooltip isn't destroyed, just moved beneath ALL windows. And remains on Desktop.
+    #                           Need to find a way to destroy it when Dropdown is closed?
+    def hide_tooltip(self, event=None):
+        """
+            Destroys the Tooltip whenever the Cursor leaves the region of the Parent Widget
+        """
         if self.tooltip:
+            if self._lifetime_id:
+                self.tooltip.after_cancel(self._lifetime_id)
+
+            if event:
+                print('Function called via event')
+            else:
+                print('Function called via Timer')
+
             self.tooltip.destroy()
             self.tooltip = None
 
+    def tooltip_lifetime_destructor(self):
+        self._lifetime_id = self.tooltip.after(self.tooltip_lifetime, self.hide_tooltip)
 
-# A Pop-Up Window to Display Confirmation/Warning/Error messages
+
 class DisplayKeys_PopUp:
+    """
+        A custom Pop-Up Window Parent class built on tk.Toplevel.
+    """
     def __init__(self, parent):
         # --- Create Window Setup ---
         self.popup_min_width = 225
@@ -775,6 +875,9 @@ class DisplayKeys_PopUp:
         return execute_function
 
     def center_window(self, parent):
+        """
+            Centers the Pop-Up to the Parent Window.
+        """
         # Update the window to get correct measurements
         self.popup.update()
 
@@ -1017,7 +1120,12 @@ class PopUp_Preset_Add(DisplayKeys_PopUp):
             rows = int(rows_input.spinbox.get())
             cols = int(cols_input.spinbox.get())
             gap = int(gap_input.spinbox.get())
-            ButtonFunctions.add_preset(name=name, rows=rows, cols=cols, gap=gap)
+
+            if not any(preset.name == name for preset in app.presets):
+                ButtonFunctions.add_preset(name=name, rows=rows, cols=cols, gap=gap)
+            else:
+                PopUp_Dialogue(app.window, popup_type='error', message="Preset with this Name already exists!",
+                               buttons=[{'OK': lambda: None}])
         else:
             PopUp_Dialogue(self.popup, popup_type='error', message="Missing a Field!", buttons=[{'OK': lambda: None}])
 
@@ -1042,7 +1150,7 @@ class PopUp_Preset_Add(DisplayKeys_PopUp):
         self.confirm_button = tk.Button(self.button_container, text="           Confirm          ", command=self.button_command_destructive(lambda: self.submit_preset()))
         self.confirm_button.grid(sticky="nsew", row=0, column=0)
         self.confirm_button.rowconfigure(0, weight=1)
-        self.cancel_button = tk.Button(self.button_container, text="           Cancel           ", command=self.button_command_destructive(lambda:None))
+        self.cancel_button = tk.Button(self.button_container, text="           Cancel           ", command=self.button_command_destructive(lambda: None))
         self.cancel_button.grid(sticky="nsew", row=0, column=1)
         self.cancel_button.rowconfigure(0, weight=1)
 
@@ -1119,7 +1227,11 @@ class PopUp_Preset_Edit(DisplayKeys_PopUp):
             gap = int(self.gap_input.spinbox.get())
 
             # Save edited Preset
-            ButtonFunctions.edit_preset(current_preset=self.current_preset, new_name=name, rows=rows, cols=cols, gap=gap)
+            if not any(preset.name == name for preset in app.presets):
+                ButtonFunctions.edit_preset(current_preset=self.current_preset, new_name=name, rows=rows, cols=cols, gap=gap)
+            else:
+                PopUp_Dialogue(app.window, popup_type='error', message="Preset with this Name already exists!",
+                               buttons=[{'OK': lambda: None}])
         else:
             PopUp_Dialogue(self.popup, popup_type='error', message="Missing a Field!", buttons=[{'OK': lambda: None}])
 
@@ -1167,6 +1279,20 @@ class PopUp_Preset_Edit(DisplayKeys_PopUp):
         # White Space Blank
         self.bottm_white_space = tk.Label(self.container)
         self.bottm_white_space.grid(sticky="nsew", row=7, column=0)
+
+# TODO: Implement a Preferences Pop-Up to adjust colours, etc.
+#       Main UI Structure should be:
+#       -------------------------------------------------------
+#       |                                                     |
+#       | Colours  I        Colours         | Reset | Save |  |
+#       | Option 2 I  --------------------------------------  |
+#       | Option 3 I    Category                              |
+#       | ...      I  Option                ['Hex' / String]  |
+#       |          I  ...                                     |
+#       |                                                     |
+#       -------------------------------------------------------
+class PopUp_Preferences(DisplayKeys_PopUp):
+    pass
 
 
 # A Drag&Drop latch-on class that can be used on any tk.Entry or tk.Spinbox widget
@@ -1249,7 +1375,6 @@ class DisplayKeys_DragDrop:
                         self.set_background(event.widget, 'red')
                         print("Not a Folder DnD!")
             elif self.accept_type == self.type_legend["text"]:
-
                 try:
                     # Ensure that dropped item is text
                     event.data.encode('utf-8')
@@ -1401,7 +1526,7 @@ class DisplayKeys_Help:
                  percentage_size: int = 100, help_tooltip: str = "Placeholder Help",
                  tooltip_justification: Literal["left", "center", "right"] = "center",
                  tooltip_anchor: Literal["nw", "n", "ne", "w", "center", "e", "sw", "s", "se"] = "center"):
-        self.image = Image.open(sys._MEIPASS + "./Help.png")
+        self.image = Image.open(sys_help_img)
         new_size = int( self.image.height * (percentage_size / 100) )
         self.resized_image = ImageTk.PhotoImage( self.image.resize((new_size, new_size)))
 
@@ -1586,7 +1711,7 @@ class ButtonFunctions:
             image_path = get_image_widget.textbox.get() if get_image_widget.textbox.get() else None
             output_dir = get_output_widget.textbox.get() if get_output_widget.textbox.get() else None
             if not image_path:
-                image_path = sys._MEIPASS + "./Preview.png"
+                image_path = sys_preview_img
 
                 # Disable Trace temporarily to not call this function again mid-execution
                 ButtonFunctions.disable_trace(get_image_widget.textbox_var, get_image_widget.textbox_trace)
@@ -1780,6 +1905,7 @@ class ButtonFunctions:
             if preset.name == current_preset:
                 # delete the preset that currently exists...
                 app.presets.remove(preset)
+                continue
         ButtonFunctions.populate_property_presets_options(app.properties, app.presets, reset_selection=True)
 
     # ----- Menu Bar: -----
@@ -1942,14 +2068,7 @@ class split:
 
         # Is not of a supported image format
         except TypeError as error_message:
-            # In the future simply open a Pop-Up Window with an error message:
-            # |----------------------------------------|
-            # | File Format not supported \n           |
-            # | Currently supported formats are: \n    |
-            # | - Image     | get_supported_types()[0] |
-            # | - Animated  | get_supported_types()[1] |
-            # |----------------------------------------|
-            PopUp_Dialogue(app.window, 'error', f"File Format not supporte\nCurrenlty supported formats are:\n- Image     | {split.get_supported_types()[0]}\n- Animated  | {split.get_supported_types()[1]}")
+            PopUp_Dialogue(app.window, 'error', f"File Format not supporte\nCurrenlty supported formats are:\n- Static     | {split.get_supported_types()[0]}\n- Animated  | {split.get_supported_types()[1]}")
             print("Wrong File Type: ", type(error_message).__name__, str(error_message))
             return None
 
