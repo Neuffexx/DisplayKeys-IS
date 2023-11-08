@@ -208,7 +208,7 @@ class DisplayKeys_GUI:
                     {
                         "type": CompWidgetTypes.BUTTON,
                         "widget_id": "GetImageButton",
-                        "label": "Browse Image",
+                        "text": "Browse Image",
                         "command": ButtonFunctions.browse_image,
                         "tooltip": "Select the Image you want to be split.",
                     },
@@ -231,7 +231,7 @@ class DisplayKeys_GUI:
                     {
                         "type": CompWidgetTypes.BUTTON,
                         "widget_id": "GetOutputButton",
-                        "label": "Browse Folder",
+                        "text": "Browse Folder",
                         "command": ButtonFunctions.browse_directory,
                         "tooltip": "Select the Folder to save the split image to.",
                     },
@@ -284,7 +284,7 @@ class DisplayKeys_GUI:
                     {
                         "type": CompWidgetTypes.BUTTON,
                         "widget_id": "PressetAddButton",
-                        "label": "       Add       ",
+                        "text": "       Add       ",
                         "command": ButtonFunctions.create_preset_popup,
                         "tooltip": "Create a new Preset.",
                         "fill": "vertical",
@@ -297,7 +297,7 @@ class DisplayKeys_GUI:
                     {
                         "type": CompWidgetTypes.BUTTON,
                         "widget_id": "PresetEditButton",
-                        "label": "       Edit       ",
+                        "text": "       Edit       ",
                         "command": ButtonFunctions.edit_preset_popup,
                         "tooltip": "Edit the currently selected Preset.",
                         "fill": "vertical",
@@ -310,7 +310,7 @@ class DisplayKeys_GUI:
                     {
                         "type": CompWidgetTypes.BUTTON,
                         "widget_id": "PresetDeleteButton",
-                        "label": "     Delete     ",
+                        "text": "     Delete     ",
                         "command": ButtonFunctions.delete_preset_popup,
                         "tooltip": "Delete the currently selected Preset.",
                         "fill": "vertical",
@@ -384,7 +384,7 @@ class DisplayKeys_GUI:
                     {
                         "type": CompWidgetTypes.BUTTON,
                         "widget_id": "SplitImage",
-                        "label": "Split Image",
+                        "text": "Split Image",
                         "command": ButtonFunctions.process_image,
                     },
                 ],
@@ -906,7 +906,7 @@ class DisplayKeys_Composite_Widget(tk.Frame):
 
     class Comp_Entry(tk.Entry):
         def __init__(self, widget_id: str, state: Literal["normal", "disabled", "readonly"] = "normal", default_value: str = None,
-                     dnd_type: Literal['image', 'folder', 'text', 'any'] | None = None,
+                     dnd_type: Literal['image', 'folder', 'text', 'any'] | None = None, tooltip: str = None,
                      colour: str = "white", updates_previewer: bool = False,
                      master=None, **kwargs):
             self.textbox_var = tk.StringVar()
@@ -917,6 +917,8 @@ class DisplayKeys_Composite_Widget(tk.Frame):
             self.id = widget_id
             if updates_previewer:
                 self.textbox_trace = self.textbox_var.trace('w', lambda *args: ButtonFunctions.process_image(self.id))
+            if tooltip:
+                self.tooltip = DisplayKeys_Tooltip(parent=self, text=tooltip)
             if dnd_type:
                 self.dnd = DisplayKeys_DragDrop(self, drop_type=dnd_type, parent_widget=self,
                                                 traced_callback=lambda *args: ButtonFunctions.process_image(
@@ -924,7 +926,7 @@ class DisplayKeys_Composite_Widget(tk.Frame):
 
     class Comp_Spinbox(tk.Spinbox):
         def __init__(self, widget_id: str, default_value: Union[int, float, 'DefaultSplitData'] = 0, dnd_type: Literal['image', 'folder', 'text', 'any'] | None = None,
-                     colour: str = "white", updates_previewer: bool = False,
+                     colour: str = "white", updates_previewer: bool = False, tooltip: str = None,
                      master=None, **kwargs):
             self.spinbox_var = tk.IntVar()
 
@@ -940,16 +942,18 @@ class DisplayKeys_Composite_Widget(tk.Frame):
             self.id = widget_id
             if updates_previewer:
                 self.spinbox_trace = self.spinbox_var.trace('w', lambda *args: ButtonFunctions.process_image(self.id))
+            if tooltip:
+                self.tooltip = DisplayKeys_Tooltip(parent=self, text=tooltip)
             if dnd_type:
                 self.dnd = DisplayKeys_DragDrop(self, drop_type=dnd_type, parent_widget=self,
                                                 traced_callback=lambda *args: ButtonFunctions.process_image(
                                                     self.id) if updates_previewer else None)
 
     class Comp_Button(tk.Button):
-        def __init__(self, widget_id: str, label: str = None, command: Callable[[str], None] = None,
+        def __init__(self, widget_id: str, text: str = None, command: Callable[[str], None] = None,
                      tooltip: str = None, colour: str = "white", border: int = 3, fill: str = 'both',
                      master=None, **kwargs):
-            super().__init__(master, text=label, command=lambda: command(self.id), borderwidth=border, bg=colour, **kwargs)
+            super().__init__(master, text=text, command=lambda: command(self.id), borderwidth=border, bg=colour, **kwargs)
             self.id = widget_id
             if tooltip:
                 self.tooltip = DisplayKeys_Tooltip(parent=self, text=tooltip)
@@ -1621,7 +1625,8 @@ class PopUp_Settings(DisplayKeys_PopUp):
         self.settings_category_container.grid_columnconfigure(0, weight=1)
         self.category_placement_frame = tk.Frame(self.settings_category_container, width='150', height='500')
         self.category_placement_frame.place(relx=0.5, rely=0.104, anchor=tk.CENTER)
-        self.populate_categories(self.category_placement_frame)
+        #self.populate_categories(self.category_placement_frame)
+        self.populate_categories_reworked(self.category_placement_frame, self.get_categories_reworked())
 
         # --- Options ---
         self.settings_container = tk.Frame(self.container, width=250, height=450, background='green')
@@ -1635,18 +1640,14 @@ class PopUp_Settings(DisplayKeys_PopUp):
         self.settings_placement_frame_appearance = tk.Frame(self.settings_container, width='150', height='450')
         self.settings_placement_frame_appearance.grid(row=0, column=0, sticky='new')
         # Populate Frames
-        self.populate_options_frame(self.settings_placement_frame_preferences)
-        self.populate_options_frame(self.settings_placement_frame_appearance)
+        app.populate_column(self.settings_placement_frame_preferences, self.get_preference_options_reworked())
+        app.populate_column(self.settings_placement_frame_appearance, self.get_appearance_options_reworked())
 
         # --- Window Interaction ---
         self.window_interactions_container = tk.Frame(self.container, width=250, height=50, background='blue')
         self.window_interactions_container.pack(expand=False, side=tk.BOTTOM)
-        self.apply_button = tk.Button(self.window_interactions_container, text='    Apply    ', command=lambda: None)  # self.save_options())
-        self.apply_button.place(relx=0.2, rely=0.5, anchor=tk.CENTER)
-        self.cancel_button = tk.Button(self.window_interactions_container, text='   Default    ', command=lambda: SettingsData.get_default_settings)
-        self.cancel_button.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
-        self.cancel_button = tk.Button(self.window_interactions_container, text='    Cancel    ', command=lambda: None)
-        self.cancel_button.place(relx=0.8, rely=0.5, anchor=tk.CENTER)
+        self.add_interaction_buttons(self.window_interactions_container)
+
 
         # Set Initial Option Values
         #self.validate_options(self.current_options)
@@ -1654,19 +1655,11 @@ class PopUp_Settings(DisplayKeys_PopUp):
         # Set Default Visible Options Frame
         self.toggle_frame_visibility(self.settings_placement_frame_preferences)
 
-        #for child in self.settings_category_container.winfo_children()[0].winfo_children():
-        #    print(child.cget('text'))
-
-    # TODO:
-    #                       --- DONE ---
-    #       - Create a Placement Frame (for each category)
-    #       - Fill Placement Frame with Relevant Options
-    #       - Hide/Un-hide Placement Frames based on Category
     def toggle_frame_visibility(self, frame_to_show: tk.Frame):
         """
             Hides all Options Frame's, and un-hides wanted Frame.
 
-            :param frame_to_show: The Frame that is to be interacted with by the user.
+            :param frame_to_show: The Frame that is to be shown and interacted with by the user.
         """
         # Hide all frames
         for frame in [self.settings_placement_frame_preferences, self.settings_placement_frame_appearance]:
@@ -1686,6 +1679,29 @@ class PopUp_Settings(DisplayKeys_PopUp):
             category.grid(row=index, column=0, sticky="new")
         return categories
 
+    def populate_categories_reworked(self, parent, widgets):
+        """
+            Gets the Buttons for the Categories and packs them into a placement frame.
+            Also configures the Width of the buttons.
+            This frame is then added to the Parent frame in the popup-window.
+        """
+
+        # Create Composite Widgets
+        categories = []
+        for widget in widgets:
+            categories.append(DisplayKeys_Composite_Widget(parent, **widget))
+
+        # Set style of buttons
+        for composite in categories:
+            for child in composite.child_widgets:
+                child.configure(padx=50, pady=0, border="1")
+
+        # Render widgets
+        for index, widget in enumerate(categories):
+            widget.grid(row=index, column=0, sticky="new")
+
+        return categories
+
     def get_categories(self, parent):
         """
             Creates and Returns the List of the Settings Category Buttons
@@ -1699,38 +1715,70 @@ class PopUp_Settings(DisplayKeys_PopUp):
 
         return categories
 
-    def populate_options_frame(self, parent):
+    def get_categories_reworked(self):
         """
-            Populates the Options Frame's with the relevant Widgets.
-
-            :param parent: The Options Frame.
+            Creates and Returns the List of the Settings Category Buttons
         """
+        categories = [
+            {
+                "composite_id": "PreferenceCategory",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.BUTTON,
+                        "widget_id": "PreferenceCategoryButton",
+                        "text": "Preferences",
+                        "command": lambda: self.toggle_frame_visibility(self.settings_placement_frame_preferences),
+                    },
+                ],
+            },
+            {
+                "composite_id": "AppearanceCategory",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.BUTTON,
+                        "widget_id": "AppearanceCategoryButton",
+                        "text": "Appearance",
+                        "command": lambda: self.toggle_frame_visibility(self.settings_placement_frame_appearance),
+                    },
+                ],
+            },
+            {
+                "composite_id": "IntegrationsCategory",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.BUTTON,
+                        "widget_id": "IntegrationsCategoryButton",
+                        "text": "Integrations",
+                        "command": lambda: None,
+                    },
+                ],
+            },
+            {
+                "composite_id": "...Category",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.BUTTON,
+                        "widget_id": "...CategoryButton",
+                        "text": "...",
+                        "command": lambda: None,
+                    },
+                ],
+            },
+        ]
 
-        # Create Frame's Columns
-        parent.grid_columnconfigure(0, weight=2)
-        parent.grid_columnconfigure(1, weight=1)
+        return categories
 
-        # Get Relevant Options
-        options = []
+    def add_interaction_buttons(self, parent):
+        self.apply_button = tk.Button(parent, text='    Apply    ',
+                                      command=lambda: None)  # self.save_options())
+        self.apply_button.place(relx=0.2, rely=0.5, anchor=tk.CENTER)
+        self.cancel_button = tk.Button(parent, text='   Default    ',
+                                       command=lambda: SettingsData.get_default_settings)
+        self.cancel_button.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
+        self.cancel_button = tk.Button(parent, text='    Cancel    ', command=lambda: None)
+        self.cancel_button.place(relx=0.8, rely=0.5, anchor=tk.CENTER)
 
-        if parent == self.settings_placement_frame_preferences:
-            options = self.get_preference_options(parent)
-        elif parent == self.settings_placement_frame_appearance:
-            options = self.get_appearance_options(parent)
-        elif parent == self.settings_placement_frame_preferences:
-            options = self.get_integration_options(parent)
-
-        # Add Option Widgets
-        for row, packed_option in enumerate(options):
-            for col, option in enumerate(packed_option):
-                if option:
-                    option.grid(row=row, column=col, sticky='nsew')
-                    if option.winfo_class() == 'Label' and row != 0:
-                        option.configure(bd=1, relief='solid')
-
-            self.validate_loaded_options(options)
-
-    def get_preference_options(self, parent):
+    def get_preference_options_reworked(self):
         """
             Creates and Returns the actual Preferences Widgets
         """
@@ -1740,27 +1788,212 @@ class PopUp_Settings(DisplayKeys_PopUp):
 
         # Preview Modes, Input Modes, Save Locations,
         preferences = [
-            [tk.Label(parent, text='PREFERENCES'), None],
-            [tk.Label(parent, text='Preview Mode:', padx=22), ttk.Combobox(parent, values=["Full", "Crop Only", "Split Only"], state='readonly', justify='left')],
-            [tk.Label(parent, text='Input Mode:', padx=22), ttk.Combobox(parent, values=["Pixel", "Percentage"], state='readonly', justify='left')],
-            #{},
+            {
+                "composite_id": "PreferenceHeader",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "PreferenceHeaderLabel",
+                        "text": "PREFERENCES",
+                    },
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "PreferenceHeaderBlank",
+                        "text": "",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+            {
+                "composite_id": "PreviewMode",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "PreviewModeLabel",
+                        "text": "Preview Mode:",
+                    },
+                    {
+                        "type": CompWidgetTypes.DROPDOWN,
+                        "widget_id": "PreviewModeOption",
+                        "options": ["Split Method", "Full", "Crop Only", "Split Only"],
+                        "tooltip": "What to display in the Previewer\nSplit Method: Use method of how to split the image.\nFull: Show both crop and split.\nCrop Only: Only shows how the cells will be cropped.\nSplit Only: Only shows how the image will be split into cells.",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+            {
+                "composite_id": "InputMode",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "InputModeLabel",
+                        "text": "Input Mode:",
+                    },
+                    {
+                        "type": CompWidgetTypes.DROPDOWN,
+                        "widget_id": "InputModeOption",
+                        "options": ["Percentage (Relative)", "Percentage (X)", "Percentage (Y)", "Pixel"],
+                        "tooltip": "In what way to process the Image\nPercentage Relative: Will take the percentage value to calculate how many pixels to split the image by on both X and Y axis.\nPercentage X/Y: Will take the percentage number to caluclate the number of pixels to split by on their respective Axis, and then also use the exact same number on the other Axis.\nPixel: Give the exact Pixel number to split the image by.",
+                    },
+                ],
+                "layout": "horizontal",
+            },
         ]
         return preferences
 
-    def get_appearance_options(self, parent):
+    def get_appearance_options_reworked(self):
         # Colors, ...
         appearances = [
-            [tk.Label(parent, text='COLORS'), None],
-            [tk.Label(parent, text='Main'), None],
-            [tk.Label(parent, text='Text Colour:', padx=22), tk.Entry(parent, textvariable=tk.StringVar(value="Placeholder"))],
-            [tk.Label(parent, text='Background Colour:', padx=22), tk.Entry(parent, textvariable=tk.StringVar(value="Placeholder"))],
-            [tk.Label(parent, text='Primary Colour:', padx=22), tk.Entry(parent)],
-            [tk.Label(parent, text='Secondary Colour:', padx=22), tk.Entry(parent)],
-            [tk.Label(parent, text='Buttons'), None],
-            [tk.Label(parent, text='Text Colour:', padx=22), tk.Entry(parent)],
-            [tk.Label(parent, text='Background Colour:'), tk.Entry(parent, textvariable=tk.StringVar(value="Placeholder"))],
-            [tk.Label(parent, text='Colour:', padx=22), tk.Entry(parent)],
-            # {},
+            {
+                "composite_id": "AppearanceHeader",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "AppearanceHeaderLabel",
+                        "text": "APPEARANCE",
+                    },
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "AppearanceHeaderBlank",
+                        "text": "",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+            {
+                "composite_id": "ColoursHeader",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "ColoursHeaderLabel",
+                        "text": "App Colours",
+                    },
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "ColoursHeaderBlank",
+                        "text": "",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+            {
+                "composite_id": "TextColour",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "TextColorLabel",
+                        "text": "Text",
+                    },
+                    {
+                        "type": CompWidgetTypes.TEXTBOX,
+                        "widget_id": "TextColourOption",
+                        "tooltip": "The Colour ALL text will have. Will be overwritten by other Text Colours unless blank.",
+                        "dnd_type": "text",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+            {
+                "composite_id": "BackgroundColour",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "BackgroundColourLabel",
+                        "text": "Background",
+                    },
+                    {
+                        "type": CompWidgetTypes.TEXTBOX,
+                        "widget_id": "BackgroundColourOption",
+                        "tooltip": "The colour of ...",
+                        "dnd_type": "text",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+            {
+                "composite_id": "PrimaryColour",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "PrimaryColorLabel",
+                        "text": "Primary Colour",
+                    },
+                    {
+                        "type": CompWidgetTypes.TEXTBOX,
+                        "widget_id": "PrimaryColourOption",
+                        "tooltip": "The Primary application colour, used for app background.",
+                        "dnd_type": "text",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+            {
+                "composite_id": "SecondaryColour",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "SecondaryColorLabel",
+                        "text": "Secondary Colour",
+                    },
+                    {
+                        "type": CompWidgetTypes.TEXTBOX,
+                        "widget_id": "SecondaryColourOption",
+                        "tooltip": "The Secondary application colour, used for app background.",
+                        "dnd_type": "text",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+            {
+                "composite_id": "ButtonsHeader",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "ButtonsHeaderLabel",
+                        "text": "Button Colours",
+                    },
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "ButtonsHeaderBlank",
+                        "text": "",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+            {
+                "composite_id": "ButtonsTextColour",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "ButtonsTextColourLabel",
+                        "text": "Text",
+                    },
+                    {
+                        "type": CompWidgetTypes.TEXTBOX,
+                        "widget_id": "ButtonsTextColourOption",
+                        "tooltip": "The Text Colour of Buttons.",
+                        "dnd_type": "text",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+            {
+                "composite_id": "ButtonBackgroundColour",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "ButtonBackgroundColourLabel",
+                        "text": "Background",
+                    },
+                    {
+                        "type": CompWidgetTypes.TEXTBOX,
+                        "widget_id": "ButtonBackgroundColourOption",
+                        "tooltip": "The Primary application colour.",
+                        "dnd_type": "text",
+                    },
+                ],
+                "layout": "horizontal",
+            },
         ]
         return appearances
 
@@ -2514,6 +2747,7 @@ class ButtonFunctions:
             PopUp_Dialogue(parent=app.window, popup_type='error',
                            message=f"The following directory could not be opened: '{directory}'", buttons=[{'OK': lambda: None}])
 
+
 # Defines the Data structure of Presets as well as contains all of its functionality.
 # Each Preset is able to independently preform its necessary operations once created.
 class PresetData:
@@ -2746,8 +2980,6 @@ class SettingsData:
         return cls.from_dict(defaults)
 
 
-
-
 # The Default Values for the split functionality
 class DefaultSplitData(Enum):
     """
@@ -2762,6 +2994,14 @@ class DefaultSplitData(Enum):
     GAPPER: float = 5.8  # Calculated per Axis, used result respectively
     GAPPERX: float = 3.7  # Calculated with X Axis, used on Both
     GAPPERY: float = 7.9  # Calculated with Y Axis, used on Both
+
+
+# The Split method types available in the options
+class SplitType(Enum):
+    PercentageRel = 1
+    PercentageX = 2
+    PercentageY = 3
+    Pixel = 4
 
 
 ####################################################################################################################
