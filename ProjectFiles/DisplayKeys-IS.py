@@ -792,7 +792,7 @@ class CompWidgetTypes(Enum):
 class DisplayKeys_Composite_Widget(tk.Frame):
     """
         Generic Widgets used throughout the Applications UI (ie. Labels, Textboxes, Buttons, etc.)
-        Designed to be used in a Vertical Layout.
+        Designed to be used in a Vertical and Horizontal Layout.
     """
 
     def __init__(self, parent: tk.Frame, composite_id: str, widgets: list[list], layout: Literal['vertical', 'horizontal'] = 'vertical'):
@@ -880,7 +880,7 @@ class DisplayKeys_Composite_Widget(tk.Frame):
     # Create child class widgets to hold all this information themselves, so as to not store it in arrays or anything
     # with some convoluted way to keeping track of what widget has what tooltip etc.
     class Comp_Label(tk.Label):
-        def __init__(self, widget_id: str, text: str, tooltip: str = None,
+        def __init__(self, widget_id: str, text: str, tooltip: str = None, tooltip_justify = 'left',
                      master=None, **kwargs):
             super().__init__(master, text=text, **kwargs)
             self.id = widget_id
@@ -888,7 +888,7 @@ class DisplayKeys_Composite_Widget(tk.Frame):
                 self.tooltip = DisplayKeys_Tooltip(parent=self, text=tooltip)
 
     class Comp_Combobox(ttk.Combobox):
-        def __init__(self, widget_id: str, options: list[str], tooltip: str = None,
+        def __init__(self, widget_id: str, options: list[str], tooltip: str = None, tooltip_justify = 'left',
                      command: Callable[[list['DisplayKeys_Composite_Widget']], None] = None,
                      update_previewer: bool = False,
                      master=None, **kwargs):
@@ -906,7 +906,7 @@ class DisplayKeys_Composite_Widget(tk.Frame):
 
     class Comp_Entry(tk.Entry):
         def __init__(self, widget_id: str, state: Literal["normal", "disabled", "readonly"] = "normal", default_value: str = None,
-                     dnd_type: Literal['image', 'folder', 'text', 'any'] | None = None, tooltip: str = None,
+                     dnd_type: Literal['image', 'folder', 'text', 'any'] | None = None, tooltip: str = None, tooltip_justify = 'left',
                      colour: str = "white", updates_previewer: bool = False,
                      master=None, **kwargs):
             self.textbox_var = tk.StringVar()
@@ -926,7 +926,7 @@ class DisplayKeys_Composite_Widget(tk.Frame):
 
     class Comp_Spinbox(tk.Spinbox):
         def __init__(self, widget_id: str, default_value: Union[int, float, 'DefaultSplitData'] = 0, dnd_type: Literal['image', 'folder', 'text', 'any'] | None = None,
-                     colour: str = "white", updates_previewer: bool = False, tooltip: str = None,
+                     colour: str = "white", updates_previewer: bool = False, tooltip: str = None, tooltip_justify = 'left',
                      master=None, **kwargs):
             self.spinbox_var = tk.IntVar()
 
@@ -951,7 +951,7 @@ class DisplayKeys_Composite_Widget(tk.Frame):
 
     class Comp_Button(tk.Button):
         def __init__(self, widget_id: str, text: str = None, command: Callable[[str], None] = None,
-                     tooltip: str = None, colour: str = "white", border: int = 3, fill: str = 'both',
+                     tooltip: str = None, tooltip_justify = 'left', colour: str = "white", border: int = 3, fill: str = 'both',
                      master=None, **kwargs):
             super().__init__(master, text=text, command=lambda: command(self.id), borderwidth=border, bg=colour, **kwargs)
             self.id = widget_id
@@ -1594,7 +1594,7 @@ class PopUp_Settings(DisplayKeys_PopUp):
         super().__init__(parent)
 
         # Pop-Up Configuration
-        self.popup.title(f"Edit Settings")
+        self.popup.title(f"Settings")
         self.popup.geometry('400x500')
 
         # Settings Setup
@@ -1618,24 +1618,27 @@ class PopUp_Settings(DisplayKeys_PopUp):
         """
             Creates the entire Structure and UI interface for the Settings
         """
+
         # --- Categories ---
-        self.settings_category_container = tk.Frame(self.container, width=150, height=500, background='red')
-        self.settings_category_container.pack(expand=True, side=tk.LEFT)
+        self.settings_category_container = tk.Frame(self.container, width=150, height=500, background='red', padx=0)
+        self.settings_category_container.grid(row=0, column=0, sticky='ns')
         self.settings_category_container.grid_rowconfigure(0, weight=1)
         self.settings_category_container.grid_columnconfigure(0, weight=1)
-        self.category_placement_frame = tk.Frame(self.settings_category_container, width='150', height='500')
-        self.category_placement_frame.place(relx=0.5, rely=0.104, anchor=tk.CENTER)
+
+        self.category_placement_frame = tk.Frame(self.settings_category_container, width=150, height=500, background='red', padx=0)
+        self.category_placement_frame.grid(row=0, column=0, sticky='new')
+        self.category_placement_frame.grid_propagate(False)
         #self.populate_categories(self.category_placement_frame)
         self.populate_categories_reworked(self.category_placement_frame, self.get_categories_reworked())
 
         # --- Options ---
-        self.settings_container = tk.Frame(self.container, width=250, height=450, background='green')
-        self.settings_container.pack(expand=False, side=tk.TOP)
+        self.settings_container = tk.Frame(self.container, width=250, height=450, background='green', padx=0)
+        self.settings_container.grid(row=0, column=1, sticky='ns')
         self.settings_container.grid_rowconfigure(0, weight=1)
         self.settings_container.grid_columnconfigure(0, weight=1)
 
         # Create Option Placement Frames
-        self.settings_placement_frame_preferences = tk.Frame(self.settings_container, width='150', height='450')
+        self.settings_placement_frame_preferences = tk.Frame(self.settings_container, width='150', height='450', background='orange', padx=0)
         self.settings_placement_frame_preferences.grid(row=0, column=0, sticky='new')
         self.settings_placement_frame_appearance = tk.Frame(self.settings_container, width='150', height='450')
         self.settings_placement_frame_appearance.grid(row=0, column=0, sticky='new')
@@ -1644,8 +1647,8 @@ class PopUp_Settings(DisplayKeys_PopUp):
         app.populate_column(self.settings_placement_frame_appearance, self.get_appearance_options_reworked())
 
         # --- Window Interaction ---
-        self.window_interactions_container = tk.Frame(self.container, width=250, height=50, background='blue')
-        self.window_interactions_container.pack(expand=False, side=tk.BOTTOM)
+        self.window_interactions_container = tk.Frame(self.container, width=250, height=50, background='blue', padx=0)
+        self.window_interactions_container.grid(row=1, column=1, sticky='sew')
         self.add_interaction_buttons(self.window_interactions_container)
 
 
@@ -1693,12 +1696,13 @@ class PopUp_Settings(DisplayKeys_PopUp):
 
         # Set style of buttons
         for composite in categories:
+            composite.configure(pady=0, padx=0)
             for child in composite.child_widgets:
-                child.configure(padx=50, pady=0, border="1")
+                child.configure(padx=20, pady=0, border="1")
 
         # Render widgets
         for index, widget in enumerate(categories):
-            widget.grid(row=index, column=0, sticky="new")
+            widget.grid(row=index+1, column=0, sticky="new")
 
         return categories
 
@@ -1707,8 +1711,8 @@ class PopUp_Settings(DisplayKeys_PopUp):
             Creates and Returns the List of the Settings Category Buttons
         """
         categories = [
-            tk.Button(parent, text='Preferences', command=lambda: self.toggle_frame_visibility(self.settings_placement_frame_preferences), padx=50),#self.populate_options(parent, self.get_preference_options(self.settings_placement_frame)), padx=50),
-            tk.Button(parent, text='Appearance', command=lambda: self.toggle_frame_visibility(self.settings_placement_frame_appearance)),#self.populate_options(parent, self.get_appearance_options(self.settings_placement_frame))),
+            tk.Button(parent, text='Preferences', command=lambda: self.toggle_frame_visibility(self.settings_placement_frame_preferences), padx=50),
+            tk.Button(parent, text='Appearance', command=lambda: self.toggle_frame_visibility(self.settings_placement_frame_appearance)),
             tk.Button(parent, text='Integrations', command=lambda: None),
             tk.Button(parent, text='...', command=lambda: None),
         ]
@@ -1769,11 +1773,9 @@ class PopUp_Settings(DisplayKeys_PopUp):
         return categories
 
     def add_interaction_buttons(self, parent):
-        self.apply_button = tk.Button(parent, text='    Apply    ',
-                                      command=lambda: None)  # self.save_options())
+        self.apply_button = tk.Button(parent, text='    Apply    ', command=lambda: None)  # self.save_options())
         self.apply_button.place(relx=0.2, rely=0.5, anchor=tk.CENTER)
-        self.cancel_button = tk.Button(parent, text='   Default    ',
-                                       command=lambda: SettingsData.get_default_settings)
+        self.cancel_button = tk.Button(parent, text='   Default    ', command=lambda: SettingsData.get_default_settings)
         self.cancel_button.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
         self.cancel_button = tk.Button(parent, text='    Cancel    ', command=lambda: None)
         self.cancel_button.place(relx=0.8, rely=0.5, anchor=tk.CENTER)
@@ -1800,6 +1802,23 @@ class PopUp_Settings(DisplayKeys_PopUp):
                         "type": CompWidgetTypes.LABEL,
                         "widget_id": "PreferenceHeaderBlank",
                         "text": "",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+            {
+                "composite_id": "SplitMethod",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "SplitMethodLabel",
+                        "text": "Split Method:",
+                    },
+                    {
+                        "type": CompWidgetTypes.DROPDOWN,
+                        "widget_id": "SplitMethodOption",
+                        "options": ["Both", "Split Only"],
+                        "tooltip": "Determines how the image will be processed\nBoth: Split and Crop the image.\nSplit Only: Only splits the image into cells.",
                     },
                 ],
                 "layout": "horizontal",
