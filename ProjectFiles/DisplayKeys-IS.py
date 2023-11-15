@@ -72,7 +72,15 @@ class DisplayKeys_GUI:
 
         #########################
 
+        # Load Settings
+        # TODO: Load current Settings from file
         self.settings: 'SettingsData'
+        # self.settings = SettingsData.load_settings_from_file()
+        # if self.settings:
+        #     pass
+        # # TODO: If file couldn't be loaded, load default settings
+        # else:
+        #     self.settings = SettingsData.get_default_settings()
 
         #########################
 
@@ -788,6 +796,7 @@ class CompWidgetTypes(Enum):
 
 
 # TODO: Get colours to display from Preferences menu/popup
+# TODO: Add Checkbox input option
 # Generic Widgets used throughout the Applications UI (i.e. Labels, Textboxes, Buttons, etc.)
 class DisplayKeys_Composite_Widget(tk.Frame):
     """
@@ -1598,165 +1607,105 @@ class PopUp_Settings(DisplayKeys_PopUp):
         self.popup.geometry('400x500')
 
         # Settings Setup
-        # TODO: Load current Settings from file (probably will set AppData/Local/Neuffexx/DisplayKeys-IS as save path)
-        # For now load TEMP save locations from main window
-        #if(True):  # Saved Preference File can be opened
-            #self.colours_background = app.preference_saved_background_color
-            #self.previewer_mode = app.preference_saved_preview_mode
-            #self.input_split_mode = app.preference_saved_input_mode
-        #else:
-        #    pass
-        #self.colours_background = app.preference_default_background_color
-            #self.previewer_mode = app.preference_default_preview_mode
-            #self.input_split_mode = app.preference_default_input_mode
+
+        self.categories: list['DisplayKeys_Settings_Category'] = []
 
         # Create UI
-        self.create_Settings_ui()
+        self.create_settings_ui()
         self.center_window(parent)
 
-    def create_Settings_ui(self):
+    def create_settings_ui(self):
         """
             Creates the entire Structure and UI interface for the Settings
         """
 
+        #######################
+        # Create UI Structure #
+
         # --- Categories ---
         self.settings_category_container = tk.Frame(self.container, width=150, height=500, background='red', padx=0)
         self.settings_category_container.grid(row=0, column=0, sticky='ns')
-        self.settings_category_container.grid_rowconfigure(0, weight=1)
-        self.settings_category_container.grid_columnconfigure(0, weight=1)
+        self.settings_category_container.grid_propagate(False)  # Enforce frame size without adapting to children
 
         self.category_placement_frame = tk.Frame(self.settings_category_container, width=150, height=500, background='red', padx=0)
         self.category_placement_frame.grid(row=0, column=0, sticky='new')
         self.category_placement_frame.grid_propagate(False)
-        #self.populate_categories(self.category_placement_frame)
-        self.populate_categories_reworked(self.category_placement_frame, self.get_categories_reworked())
 
         # --- Options ---
         self.settings_container = tk.Frame(self.container, width=250, height=450, background='green', padx=0)
         self.settings_container.grid(row=0, column=1, sticky='ns')
         self.settings_container.grid_rowconfigure(0, weight=1)
         self.settings_container.grid_columnconfigure(0, weight=1)
-
-        # Create Option Placement Frames
-        self.settings_placement_frame_preferences = tk.Frame(self.settings_container, width='150', height='450', background='orange', padx=0)
-        self.settings_placement_frame_preferences.grid(row=0, column=0, sticky='new')
-        self.settings_placement_frame_appearance = tk.Frame(self.settings_container, width='150', height='450')
-        self.settings_placement_frame_appearance.grid(row=0, column=0, sticky='new')
-        # Populate Frames
-        app.populate_column(self.settings_placement_frame_preferences, self.get_preference_options_reworked())
-        app.populate_column(self.settings_placement_frame_appearance, self.get_appearance_options_reworked())
+        self.settings_container.grid_propagate(False)
 
         # --- Window Interaction ---
         self.window_interactions_container = tk.Frame(self.container, width=250, height=50, background='blue', padx=0)
         self.window_interactions_container.grid(row=1, column=1, sticky='sew')
         self.add_interaction_buttons(self.window_interactions_container)
 
+        #######################
+        #      Create UI      #
+
+        # Create Categories
+        self.categories.append(self.create_preferences_category())
+        self.categories.append(self.create_appearance_category())
+        self.categories.append(self.create_integrations_category())
+
+        # Set Visibilities
+        self.render_category_buttons()
+        self.toggle_frame_visibility('PreferenceCategoryButton')
 
         # Set Initial Option Values
-        #self.validate_options(self.current_options)
+        # self.validate_options(self.current_options)
 
-        # Set Default Visible Options Frame
-        self.toggle_frame_visibility(self.settings_placement_frame_preferences)
+    # --- UI Creation Functions ---
+    def render_category_buttons(self):
+        """
+            Gets the Category Selection Button from the Categories and packs them into a placement frame.
+        """
 
-    def toggle_frame_visibility(self, frame_to_show: tk.Frame):
+        for index, category in enumerate(self.categories):
+            category.button.grid(row=index + 1, column=0, sticky="new")
+
+    def toggle_frame_visibility(self, widget_id: str):
         """
             Hides all Options Frame's, and un-hides wanted Frame.
 
-            :param frame_to_show: The Frame that is to be shown and interacted with by the user.
+            :param widget_id: The ID of the button requesting to change category.
         """
+        category_placement_frames: [str, tk.Frame] = []  # Saves a reference to the name, and frame, of a category.
+        frame_to_show: tk.Frame
+
+        # Gather the placement frames from All categories
+        for category in self.categories:
+            category_placement_frames.append([category.name, category.options_frame])
+
         # Hide all frames
-        for frame in [self.settings_placement_frame_preferences, self.settings_placement_frame_appearance]:
-            frame.grid_remove()
+        for frame in category_placement_frames:
+            frame[1].grid_remove()
+
+        # Get category name
+        wanted_category = self.get_category_via_button(widget_id)
+        if not wanted_category:
+            print(f"Couldn't find Category with the button: '{widget_id}'")
+            return
+
+        # Get wanted frame
+        frame_to_show = next((frame[1] for frame in category_placement_frames if frame[0] == wanted_category.name), None)
+        if not frame_to_show:
+            print(f"Couldn't find Matching Category frame of: '{wanted_category.name}'")
+            return
 
         # Show wanted frame
-        frame_to_show.grid(sticky='new')
+        if frame_to_show:
+            frame_to_show.grid(sticky='new')
 
-    def populate_categories(self, parent):
+    def create_preferences_category(self):
         """
-            Gets the Buttons for the Categories and packs them into a placement frame.
-            This frame is then added to the Parent frame in the popup-window.
-        """
-
-        categories = self.get_categories(parent)
-        for index, category in enumerate(categories):
-            category.grid(row=index, column=0, sticky="new")
-        return categories
-
-    def populate_categories_reworked(self, parent, widgets):
-        """
-            Gets the Buttons for the Categories and packs them into a placement frame.
-            Also configures the Width of the buttons.
-            This frame is then added to the Parent frame in the popup-window.
-        """
-
-        # Create Composite Widgets
-        categories = []
-        for widget in widgets:
-            categories.append(DisplayKeys_Composite_Widget(parent, **widget))
-
-        # Set style of buttons
-        for composite in categories:
-            composite.configure(pady=0, padx=0)
-            for child in composite.child_widgets:
-                child.configure(padx=20, pady=0, border="1")
-
-        # Render widgets
-        for index, widget in enumerate(categories):
-            widget.grid(row=index+1, column=0, sticky="new")
-
-        return categories
-
-    def get_categories(self, parent):
-        """
-            Creates and Returns the List of the Settings Category Buttons
+            Creates and Returns the actual Category holding reference to both the Button and its Options
         """
         categories = [
-            tk.Button(parent, text='Preferences', command=lambda: self.toggle_frame_visibility(self.settings_placement_frame_preferences), padx=50),
-            tk.Button(parent, text='Appearance', command=lambda: self.toggle_frame_visibility(self.settings_placement_frame_appearance)),
-            tk.Button(parent, text='Integrations', command=lambda: None),
-            tk.Button(parent, text='...', command=lambda: None),
-        ]
 
-        return categories
-
-    def get_categories_reworked(self):
-        """
-            Creates and Returns the List of the Settings Category Buttons
-        """
-        categories = [
-            {
-                "composite_id": "PreferenceCategory",
-                "widgets": [
-                    {
-                        "type": CompWidgetTypes.BUTTON,
-                        "widget_id": "PreferenceCategoryButton",
-                        "text": "Preferences",
-                        "command": lambda: self.toggle_frame_visibility(self.settings_placement_frame_preferences),
-                    },
-                ],
-            },
-            {
-                "composite_id": "AppearanceCategory",
-                "widgets": [
-                    {
-                        "type": CompWidgetTypes.BUTTON,
-                        "widget_id": "AppearanceCategoryButton",
-                        "text": "Appearance",
-                        "command": lambda: self.toggle_frame_visibility(self.settings_placement_frame_appearance),
-                    },
-                ],
-            },
-            {
-                "composite_id": "IntegrationsCategory",
-                "widgets": [
-                    {
-                        "type": CompWidgetTypes.BUTTON,
-                        "widget_id": "IntegrationsCategoryButton",
-                        "text": "Integrations",
-                        "command": lambda: None,
-                    },
-                ],
-            },
             {
                 "composite_id": "...Category",
                 "widgets": [
@@ -1770,26 +1719,21 @@ class PopUp_Settings(DisplayKeys_PopUp):
             },
         ]
 
-        return categories
+        preference_button = [
+            {
+                "composite_id": "PreferenceCategory",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.BUTTON,
+                        "widget_id": "PreferenceCategoryButton",
+                        "text": "Preferences",
+                        "command": self.toggle_frame_visibility,
+                    },
+                ],
+            },
+        ]
 
-    def add_interaction_buttons(self, parent):
-        self.apply_button = tk.Button(parent, text='    Apply    ', command=lambda: None)  # self.save_options())
-        self.apply_button.place(relx=0.2, rely=0.5, anchor=tk.CENTER)
-        self.cancel_button = tk.Button(parent, text='   Default    ', command=lambda: SettingsData.get_default_settings)
-        self.cancel_button.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
-        self.cancel_button = tk.Button(parent, text='    Cancel    ', command=lambda: None)
-        self.cancel_button.place(relx=0.8, rely=0.5, anchor=tk.CENTER)
-
-    def get_preference_options_reworked(self):
-        """
-            Creates and Returns the actual Preferences Widgets
-        """
-        # Column 1 - Name | Column 2 - Option
-        # Will be iterated with the same assumption.
-        # Everything is a name, unless its n / 2 those are options of the same row.
-
-        # Preview Modes, Input Modes, Save Locations,
-        preferences = [
+        preference_options = [
             {
                 "composite_id": "PreferenceHeader",
                 "widgets": [
@@ -1858,11 +1802,34 @@ class PopUp_Settings(DisplayKeys_PopUp):
                 "layout": "horizontal",
             },
         ]
-        return preferences
 
-    def get_appearance_options_reworked(self):
-        # Colors, ...
-        appearances = [
+        return DisplayKeys_Settings_Category(category_name="Preferences",
+                                             category_button=preference_button,
+                                             button_parent=self.category_placement_frame,
+                                             category_options=preference_options,
+                                             options_parent=self.settings_container)
+
+    def create_appearance_category(self):
+        """
+            Creates and Returns the actual Category holding reference to both the Button and its Options
+        """
+        # Colors, etc.
+
+        appearance_button = [
+            {
+                "composite_id": "AppearanceCategory",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.BUTTON,
+                        "widget_id": "AppearanceCategoryButton",
+                        "text": "Appearance",
+                        "command": self.toggle_frame_visibility,
+                    },
+                ],
+            },
+        ]
+
+        appearance_options = [
             {
                 "composite_id": "AppearanceHeader",
                 "widgets": [
@@ -2014,23 +1981,113 @@ class PopUp_Settings(DisplayKeys_PopUp):
                 "layout": "horizontal",
             },
         ]
-        return appearances
 
-    def get_integration_options(self, parent):
-        pass
+        return DisplayKeys_Settings_Category(category_name="Appearance",
+                                             category_button=appearance_button,
+                                             button_parent=self.category_placement_frame,
+                                             category_options=appearance_options,
+                                             options_parent=self.settings_container,)
 
+    def create_integrations_category(self):
+        """
+            Creates and Returns the actual Category holding reference to both the Button and its Options
+        """
+
+        integration_button = [
+            {
+                "composite_id": "IntegrationsCategory",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.BUTTON,
+                        "widget_id": "IntegrationsCategoryButton",
+                        "text": "Integrations",
+                        "command": self.toggle_frame_visibility,
+                    },
+                ],
+            },
+        ]
+
+        integration_options = [
+            {
+                "composite_id": "IntegrationsHeader",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "IntegrationsHeaderLabel",
+                        "text": "INTEGRATIONS",
+                    },
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "IntegrationsHeaderBlank",
+                        "text": "",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+            {
+                "composite_id": "BaseCampHeader",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "BaseCampHeaderLabel",
+                        "text": "Base Camp",
+                    },
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "IntegrationsHeaderBlank",
+                        "text": "",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+        ]
+
+        return DisplayKeys_Settings_Category(category_name="Integrations",
+                                             category_button=integration_button,
+                                             button_parent=self.category_placement_frame,
+                                             category_options=integration_options,
+                                             options_parent=self.settings_container)
+
+    def add_interaction_buttons(self, parent: tk.Frame):
+        self.apply_button = tk.Button(parent, text='    Apply    ', command=lambda: None)  # self.save_options())
+        self.apply_button.place(relx=0.2, rely=0.5, anchor=tk.CENTER)
+        self.cancel_button = tk.Button(parent, text='   Default    ', command=lambda: SettingsData.get_default_settings)
+        self.cancel_button.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
+        self.cancel_button = tk.Button(parent, text='    Cancel    ', command=lambda: None)
+        self.cancel_button.place(relx=0.8, rely=0.5, anchor=tk.CENTER)
+
+    # --- Category Utility Functions ---
+    def get_category_via_name(self, category_name: str):
+        """
+            Finds and returns a Category via its given name
+        """
+        return next((category for category in self.categories if category.name == category_name), None)
+
+    def get_category_via_button(self, button_id: str):
+        """
+            Finds and returns a Category based on the id of its Selection Button
+        """
+        for category in self.categories:
+            for child in category.button.child_widgets:
+                if child.id == button_id:
+                    return category
+
+        return None
+
+    # --- Options Utility Functions ---
+    # TODO:
+    #       Re-create Functions below after restructuring the settings to use Categories Class
+    #       AND have adjusted the SettingsData class to use composite widgets
     def validate_loaded_options(self, options: list[list]):
         """
             Populates the Created Widgets with actual states/options.
             Either Default or from User's locally saved file.
         """
-        # Will receive the array of options that is currently populated.
-        # Then set their values according to the equivalent stored in the preferences file.
-        # Will have to check 'option type' to ensure I am looking for the correct values and setting them correctly
-        # for each equivalent widget (ie. checkbox vs dropdown)
+        # Will receive all categories to have reverence to the options that will be validated.
+        # Then set their values according to the equivalent stored in the settings file.
+        # Will have to check for the variable (composite id? widget id?)
 
-        # USE TEMP SAVE LOCATION FROM MAIN WINDOW FOR TESTING
-        # IN FUTURE WILL BE USING ALREADY RETRIEVED SAVED FILE
+        # NEEDS TO BE IMPLEMENTED AFTER SETTINGSDATA
         pass
 
     def save_options(self):
@@ -2093,6 +2150,51 @@ class PopUp_Settings(DisplayKeys_PopUp):
 
     def save_default_values(self):
         pass
+
+
+class DisplayKeys_Settings_Category:
+    def __init__(self, category_name,
+                 category_button: list[dict[str, list]],
+                 category_options: list[dict[str, list]],
+                 button_parent: tk.Frame, options_parent: tk.Frame):
+        """
+            Used to Store reference to a Categories selection button, as well as its options (and their parent frame).
+        """
+
+        self.name = category_name
+
+        self.options_frame = tk.Frame(options_parent, width='150', height='450')
+        self.options_frame.grid(row=0, column=0, sticky='new')
+        self.options_frame.grid_propagate(False)
+
+        self.button = self.create_button(button_parent, category_button)
+        self.options = self.create_options(category_options)
+
+    def get_option(self, composite_id: str):
+        """
+            Returns the option's composite_widget with the given ID
+        """
+
+        option = next(option for option in self.options if option.id == composite_id)
+        return option
+
+    def create_button(self, parent, buttons):
+        for button in buttons:
+            composite_button = DisplayKeys_Composite_Widget(parent, **button)
+
+            # Set Style
+            for child in composite_button.child_widgets:
+                child.configure(padx=35, pady=0, border="1")
+
+            return composite_button
+
+    def create_options(self, options):
+        options_widgets = []
+
+        for option in options:
+            options_widgets.append(DisplayKeys_Composite_Widget(self.options_frame, **option))
+
+        return options_widgets
 
 
 # A Drag&Drop latch-on class that can be used on any tk.Entry or tk.Spinbox widget
@@ -2862,30 +2964,26 @@ class SettingsData:
         Parameter 'categories' Legend:
             list[
                 Category[
-                        Row[ Label, Value ],
-                        Row[ Label, Value ],
+                        Option: Value,
+                        Option: Value,
                         ...
                 ]
             ]
+        'Option' would be the Widgets id, from which the 'Value' is read.
+        This is done rather than using a more human-readable name (i.e. SplitMethod vs SplitMethodOption),
+        as only the actual user input fields are going to be labeled 'options'.
+        Therefore no further processing of string concatenation needed when searching for these widgets.
     """
-    def __init__(self, settings_categories: list[list[list[tk.Label, tk.Entry | ttk.Combobox]]]):
-        # System save path
-        self.SETTINGS_DIR = os.path.join(os.environ['LOCALAPPDATA'], 'Neuffexx', 'DisplayKeys-IS', 'config')
-        self.SETTINGS_FILE = 'settings.json'
+    def __init__(self, preferences_values: list[str, any], appearance_values: list[str, any]):
+        """
+            Stores lists of 'name value' pairs for each category
+        """
 
-        self.categories = []
-        for category_data in settings_categories:
-            category_name = category_data[0][0].cget("text")
-            category = self.Category(category_name)
-            for row in category_data:
-                label_text = row[0].cget("text")
-                widget = row[1]
-                value = widget.get() if isinstance(widget, tk.Entry) else widget.get()
-                option = self.Option(label_text, value)
-                category.add_option(option)
-            self.categories.append(category)
+        self.preferences = []
+        self.appearance = []
 
-    ###############################
+    ################################
+    # Classes for Stored Structure #
 
     class Option:
         def __init__(self, label, value):
@@ -2906,8 +3004,8 @@ class SettingsData:
                 'options': {option.label: option.value for option in self.options}
             }
 
-    ###############################
-
+    ################################
+    #   Save/Load Util Functions   #
 
     @staticmethod
     def to_dict(settings_data: 'SettingsData'):
@@ -2944,7 +3042,7 @@ class SettingsData:
                 data_dict = json.load(file)
                 return SettingsData.from_dict(data_dict)
         except FileNotFoundError:
-            print(f"Settings file not found at {file_path}")
+            print(f"Settings file not found at '{file_path}'")
             with open(file_path, 'w') as file:
                 json.dump(SettingsData.to_dict(SettingsData.get_default_settings()), file, indent=4)
             return None
