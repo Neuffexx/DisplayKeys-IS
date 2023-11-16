@@ -17,16 +17,17 @@
 #         (i.e. Package tkinterdnd2, and its within './assets/modules/hook-tkinterdnd2.py',
 #         then it will be '...hooks-dir=./assets/modules')
 
-from typing import Literal, Callable, Union, Annotated
 import os, sys
+import webbrowser
+import json
+
+from typing import Literal, Callable, Union, Annotated
+from enum import Enum
 from PIL import Image, ImageTk, ImageSequence, ImageDraw
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, Menu
 import tkinterdnd2 as tkdnd
 from tkinterdnd2 import *
-import webbrowser
-import json
-from enum import Enum
 
 ####################################################################################################################
 #                                                    App Paths
@@ -42,9 +43,9 @@ sys_icon_img = sys._MEIPASS + "./DisplayKeys-IS.ico"
 sys_help_img = sys._MEIPASS + "./Help.png"
 sys_preview_img = sys._MEIPASS + "./Preview.png"
 
-PRESETS_DIR = os.path.join(os.environ['LOCALAPPDATA'], 'Neuffexx', 'DisplayKeys-IS', 'presets')
-OUTPUT_DIR = os.path.join(os.environ['LOCALAPPDATA'], 'Neuffexx', 'DisplayKeys-IS', 'output')
-SETTINGS_DIR = os.path.join(os.environ['LOCALAPPDATA'], 'Neuffexx', 'DisplayKeys-IS', 'config')
+PRESETS_DIR = os.path.join(os.path.expanduser('~/Documents'), 'Neuffexx', 'DisplayKeys-IS', 'presets')
+OUTPUT_DIR = os.path.join(os.path.expanduser('~/Documents'), 'Neuffexx', 'DisplayKeys-IS', 'output')
+SETTINGS_DIR = os.path.join(os.path.expanduser('~/Documents'), 'Neuffexx', 'DisplayKeys-IS', 'config')
 SETTINGS_FILE = 'settings.json'
 
 
@@ -72,15 +73,7 @@ class DisplayKeys_GUI:
 
         #########################
 
-        # Load Settings
-        # TODO: Load current Settings from file
-        self.settings: 'SettingsData'
-        # self.settings = SettingsData.load_settings_from_file()
-        # if self.settings:
-        #     pass
-        # # TODO: If file couldn't be loaded, load default settings
-        # else:
-        #     self.settings = SettingsData.get_default_settings()
+        self.settings = SettingsData.load_settings_from_file()
 
         #########################
 
@@ -898,7 +891,7 @@ class DisplayKeys_Composite_Widget(tk.Frame):
 
     class Comp_Combobox(ttk.Combobox):
         def __init__(self, widget_id: str, options: list[str], tooltip: str = None, tooltip_justify = 'left',
-                     command: Callable[[list['DisplayKeys_Composite_Widget']], None] = None,
+                     command: Callable[[list['DisplayKeys_Composite_Widget']], None] = lambda id: None,
                      update_previewer: bool = False,
                      master=None, **kwargs):
             self.dropdown_var = tk.StringVar()
@@ -969,6 +962,7 @@ class DisplayKeys_Composite_Widget(tk.Frame):
             self.fill = fill
 
 
+# TODO: Tooltips cause Settings popup window to 'glitch', essentially move around a lot.
 # A custom Tooltip class based on tk.Toplevel
 class DisplayKeys_Tooltip:
     """
@@ -1587,17 +1581,6 @@ class PopUp_Preset_Edit(DisplayKeys_PopUp):
         self.bottm_white_space.grid(sticky="nsew", row=7, column=0)
 
 
-# TODO: Implement a Preferences Pop-Up to adjust colours, etc.
-#       Main UI Structure should be:
-#       -------------------------------------------------------
-#       |                                                        |
-#       | Preferences I        Colours         | Reset | Save |  |
-#       | Options     I  --------------------------------------  |
-#       | ...         I  Background            ['Hex' / String]  |
-#       | ...         I  Option                [   Dropdown   ]  |
-#       |             I  ...                                     |
-#       |                                                        |
-#       -------------------------------------------------------
 class PopUp_Settings(DisplayKeys_PopUp):
     def __init__(self, parent: tk.Toplevel):
         super().__init__(parent)
@@ -1656,7 +1639,7 @@ class PopUp_Settings(DisplayKeys_PopUp):
         self.toggle_frame_visibility('PreferenceCategoryButton')
 
         # Set Initial Option Values
-        # self.validate_options(self.current_options)
+        self.set_initial_options()
 
     # --- UI Creation Functions ---
     def render_category_buttons(self):
@@ -1704,20 +1687,6 @@ class PopUp_Settings(DisplayKeys_PopUp):
         """
             Creates and Returns the actual Category holding reference to both the Button and its Options
         """
-        categories = [
-
-            {
-                "composite_id": "...Category",
-                "widgets": [
-                    {
-                        "type": CompWidgetTypes.BUTTON,
-                        "widget_id": "...CategoryButton",
-                        "text": "...",
-                        "command": lambda: None,
-                    },
-                ],
-            },
-        ]
 
         preference_button = [
             {
@@ -1762,7 +1731,7 @@ class PopUp_Settings(DisplayKeys_PopUp):
                         "type": CompWidgetTypes.DROPDOWN,
                         "widget_id": "SplitMethodOption",
                         "options": ["Both", "Split Only"],
-                        "tooltip": "Determines how the image will be processed\nBoth: Split and Crop the image.\nSplit Only: Only splits the image into cells.",
+                        #"tooltip": "Determines how the image will be processed\nBoth: Split and Crop the image.\nSplit Only: Only splits the image into cells.",
                     },
                 ],
                 "layout": "horizontal",
@@ -1779,7 +1748,7 @@ class PopUp_Settings(DisplayKeys_PopUp):
                         "type": CompWidgetTypes.DROPDOWN,
                         "widget_id": "PreviewModeOption",
                         "options": ["Split Method", "Full", "Crop Only", "Split Only"],
-                        "tooltip": "What to display in the Previewer\nSplit Method: Use method of how to split the image.\nFull: Show both crop and split.\nCrop Only: Only shows how the cells will be cropped.\nSplit Only: Only shows how the image will be split into cells.",
+                        #"tooltip": "What to display in the Previewer\nSplit Method: Use method of how to split the image.\nFull: Show both crop and split.\nCrop Only: Only shows how the cells will be cropped.\nSplit Only: Only shows how the image will be split into cells.",
                     },
                 ],
                 "layout": "horizontal",
@@ -1796,7 +1765,7 @@ class PopUp_Settings(DisplayKeys_PopUp):
                         "type": CompWidgetTypes.DROPDOWN,
                         "widget_id": "InputModeOption",
                         "options": ["Percentage (Relative)", "Percentage (X)", "Percentage (Y)", "Pixel"],
-                        "tooltip": "In what way to process the Image\nPercentage Relative: Will take the percentage value to calculate how many pixels to split the image by on both X and Y axis.\nPercentage X/Y: Will take the percentage number to caluclate the number of pixels to split by on their respective Axis, and then also use the exact same number on the other Axis.\nPixel: Give the exact Pixel number to split the image by.",
+                        #"tooltip": "In what way to process the Image\nPercentage Relative: Will take the percentage value to calculate how many pixels to split the image by on both X and Y axis.\nPercentage X/Y: Will take the percentage number to caluclate the number of pixels to split by on their respective Axis, and then also use the exact same number on the other Axis.\nPixel: Give the exact Pixel number to split the image by.",
                     },
                 ],
                 "layout": "horizontal",
@@ -1847,84 +1816,100 @@ class PopUp_Settings(DisplayKeys_PopUp):
                 "layout": "horizontal",
             },
             {
-                "composite_id": "ColoursHeader",
+                "composite_id": "AppColoursHeader",
                 "widgets": [
                     {
                         "type": CompWidgetTypes.LABEL,
-                        "widget_id": "ColoursHeaderLabel",
+                        "widget_id": "AppColoursHeaderLabel",
                         "text": "App Colours",
                     },
                     {
                         "type": CompWidgetTypes.LABEL,
-                        "widget_id": "ColoursHeaderBlank",
+                        "widget_id": "AppColoursHeaderBlank",
                         "text": "",
                     },
                 ],
                 "layout": "horizontal",
             },
             {
-                "composite_id": "TextColour",
+                "composite_id": "AppPrimaryColour",
                 "widgets": [
                     {
                         "type": CompWidgetTypes.LABEL,
-                        "widget_id": "TextColorLabel",
+                        "widget_id": "AppPrimaryColorLabel",
+                        "text": "Background Colour 1",
+                    },
+                    {
+                        "type": CompWidgetTypes.TEXTBOX,
+                        "widget_id": "AppPrimaryColourOption",
+                        #"tooltip": "The Primary application colour, used for app background.",
+                        "dnd_type": "text",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+            {
+                "composite_id": "AppSecondaryColour",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "AppSecondaryColorLabel",
+                        "text": "Background Colour 2",
+                    },
+                    {
+                        "type": CompWidgetTypes.TEXTBOX,
+                        "widget_id": "AppSecondaryColourOption",
+                        #"tooltip": "The Secondary application colour, used for app background.",
+                        "dnd_type": "text",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+            {
+                "composite_id": "LabelsHeader",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "LabelsHeaderLabel",
+                        "text": "Label Colours",
+                    },
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "LabelsHeaderBlank",
+                        "text": "",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+            {
+                "composite_id": "LabelsTextColour",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "LabelsTextColourLabel",
                         "text": "Text",
                     },
                     {
                         "type": CompWidgetTypes.TEXTBOX,
-                        "widget_id": "TextColourOption",
-                        "tooltip": "The Colour ALL text will have. Will be overwritten by other Text Colours unless blank.",
+                        "widget_id": "LabelsTextColourOption",
+                        #"tooltip": "The Text Colour of Labels.",
                         "dnd_type": "text",
                     },
                 ],
                 "layout": "horizontal",
             },
             {
-                "composite_id": "BackgroundColour",
+                "composite_id": "LabelsBackgroundColour",
                 "widgets": [
                     {
                         "type": CompWidgetTypes.LABEL,
-                        "widget_id": "BackgroundColourLabel",
+                        "widget_id": "LabelsBackgroundColourLabel",
                         "text": "Background",
                     },
                     {
                         "type": CompWidgetTypes.TEXTBOX,
-                        "widget_id": "BackgroundColourOption",
-                        "tooltip": "The colour of ...",
-                        "dnd_type": "text",
-                    },
-                ],
-                "layout": "horizontal",
-            },
-            {
-                "composite_id": "PrimaryColour",
-                "widgets": [
-                    {
-                        "type": CompWidgetTypes.LABEL,
-                        "widget_id": "PrimaryColorLabel",
-                        "text": "Primary Colour",
-                    },
-                    {
-                        "type": CompWidgetTypes.TEXTBOX,
-                        "widget_id": "PrimaryColourOption",
-                        "tooltip": "The Primary application colour, used for app background.",
-                        "dnd_type": "text",
-                    },
-                ],
-                "layout": "horizontal",
-            },
-            {
-                "composite_id": "SecondaryColour",
-                "widgets": [
-                    {
-                        "type": CompWidgetTypes.LABEL,
-                        "widget_id": "SecondaryColorLabel",
-                        "text": "Secondary Colour",
-                    },
-                    {
-                        "type": CompWidgetTypes.TEXTBOX,
-                        "widget_id": "SecondaryColourOption",
-                        "tooltip": "The Secondary application colour, used for app background.",
+                        "widget_id": "LabelsBackgroundColourOption",
+                        #"tooltip": "The Background Colour of Labels.",
                         "dnd_type": "text",
                     },
                 ],
@@ -1957,7 +1942,7 @@ class PopUp_Settings(DisplayKeys_PopUp):
                     {
                         "type": CompWidgetTypes.TEXTBOX,
                         "widget_id": "ButtonsTextColourOption",
-                        "tooltip": "The Text Colour of Buttons.",
+                        #"tooltip": "The Text Colour of Buttons.",
                         "dnd_type": "text",
                     },
                 ],
@@ -1974,7 +1959,7 @@ class PopUp_Settings(DisplayKeys_PopUp):
                     {
                         "type": CompWidgetTypes.TEXTBOX,
                         "widget_id": "ButtonBackgroundColourOption",
-                        "tooltip": "The Primary application colour.",
+                        #"tooltip": "The Primary application colour.",
                         "dnd_type": "text",
                     },
                 ],
@@ -2049,11 +2034,15 @@ class PopUp_Settings(DisplayKeys_PopUp):
                                              options_parent=self.settings_container)
 
     def add_interaction_buttons(self, parent: tk.Frame):
-        self.apply_button = tk.Button(parent, text='    Apply    ', command=lambda: None)  # self.save_options())
+        self.apply_button = tk.Button(parent, text='    Apply    ', command=self.save_options)  # self.save_options())
         self.apply_button.place(relx=0.2, rely=0.5, anchor=tk.CENTER)
-        self.cancel_button = tk.Button(parent, text='   Default    ', command=lambda: SettingsData.get_default_settings)
-        self.cancel_button.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
-        self.cancel_button = tk.Button(parent, text='    Cancel    ', command=lambda: None)
+        #self.apply_button_tooltip = DisplayKeys_Tooltip(self.apply_button, "Will save the current Options to File.")
+
+        self.default_button = tk.Button(parent, text='   Default    ', command=self.reset_to_default)
+        self.default_button.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
+        #self.default_button_tooltip = DisplayKeys_Tooltip(self.default_button, "Will reset all options to the default values!")
+
+        self.cancel_button = tk.Button(parent, text='    Cancel    ', command=self.button_command_destructive(function=lambda: None))
         self.cancel_button.place(relx=0.8, rely=0.5, anchor=tk.CENTER)
 
     # --- Category Utility Functions ---
@@ -2078,78 +2067,45 @@ class PopUp_Settings(DisplayKeys_PopUp):
     # TODO:
     #       Re-create Functions below after restructuring the settings to use Categories Class
     #       AND have adjusted the SettingsData class to use composite widgets
-    def validate_loaded_options(self, options: list[list]):
+    def reset_to_default(self):
         """
-            Populates the Created Widgets with actual states/options.
-            Either Default or from User's locally saved file.
+            Populates the Option Widgets with default option values.
+            * This change is not saved to file until applied.
         """
-        # Will receive all categories to have reverence to the options that will be validated.
-        # Then set their values according to the equivalent stored in the settings file.
-        # Will have to check for the variable (composite id? widget id?)
-
-        # NEEDS TO BE IMPLEMENTED AFTER SETTINGSDATA
-        pass
+        for category in self.categories:
+            for option in category.options:
+                # Options are Composite widget with only 2 children, 0=Label | 1=Option
+                child = option.child_widgets[1]
+                value = SettingsData.get_setting(SettingsData.get_default_settings(), category.name, child.id)
+                if value:
+                    category.set_option_value(child, value)
 
     def save_options(self):
         """
-            Saves the actual values to their XML or JSON Category Object.
+            Saves the current values to their Object, and then to JSON File.
         """
 
-        # To get Category Name
-        # category_name = options[0][0].cget('text')
+        for category in self.categories:
+            for option in category.options:
+                # Options are Composite widget with only 2 children, 0=Label | 1=Option
+                child = option.child_widgets[1]
+                value = category.get_option_value(child)
+                if value:
+                    SettingsData.set_setting(app.settings, category.name, child.id, value)
+        SettingsData.save_settings_to_file(app.settings)
 
-        # Save options per Category
-        preferences = self.settings_placement_frame_preferences.winfo_children()
-        appearances = self.settings_placement_frame_appearance.winfo_children()
-
-        # TODO:
-        #       Figure out how to serialize to JSON.
-        #       Specifically ensuring that I store categories as objects in the 'Settings' file.
-        #       Where the actual options are saved as member variables of the Category objects.
-
-        # Figure out how to create / save the values in the Category Objects variables
-        for row, preferences_packed in enumerate(preferences):
-            for col, preference in enumerate(preferences_packed):
-                if col % 2 == 0:  # Ensure its second column
-                    if not preference:  # Ensure it's not a title/sub-category row
-                        continue
-
-                    # Serialize Preferences to XML or JSON
-                    # variable name to serialize is preferences_packed[col-1].cget('text')
-                    # variable value is preference.cget('variable specific to this type of widget')
-                    pass
-
-        for row, appearances_packed in enumerate(appearances):
-            for col, appearance in enumerate(appearances_packed):
-                if col % 2 == 0:  # Ensure its second column
-                    if not appearance:  # Ensure it's not a title/sub-category row
-                        continue
-
-                    # Serialize Appearance to XML or JSON
-                    # variable name to serialize is appearances_packed[col-1].cget('text')
-                    # variable value is appearance.cget('variable specific to this type of widget')
-                    pass
-
-        # Save to File
-        # SomeLibrary.save_function(JSON_Settings_Object)
-        pass
-
-    @staticmethod
-    def load_options():
+    def set_initial_options(self):
         """
-            Loads the JSON Object variables into a class struct and returns it.
+            Load the currently available option values into the widget, when the popup is first created.
         """
 
-        return None
-
-    def get_default_values(self):
-        """
-            Default values for the creation of the Settings file.
-        """
-        pass
-
-    def save_default_values(self):
-        pass
+        for category in self.categories:
+            for option in category.options:
+                # Options are Composite widget with only 2 children, 0=Label | 1=Option
+                child = option.child_widgets[1]
+                value = SettingsData.get_setting(app.settings, category.name, child.id)
+                if value:
+                    category.set_option_value(child, value)
 
 
 class DisplayKeys_Settings_Category:
@@ -2177,6 +2133,32 @@ class DisplayKeys_Settings_Category:
 
         option = next(option for option in self.options if option.id == composite_id)
         return option
+
+    @staticmethod
+    def get_option_value(child):
+        match child.__class__:
+            case DisplayKeys_Composite_Widget.Comp_Entry:
+                return child.textbox_var.get()
+            case DisplayKeys_Composite_Widget.Comp_Spinbox:
+                return child.spinbox_var.get()
+            case DisplayKeys_Composite_Widget.Comp_Combobox:
+                return child.dropdown_var.get()
+            case _:
+                #PopUp_Dialogue(app.window, 'error', f"Widget {child.id} didn't match an option type")
+                pass
+
+    @staticmethod
+    def set_option_value(child, value: str | bool):
+        match child.__class__:
+            case DisplayKeys_Composite_Widget.Comp_Entry:
+                child.textbox_var.set(value)
+            case DisplayKeys_Composite_Widget.Comp_Spinbox:
+                child.spinbox_var.set(value)
+            case DisplayKeys_Composite_Widget.Comp_Combobox:
+                child.dropdown_var.set(value)
+            case _:
+                #PopUp_Dialogue(app.window, 'error', f"Widget {child.id} didn't match an option type")
+                pass
 
     def create_button(self, parent, buttons):
         for button in buttons:
@@ -2958,36 +2940,35 @@ class PresetData:
         return PresetData(name="Default", rows=2, cols=6, gap=40)
 
 
-# Defines the Data Structure of the Settings, as well as contains all of its functionality.
+# Defines the Data Structure of the Settings, and contains all of its relevant functionality.
 class SettingsData:
     """
-        Parameter 'categories' Legend:
+        JSON 'categories' Legend:
             list[
-                Category[
-                        Option: Value,
-                        Option: Value,
+                Category Name: [
+                        Option ID: Value,
+                        Option ID: Value,
                         ...
                 ]
             ]
         'Option' would be the Widgets id, from which the 'Value' is read.
         This is done rather than using a more human-readable name (i.e. SplitMethod vs SplitMethodOption),
         as only the actual user input fields are going to be labeled 'options'.
-        Therefore no further processing of string concatenation needed when searching for these widgets.
+        Therefore, no further processing of string concatenation needed when searching for these widgets.
     """
-    def __init__(self, preferences_values: list[str, any], appearance_values: list[str, any]):
+    def __init__(self):
         """
             Stores lists of 'name value' pairs for each category
         """
 
-        self.preferences = []
-        self.appearance = []
+        self.categories = []
 
     ################################
     # Classes for Stored Structure #
 
     class Option:
-        def __init__(self, label, value):
-            self.label = label
+        def __init__(self, id, value):
+            self.id = id
             self.value = value
 
     class Category:
@@ -2998,29 +2979,55 @@ class SettingsData:
         def add_option(self, option):
             self.options.append(option)
 
-        def to_dict(self):
-            return {
-                'name': self.name,
-                'options': {option.label: option.value for option in self.options}
-            }
+    ################################
+    #   In Class Util Functions    #
+
+
+    def add_category(self, category_name, options):
+        """
+            Takes the 'name value' pairs of a provided category array and converts it to the category/option objects.
+            Then adds it to the stored categories array
+        """
+        category = self.Category(category_name)
+        for option_name, option_value in options.items():
+            option = self.Option(option_name, option_value)
+            category.add_option(option)
+        self.categories.append(category)
+
+
+    def delete_category(self, category_name):
+        for category in self.categories:
+            if category.name == category_name:
+                self.categories.remove(category)
+                break
 
     ################################
     #   Save/Load Util Functions   #
 
     @staticmethod
     def to_dict(settings_data: 'SettingsData'):
-        return [category.to_dict() for category in settings_data.categories]
+        """
+            Create the JSON dictionary to be stored
+        """
+        data = []
+        for category in settings_data.categories:
+            category_data = {category.name: []}
+            for option in category.options:
+                category_data[category.name].append({option.id: option.value})
+            data.append(category_data)
+        return data
 
     @classmethod
     def from_dict(cls, data_dict):
-        categories = []
+        settings_data = cls()
         for category_data in data_dict:
-            category = cls.Category(category_data['name'])
-            for label, value in category_data['options'].items():
-                option = cls.Option(label, value)
-                category.add_option(option)
-            categories.append(category)
-        return cls(categories)
+            for category_name, options_list in category_data.items():
+                category_options = {}
+                for option_dict in options_list:
+                    for option_name, option_value in option_dict.items():
+                        category_options[option_name] = option_value
+                settings_data.add_category(category_name, category_options)
+        return settings_data
 
     @staticmethod
     def get_settings_path():
@@ -3043,58 +3050,98 @@ class SettingsData:
                 return SettingsData.from_dict(data_dict)
         except FileNotFoundError:
             print(f"Settings file not found at '{file_path}'")
-            with open(file_path, 'w') as file:
-                json.dump(SettingsData.to_dict(SettingsData.get_default_settings()), file, indent=4)
+            default_settings = SettingsData().get_default_settings()
+            SettingsData.save_settings_to_file(default_settings)
+            return default_settings
+
+    ################################
+    #   Settings Util Functions    #
+    # Settings are ALWAYS stored in the main app class, so need to access data externally.
+    # In-App settings location: 'app.settings'
+
+    @staticmethod
+    def set_setting(settings_data: 'SettingsData', category_name: str, option_name: str, new_value: str | int):
+        """
+        Find a specific option within a category and set its value.
+        """
+        category_data = next((cat_data for cat_data in settings_data.categories if cat_data.name == category_name), None)
+        if category_data:
+            option_data = next((opt_data for opt_data in category_data.options if opt_data.id == option_name), None)
+            if option_data:
+                option_data.value = new_value
+            else:
+                #print(f"Option not found: {category_name}/{option_name}")
+                pass
+        else:
+            #print(f"Category not found: {category_name}")
+            pass
+
+        # category = next((cat for cat in categories if cat.name == category_name), None)
+        # if category:
+        #     option = next((opt for opt in category if opt.child_widgets[1].id == option_name), None)
+        #     if option:
+        #         pass
+
+    @staticmethod
+    def get_setting(settings_data: 'SettingsData', category_name: str, option_name: str):
+        """
+        Find a specific option within a category and return its value.
+        """
+        category_data = next((cat_data for cat_data in settings_data.categories if cat_data.name == category_name), None)
+        if category_data:
+            option_data = next((opt_data for opt_data in category_data.options if opt_data.id == option_name), None)
+            if option_data:
+                return option_data.value
+            else:
+                #print(f"Option not found: {category_name}/{option_name}")
+                pass
+        else:
+            #print(f"Category not found: {category_name}")
+            pass
+
+        return None
+
+    @staticmethod
+    def get_category(settings_data: 'SettingsData', category_name: str):
+        """
+        Find a specific category and return it.
+        """
+        category_data = next((cat_data for cat_data in settings_data.categories if cat_data.name == category_name), None)
+        if category_data:
+            return category_data
+        else:
+            #print(f"Category not found: {category_name}")
             return None
-
-    @staticmethod
-    def set_setting(category_name, option_name):
-        pass
-
-    @staticmethod
-    def get_setting(category_name, option_name):
-        pass
-
-    @staticmethod
-    def get_category(category_name):
-        pass
 
     @classmethod
     def get_default_settings(cls):
-        defaults = {
-            'categories': [
-                {
-                    'name': 'Preferences',
-                    'options': {
-                            'PREFERENCES': None,
-                            'Preview Mode': 'Full',
-                            'Input Mode': 'Pixel',
-                        }
-                },
-                {
-                    'name': 'Appearance',
-                    'options': {
-                        'APPEARANCE': None,
-                        'Colors - App': None,
-                        'Primary Color': '#212529',
-                        'Secondary Color': '#343A40',
-                        'Colors - Widgets': None,
-                        'Labels': '#E9ECEF',
-                        'Buttons': '#D8DBDE',
-                        'Textbox': '#ADB5BD',
-                        'Spinbox': '#CED4DA',
-                        'Colors - Previewer': None,
-                        'Backdrop': '#151515',
-                        'Split Lines': '#CC0000',
-                        'Crop Stipple': 'gray',
-                        'Colors - Tooltips': None,
-                        'Background': '#ffffe0',
-                    }
-                },
-            ]
+        """
+            Return a default Class object containing a set of default categories/values.
+        """
+        default_settings = cls()
+        default_categories = []
+
+        default_preferences = "Preferences", {
+            "SplitMethodOption": "Both",
+            "PreviewModeOption": "Split Method",
+            "InputModeOption": "Percentage",
         }
-        print(cls.from_dict(defaults))
-        return cls.from_dict(defaults)
+        default_appearance = "Appearance", {
+            "AppPrimaryColourOption": "#212529",
+            "AppSecondaryColourOption": "#343A40",
+            "LabelsTextColourOption": "#000000",
+            "LabelsBackgroundColourOption": "#E9ECEF",
+            "ButtonsTextColourOption": "#000000",
+            "ButtonBackgroundColourOption": "#F8F9FA",
+        }
+
+        default_categories.append(default_preferences)
+        default_categories.append(default_appearance)
+
+        for category in default_categories:
+            default_settings.add_category(category[0], category[1])
+
+        return default_settings
 
 
 # The Default Values for the split functionality
