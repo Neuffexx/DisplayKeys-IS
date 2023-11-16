@@ -46,6 +46,7 @@ sys_preview_img = sys._MEIPASS + "./Preview.png"
 PRESETS_DIR = os.path.join(os.path.expanduser('~/Documents'), 'Neuffexx', 'DisplayKeys-IS', 'presets')
 OUTPUT_DIR = os.path.join(os.path.expanduser('~/Documents'), 'Neuffexx', 'DisplayKeys-IS', 'output')
 SETTINGS_DIR = os.path.join(os.path.expanduser('~/Documents'), 'Neuffexx', 'DisplayKeys-IS', 'config')
+PRESETS_FILE = 'presets.json'
 SETTINGS_FILE = 'settings.json'
 
 
@@ -2880,16 +2881,19 @@ class PresetData:
             gap=data_dict.get("gap", 1),
         )
 
+    @staticmethod
+    def get_preset_path():
+        if not os.path.exists(PRESETS_DIR):
+            os.makedirs(PRESETS_DIR)
+        return os.path.join(PRESETS_DIR, PRESETS_FILE)
+
     # Currently only saves itself to a selected/new file
     # Need to change to save all presets that are in the list to this file
     # and make this into a static method
     @staticmethod
     def save_presets_to_file():
         print("---Saving Preset---")
-        file_path = filedialog.asksaveasfilename(defaultextension=".json",
-                                                 filetypes=[("JSON files", "*.json"), ("All files", "*.*")])
-        if not file_path:  # If user cancels the save dialog
-            return
+        file_path = PresetData.get_preset_path()
         with open(file_path, 'w') as file:
             if app.presets:
                 if len(app.presets) > 1:
@@ -2897,7 +2901,7 @@ class PresetData:
                     for current_preset in app.presets[1:]:  # Start from the second preset, skipping the first
                         json_presets.append(PresetData.to_json(current_preset))
                     print(json_presets)
-                    json.dump(json_presets, file)
+                    json.dump(json_presets, file, indent=4)
                 else:
                     PopUp_Dialogue(app.window, popup_type="error", message="No new Presets were found!", buttons=[{'OK': lambda: None}])
 
