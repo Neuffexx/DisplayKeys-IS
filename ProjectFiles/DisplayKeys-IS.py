@@ -84,16 +84,18 @@ class DisplayKeys_GUI:
 
         print("---Creating Left Column---")
         # Create the Properties Frame
-        self.properties_frame = tk.Frame(self.window, width=200, height=500, background="#343A40")
+        properties_frame_colour = SettingsData.get_setting(self.settings, 'Appearance', 'AppSecondaryColourOption')
+        self.properties_frame = tk.Frame(self.window, width=200, height=500, background=properties_frame_colour)
         self.properties_frame.grid(row=0, column=0, sticky="nsew")
         self.properties_frame.grid_columnconfigure(0, weight=1)
         # Populate the properties frame with widgets
         self.properties = []
-        self.properties = self.populate_column(self.properties_frame, self.get_properties_widgets())
+        self.properties = self.populate_column(self.properties_frame, self.settings, self.get_properties_widgets())
 
         print("---Creating Right Column---")
         # Create the Preview Frame
-        self.preview_frame = tk.Frame(self.window, height=500, background="#212529")
+        preview_frame_colour = SettingsData.get_setting(self.settings, 'Appearance', 'AppPrimaryColourOption')
+        self.preview_frame = tk.Frame(self.window, height=500, background=preview_frame_colour)
         self.preview_frame.grid(row=0, column=1, sticky="nsew")  # Updated this line
         self.preview_frame.grid_columnconfigure(0, weight=1)
         # Create the Preview Widget and place it in the right column
@@ -132,7 +134,7 @@ class DisplayKeys_GUI:
 
     # Used to populate a column(Frame) with DisplayKeys_Composite_Widget's
     @staticmethod
-    def populate_column(parent, widgets):
+    def populate_column(parent, settings, widgets):
         """
             Adds [DisplayKeys_Composite_Widget]'s to a parent container.
             :param parent: The Container to fill with Widgets
@@ -141,7 +143,7 @@ class DisplayKeys_GUI:
 
         created_widgets = []
         for widget in widgets:
-            created_widgets.append(DisplayKeys_Composite_Widget(parent, **widget))
+            created_widgets.append(DisplayKeys_Composite_Widget(parent, settings, **widget))
 
         for i, widget in enumerate(created_widgets):
             widget.grid(row=i, column=0, sticky="nsew")
@@ -246,6 +248,7 @@ class DisplayKeys_GUI:
                         "type": CompWidgetTypes.LABEL,
                         "widget_id": "TopDividerLabel",
                         "text": "-------------------------------------",
+                        "background_override": "#343A40",
                     },
                 ],
             },
@@ -289,7 +292,7 @@ class DisplayKeys_GUI:
                         "text": "       Add       ",
                         "command": ButtonFunctions.create_preset_popup,
                         "tooltip": "Create a new Preset.",
-                        "fill": "vertical",
+                        "fill": "both",
                     },
                 ],
             },
@@ -302,7 +305,7 @@ class DisplayKeys_GUI:
                         "text": "       Edit       ",
                         "command": ButtonFunctions.edit_preset_popup,
                         "tooltip": "Edit the currently selected Preset.",
-                        "fill": "vertical",
+                        "fill": "both",
                     },
                 ],
             },
@@ -315,7 +318,7 @@ class DisplayKeys_GUI:
                         "text": "     Delete     ",
                         "command": ButtonFunctions.delete_preset_popup,
                         "tooltip": "Delete the currently selected Preset.",
-                        "fill": "vertical",
+                        "fill": "both",
                     },
                 ],
             },
@@ -359,7 +362,7 @@ class DisplayKeys_GUI:
                     {
                         "type": CompWidgetTypes.LABEL,
                         "widget_id": "GetGapLabel",
-                        "text": "Gap (in Pixels):",
+                        "text": "Gap:",
                     },
                     {
                         "type": CompWidgetTypes.SPINBOX,
@@ -377,6 +380,7 @@ class DisplayKeys_GUI:
                         "type": CompWidgetTypes.LABEL,
                         "widget_id": "BottomDividerLabel",
                         "text": "-------------------------------------",
+                        "background_override": "#343A40",
                     },
                 ],
             },
@@ -388,6 +392,7 @@ class DisplayKeys_GUI:
                         "widget_id": "SplitImage",
                         "text": "Split Image",
                         "command": ButtonFunctions.process_image,
+                        "fill": "horizontal",
                     },
                 ],
             },
@@ -798,9 +803,13 @@ class DisplayKeys_Composite_Widget(tk.Frame):
         Designed to be used in a Vertical and Horizontal Layout.
     """
 
-    def __init__(self, parent: tk.Frame, composite_id: str, widgets: list[list], layout: Literal['vertical', 'horizontal'] = 'vertical'):
-        super().__init__(parent, bg="#343A40")
-        self.grid(sticky="nsew", padx=5, pady=5)
+    def __init__(self, parent: tk.Frame, settings: 'SettingsData', composite_id: str, widgets: list[list],
+                 layout: Literal['vertical', 'horizontal'] = 'vertical', padding: tuple[int, int] = (5, 5)):
+        self.settings = settings
+        frame_background_colour = SettingsData.get_setting(settings, 'Appearance', 'AppSecondaryColourOption')
+
+        super().__init__(parent, bg=frame_background_colour)
+        self.grid(sticky="nsew", padx=padding[0], pady=padding[1])
         self.columnconfigure(0, weight=1)
 
         # The reference name by which to find this widget
@@ -828,42 +837,49 @@ class DisplayKeys_Composite_Widget(tk.Frame):
 
             match widget_type:
                 case CompWidgetTypes.LABEL:
-                    child_widgets.append(self.Comp_Label(master=self, widget_id=widget_id, **widget_params))
+                    child_widgets.append(self.Comp_Label(master=self, settings=self.settings, widget_id=widget_id, **widget_params))
                 case CompWidgetTypes.DROPDOWN:
-                    child_widgets.append(self.Comp_Combobox(master=self, widget_id=widget_id, **widget_params))
+                    child_widgets.append(self.Comp_Combobox(master=self, settings=self.settings, widget_id=widget_id, **widget_params))
                 case CompWidgetTypes.TEXTBOX:
-                    child_widgets.append(self.Comp_Entry(master=self, widget_id=widget_id, **widget_params))
+                    child_widgets.append(self.Comp_Entry(master=self, settings=self.settings, widget_id=widget_id, **widget_params))
                 case CompWidgetTypes.SPINBOX:
-                    child_widgets.append(self.Comp_Spinbox(master=self, widget_id=widget_id, **widget_params))
+                    child_widgets.append(self.Comp_Spinbox(master=self, settings=self.settings, widget_id=widget_id, **widget_params))
                 case CompWidgetTypes.BUTTON:
-                    child_widgets.append(self.Comp_Button(master=self, widget_id=widget_id, **widget_params))
+                    child_widgets.append(self.Comp_Button(master=self, settings=self.settings, widget_id=widget_id, **widget_params))
 
         return child_widgets
 
     def populate_composite(self):
         for i, widget in enumerate(self.child_widgets):
             if widget.__class__ == self.Comp_Button:
+                # Ensure that there are other widgets and that at least 1 widget is above the button,
+                # otherwise, will have white-space's around the button
+                if len(self.child_widgets) > 1 and i > 0:
+                    padding = 3
+                else:
+                    padding = 0
+
                 match self.layout:
                     case 'vertical':
                         match widget.fill:
                             case 'both':
-                                widget.grid(sticky="nsew", row=i, column=0, pady=3)
+                                widget.grid(sticky="nsew", row=i, column=0, pady=padding)
                             case 'horizontal':
-                                widget.grid(sticky="ew", row=i, column=0, pady=3)
+                                widget.grid(sticky="ew", row=i, column=0, pady=padding)
                             case 'vertical':
-                                widget.grid(sticky="ns", row=i, column=0, pady=3)
+                                widget.grid(sticky="ns", row=i, column=0, pady=padding)
                             case "":
-                                widget.grid(sticky="", row=i, column=0, pady=3)
+                                widget.grid(sticky="", row=i, column=0, pady=padding)
                     case 'horizontal':
                         match widget.fill:
                             case 'both':
-                                widget.grid(sticky="nsew", row=0, column=i, pady=3)
+                                widget.grid(sticky="nsew", row=0, column=i, pady=padding)
                             case 'horizontal':
-                                widget.grid(sticky="ew", row=0, column=i, pady=3)
+                                widget.grid(sticky="ew", row=0, column=i, pady=padding)
                             case 'vertical':
-                                widget.grid(sticky="ns", row=0, column=i, pady=3)
+                                widget.grid(sticky="ns", row=0, column=i, pady=padding)
                             case "":
-                                widget.grid(sticky="", row=0, column=i, pady=3)
+                                widget.grid(sticky="", row=0, column=i, pady=padding)
             else:
                 match self.layout:
                     case 'vertical':
@@ -883,15 +899,27 @@ class DisplayKeys_Composite_Widget(tk.Frame):
     # Create child class widgets to hold all this information themselves, so as to not store it in arrays or anything
     # with some convoluted way to keeping track of what widget has what tooltip etc.
     class Comp_Label(tk.Label):
-        def __init__(self, widget_id: str, text: str, tooltip: str = None, tooltip_justify = 'left',
+        def __init__(self, widget_id: str, settings: 'SettingsData', text: str,
+                     tooltip: str = None, tooltip_justify: Literal['left', 'center', 'right'] = 'left',
+                     background_override: str = None, text_override: str = None,
                      master=None, **kwargs):
-            super().__init__(master, text=text, **kwargs)
+            # Widget colours
+            if not text_override:
+                text_colour = SettingsData.get_setting(settings, 'Appearance', 'LabelsTextColourOption')
+            else:
+                text_colour = text_override
+            if not background_override:
+                background_colour = SettingsData.get_setting(settings, 'Appearance', 'LabelsBackgroundColourOption')
+            else:
+                background_colour = background_override
+
+            super().__init__(master, text=text, fg=text_colour, bg=background_colour, **kwargs)
             self.id = widget_id
             if tooltip:
-                self.tooltip = DisplayKeys_Tooltip(parent=self, text=tooltip)
+                self.tooltip = DisplayKeys_Tooltip(parent=self, text=tooltip, justify=tooltip_justify)
 
     class Comp_Combobox(ttk.Combobox):
-        def __init__(self, widget_id: str, options: list[str], tooltip: str = None, tooltip_justify = 'left',
+        def __init__(self, widget_id: str, settings: 'SettingsData', options: list[str], tooltip: str = None, tooltip_justify: Literal['left', 'center', 'right'] = 'left',
                      command: Callable[[list['DisplayKeys_Composite_Widget']], None] = lambda id: None,
                      update_previewer: bool = False,
                      master=None, **kwargs):
@@ -905,11 +933,11 @@ class DisplayKeys_Composite_Widget(tk.Frame):
             if update_previewer:
                 self.dropdown_trace = self.dropdown_var.trace('w', lambda *args: ButtonFunctions.process_image(self.id))
             if tooltip:
-                self.tooltip = DisplayKeys_Tooltip(parent=self, text=tooltip)
+                self.tooltip = DisplayKeys_Tooltip(parent=self, text=tooltip, justify=tooltip_justify)
 
     class Comp_Entry(tk.Entry):
-        def __init__(self, widget_id: str, state: Literal["normal", "disabled", "readonly"] = "normal", default_value: str = None,
-                     dnd_type: Literal['image', 'folder', 'text', 'any'] | None = None, tooltip: str = None, tooltip_justify = 'left',
+        def __init__(self, widget_id: str, settings: 'SettingsData', state: Literal["normal", "disabled", "readonly"] = "normal", default_value: str = None,
+                     dnd_type: Literal['image', 'folder', 'text', 'any'] | None = None, tooltip: str = None, tooltip_justify: Literal['left', 'center', 'right'] = 'left',
                      colour: str = "white", updates_previewer: bool = False,
                      master=None, **kwargs):
             self.textbox_var = tk.StringVar()
@@ -921,15 +949,15 @@ class DisplayKeys_Composite_Widget(tk.Frame):
             if updates_previewer:
                 self.textbox_trace = self.textbox_var.trace('w', lambda *args: ButtonFunctions.process_image(self.id))
             if tooltip:
-                self.tooltip = DisplayKeys_Tooltip(parent=self, text=tooltip)
+                self.tooltip = DisplayKeys_Tooltip(parent=self, text=tooltip, justify=tooltip_justify)
             if dnd_type:
                 self.dnd = DisplayKeys_DragDrop(self, drop_type=dnd_type, parent_widget=self,
                                                 traced_callback=lambda *args: ButtonFunctions.process_image(
                                                     self.id) if updates_previewer else None)
 
     class Comp_Spinbox(tk.Spinbox):
-        def __init__(self, widget_id: str, default_value: Union[int, float, 'DefaultSplitData'] = 0, dnd_type: Literal['image', 'folder', 'text', 'any'] | None = None,
-                     colour: str = "white", updates_previewer: bool = False, tooltip: str = None, tooltip_justify = 'left',
+        def __init__(self, widget_id: str, settings: 'SettingsData', default_value: Union[int, float, 'DefaultSplitData'] = 0, dnd_type: Literal['image', 'folder', 'text', 'any'] | None = None,
+                     colour: str = "white", updates_previewer: bool = False, tooltip: str = None, tooltip_justify: Literal['left', 'center', 'right'] = 'left',
                      master=None, **kwargs):
             self.spinbox_var = tk.IntVar()
 
@@ -946,20 +974,29 @@ class DisplayKeys_Composite_Widget(tk.Frame):
             if updates_previewer:
                 self.spinbox_trace = self.spinbox_var.trace('w', lambda *args: ButtonFunctions.process_image(self.id))
             if tooltip:
-                self.tooltip = DisplayKeys_Tooltip(parent=self, text=tooltip)
+                self.tooltip = DisplayKeys_Tooltip(parent=self, text=tooltip, justify=tooltip_justify)
             if dnd_type:
                 self.dnd = DisplayKeys_DragDrop(self, drop_type=dnd_type, parent_widget=self,
                                                 traced_callback=lambda *args: ButtonFunctions.process_image(
                                                     self.id) if updates_previewer else None)
 
+    class Comp_Checkbutton(tk.Checkbutton):
+        def __init__(self, widget_id: str, settings: 'SettingsData', text: str = None, values: list[any, any] = [True, False],
+                     master=None,**kwargs):
+            super().__init__(master, text=text, onvalue=values[0], offvalue=values[1], **kwargs)
+            pass
+
     class Comp_Button(tk.Button):
-        def __init__(self, widget_id: str, text: str = None, command: Callable[[str], None] = None,
-                     tooltip: str = None, tooltip_justify = 'left', colour: str = "white", border: int = 3, fill: str = 'both',
+        def __init__(self, widget_id: str, settings: 'SettingsData', text: str = None, command: Callable[[str], None] = None,
+                     tooltip: str = None, tooltip_justify: Literal['left', 'center', 'right'] = 'left', colour: str = "white", border: int = 3, fill: str = 'both',
                      master=None, **kwargs):
-            super().__init__(master, text=text, command=lambda: command(self.id), borderwidth=border, bg=colour, **kwargs)
+            text_colour = SettingsData.get_setting(settings, 'Appearance', 'ButtonsTextColourOption')
+            background_colour = SettingsData.get_setting(settings, 'Appearance', 'ButtonsBackgroundColourOption')
+
+            super().__init__(master, text=text, foreground=text_colour, background=background_colour, command=lambda: command(self.id), borderwidth=border, bg=colour, relief='ridge', **kwargs)
             self.id = widget_id
             if tooltip:
-                self.tooltip = DisplayKeys_Tooltip(parent=self, text=tooltip)
+                self.tooltip = DisplayKeys_Tooltip(parent=self, text=tooltip, justify=tooltip_justify)
             self.fill = fill
 
 
@@ -1082,7 +1119,7 @@ class DisplayKeys_PopUp:
         self.popup.bind("<Destroy>", self.on_close)
 
         # Primary Content Container ( will be used by all pop-up`s )
-        self.container = tk.Frame(self.popup)
+        self.container = tk.Frame(self.popup, background=SettingsData.get_setting(app.settings, 'Appearance', 'AppSecondaryColourOption'))
         self.container.pack(expand=True, fill=tk.BOTH)
         self.container.grid_columnconfigure(0, weight=1)
         self.container.grid_rowconfigure(0, weight=1)
@@ -1411,7 +1448,7 @@ class PopUp_Preset_Add(DisplayKeys_PopUp):
         self.message.grid(sticky="nsew", row=1, column=0, pady=15)
 
         # Create Necessary Edit Fields
-        self.preset_param_widgets = app.populate_column(parent=self.container, widgets=self.get_add_widgets())
+        self.preset_param_widgets = app.populate_column(parent=self.container, settings=app.settings, widgets=self.get_add_widgets())
 
         # Interaction Buttons
         self.button_container = tk.Frame(self.container)
@@ -1562,7 +1599,7 @@ class PopUp_Preset_Edit(DisplayKeys_PopUp):
         self.message.grid(sticky="nsew", row=1, column=0, pady=15)
 
         # Create Necessary Edit Fields
-        self.preset_param_widgets = app.populate_column(parent=self.container, widgets=self.get_edit_widgets())
+        self.preset_param_widgets = app.populate_column(parent=self.container, settings=app.settings, widgets=self.get_edit_widgets())
 
         # Interaction Buttons
         self.button_container = tk.Frame(self.container)
@@ -1603,27 +1640,30 @@ class PopUp_Settings(DisplayKeys_PopUp):
             Creates the entire Structure and UI interface for the Settings
         """
 
+        bg_colour_primary = SettingsData.get_setting(app.settings, 'Appearance', 'AppPrimaryColourOption')
+        bg_colour_secondary = SettingsData.get_setting(app.settings, 'Appearance', 'AppSecondaryColourOption')
+
         #######################
         # Create UI Structure #
 
         # --- Categories ---
-        self.settings_category_container = tk.Frame(self.container, width=150, height=500, background='red', padx=0)
+        self.settings_category_container = tk.Frame(self.container, width=150, height=500, background=bg_colour_secondary, padx=0)
         self.settings_category_container.grid(row=0, column=0, sticky='ns')
         self.settings_category_container.grid_propagate(False)  # Enforce frame size without adapting to children
 
-        self.category_placement_frame = tk.Frame(self.settings_category_container, width=150, height=500, background='red', padx=0)
+        self.category_placement_frame = tk.Frame(self.settings_category_container, width=150, height=500, background=bg_colour_secondary, padx=0)
         self.category_placement_frame.grid(row=0, column=0, sticky='new')
         self.category_placement_frame.grid_propagate(False)
 
         # --- Options ---
-        self.settings_container = tk.Frame(self.container, width=250, height=450, background='green', padx=0)
+        self.settings_container = tk.Frame(self.container, width=250, height=450, background=bg_colour_primary, padx=0)
         self.settings_container.grid(row=0, column=1, sticky='ns')
         self.settings_container.grid_rowconfigure(0, weight=1)
         self.settings_container.grid_columnconfigure(0, weight=1)
         self.settings_container.grid_propagate(False)
 
         # --- Window Interaction ---
-        self.window_interactions_container = tk.Frame(self.container, width=250, height=50, background='blue', padx=0)
+        self.window_interactions_container = tk.Frame(self.container, width=250, height=50, background='darkgray', padx=0)
         self.window_interactions_container.grid(row=1, column=1, sticky='sew')
         self.add_interaction_buttons(self.window_interactions_container)
 
@@ -1838,7 +1878,7 @@ class PopUp_Settings(DisplayKeys_PopUp):
                     {
                         "type": CompWidgetTypes.LABEL,
                         "widget_id": "AppPrimaryColorLabel",
-                        "text": "Background Colour 1",
+                        "text": "Background Primary",
                     },
                     {
                         "type": CompWidgetTypes.TEXTBOX,
@@ -1855,7 +1895,7 @@ class PopUp_Settings(DisplayKeys_PopUp):
                     {
                         "type": CompWidgetTypes.LABEL,
                         "widget_id": "AppSecondaryColorLabel",
-                        "text": "Background Colour 2",
+                        "text": "Background Secondary",
                     },
                     {
                         "type": CompWidgetTypes.TEXTBOX,
@@ -1950,16 +1990,16 @@ class PopUp_Settings(DisplayKeys_PopUp):
                 "layout": "horizontal",
             },
             {
-                "composite_id": "ButtonBackgroundColour",
+                "composite_id": "ButtonsBackgroundColour",
                 "widgets": [
                     {
                         "type": CompWidgetTypes.LABEL,
-                        "widget_id": "ButtonBackgroundColourLabel",
+                        "widget_id": "ButtonsBackgroundColourLabel",
                         "text": "Background",
                     },
                     {
                         "type": CompWidgetTypes.TEXTBOX,
-                        "widget_id": "ButtonBackgroundColourOption",
+                        "widget_id": "ButtonsBackgroundColourOption",
                         #"tooltip": "The Primary application colour.",
                         "dnd_type": "text",
                     },
@@ -2120,7 +2160,8 @@ class DisplayKeys_Settings_Category:
 
         self.name = category_name
 
-        self.options_frame = tk.Frame(options_parent, width='150', height='450')
+        background = SettingsData.get_setting(app.settings, 'Appearance', 'AppPrimaryColourOption')
+        self.options_frame = tk.Frame(options_parent, width='150', height='450', background=background)
         self.options_frame.grid(row=0, column=0, sticky='new')
         self.options_frame.grid_propagate(False)
 
@@ -2163,7 +2204,7 @@ class DisplayKeys_Settings_Category:
 
     def create_button(self, parent, buttons):
         for button in buttons:
-            composite_button = DisplayKeys_Composite_Widget(parent, **button)
+            composite_button = DisplayKeys_Composite_Widget(parent, app.settings, **button)
 
             # Set Style
             for child in composite_button.child_widgets:
@@ -2175,7 +2216,9 @@ class DisplayKeys_Settings_Category:
         options_widgets = []
 
         for option in options:
-            options_widgets.append(DisplayKeys_Composite_Widget(self.options_frame, **option))
+            options_widgets.append(DisplayKeys_Composite_Widget(self.options_frame, app.settings, padding=(5,1), **option))
+
+        # for option in options_widgets:
 
         return options_widgets
 
@@ -2619,7 +2662,7 @@ class ButtonFunctions:
                                              lambda *args: ButtonFunctions.process_image(get_image_widget.id))
 
             if not output_dir:
-                output_dir = os.path.join(os.path.expanduser("~"), "Desktop")
+                output_dir = OUTPUT_DIR
 
                 # Temporarily set the text entry widget to normal state to update its value
                 get_output_widget.configure(state="normal")
@@ -3136,7 +3179,7 @@ class SettingsData:
             "LabelsTextColourOption": "#000000",
             "LabelsBackgroundColourOption": "#E9ECEF",
             "ButtonsTextColourOption": "#000000",
-            "ButtonBackgroundColourOption": "#F8F9FA",
+            "ButtonsBackgroundColourOption": "#F8F9FA",
         }
 
         default_categories.append(default_preferences)
