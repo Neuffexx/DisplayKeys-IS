@@ -607,62 +607,85 @@ class DisplayKeys_Previewer:
         self.allowed_drag_distance_cropping["x"] = abs((cell_width - square_size)) / (self.scale_factor)
         self.allowed_drag_distance_cropping["y"] = abs((cell_height - square_size)) / (self.scale_factor)
 
-        # Draw Cropping Stipple's
-        for column_index in range(num_columns):
-            for row_index in range(num_rows):
+        # Determine what preview method is used
+        preview_method = SettingsData.get_setting(app.settings, "Preferences", "PreviewModeOption")
+        show_cropping = False
+        show_split = False
+        match preview_method:
+            case "Full":
+                show_split = True
+                show_cropping = True
+            case "Crop Only":
+                show_cropping = True
+            case "Split Only":
+                show_split = True
+            case "Split Method":
+                split_method = SettingsData.get_setting(app.settings, "Preferences", "SplitMethodOption")
+                match split_method:
+                    case "Both":
+                        show_split = True
+                        show_cropping = True
+                    case "Split Only":
+                        show_split = True
 
-                # Initial position for cropping rectangle (centered in cell)
-                crop_left = column_index * cell_width + (cell_width - square_size) / 2 + self.x_offset
-                crop_top = row_index * cell_height + (cell_height - square_size) / 2 + self.y_offset
-                crop_right = crop_left + square_size
-                crop_bottom = crop_top + square_size
+        if show_cropping:
+            # Draw Cropping Stipple's
+            for column_index in range(num_columns):
+                for row_index in range(num_rows):
 
-                # Position adjustments for Outlier Image-Cells
-                if row_index == 0:  # First Row
-                    crop_bottom = (row_index + 1) * cell_height - scaled_gap / 2 + self.y_offset
-                    crop_top = crop_bottom - square_size
-                elif row_index == num_rows - 1:  # Last Row
-                    crop_top = row_index * cell_height + scaled_gap / 2 + self.y_offset
+                    # Initial position for cropping rectangle (centered in cell)
+                    crop_left = column_index * cell_width + (cell_width - square_size) / 2 + self.x_offset
+                    crop_top = row_index * cell_height + (cell_height - square_size) / 2 + self.y_offset
+                    crop_right = crop_left + square_size
                     crop_bottom = crop_top + square_size
 
-                if column_index == 0:  # First Column
-                    crop_right = (column_index + 1) * cell_width - scaled_gap / 2 + self.x_offset
-                    crop_left = crop_right - square_size
-                elif column_index == num_columns - 1:  # Last Column
-                    crop_left = column_index * cell_width + scaled_gap / 2 + self.x_offset
-                    crop_right = crop_left + square_size
+                    # Position adjustments for Outlier Image-Cells
+                    if row_index == 0:  # First Row
+                        crop_bottom = (row_index + 1) * cell_height - scaled_gap / 2 + self.y_offset
+                        crop_top = crop_bottom - square_size
+                    elif row_index == num_rows - 1:  # Last Row
+                        crop_top = row_index * cell_height + scaled_gap / 2 + self.y_offset
+                        crop_bottom = crop_top + square_size
 
-                # Draw the adjusted Cropping Overlay
-                self.canvas.create_rectangle(crop_left, crop_top, crop_right, crop_bottom, outline="blue")
+                    if column_index == 0:  # First Column
+                        crop_right = (column_index + 1) * cell_width - scaled_gap / 2 + self.x_offset
+                        crop_left = crop_right - square_size
+                    elif column_index == num_columns - 1:  # Last Column
+                        crop_left = column_index * cell_width + scaled_gap / 2 + self.x_offset
+                        crop_right = crop_left + square_size
 
-                # Draw Cropping Overlays with stipple effect, adjusted for Outlier Image-Cells
-                stipple_pattern = "gray25"
-                overlay_left = self.x_offset if column_index == 0 else column_index * cell_width + self.x_offset
-                overlay_right = self.x_offset + image_width if column_index == num_columns - 1 else (
-                                                                                                            column_index + 1) * cell_width + self.x_offset
-                overlay_top = self.y_offset if row_index == 0 else row_index * cell_height + self.y_offset
-                overlay_bottom = self.y_offset + image_height if row_index == num_rows - 1 else (
-                                                                                                        row_index + 1) * cell_height + self.y_offset
+                    # Draw the adjusted Cropping Overlay
+                    self.canvas.create_rectangle(crop_left, crop_top, crop_right, crop_bottom, outline="blue")
 
-                self.canvas.create_rectangle(overlay_left, crop_top, crop_right, overlay_top, fill="gray",
-                                             stipple=stipple_pattern)
-                self.canvas.create_rectangle(overlay_left, crop_bottom, crop_right, overlay_bottom, fill="gray",
-                                             stipple=stipple_pattern)
-                self.canvas.create_rectangle(crop_left, overlay_top, overlay_left, overlay_bottom, fill="gray",
-                                             stipple=stipple_pattern)
-                self.canvas.create_rectangle(crop_right, overlay_top, overlay_right, overlay_bottom, fill="gray",
-                                             stipple=stipple_pattern)
+                    # Draw Cropping Overlays with stipple effect, adjusted for Outlier Image-Cells
+                    stipple_pattern = "gray25"
+                    overlay_left = self.x_offset if column_index == 0 else column_index * cell_width + self.x_offset
+                    overlay_right = self.x_offset + image_width if column_index == num_columns - 1 else (
+                                                                                                                column_index + 1) * cell_width + self.x_offset
+                    overlay_top = self.y_offset if row_index == 0 else row_index * cell_height + self.y_offset
+                    overlay_bottom = self.y_offset + image_height if row_index == num_rows - 1 else (
+                                                                                                            row_index + 1) * cell_height + self.y_offset
 
-        # Draw the Grid Lines
-        for column_index in range(1, num_columns):
-            grid_x = column_index * cell_width + self.x_offset
-            self.canvas.create_line(grid_x, self.y_offset, grid_x, image_height + self.y_offset, fill="#CC0000",
-                                    width=scaled_gap)
+                    self.canvas.create_rectangle(overlay_left, crop_top, crop_right, overlay_top, fill="gray",
+                                                 stipple=stipple_pattern)
+                    self.canvas.create_rectangle(overlay_left, crop_bottom, crop_right, overlay_bottom, fill="gray",
+                                                 stipple=stipple_pattern)
+                    self.canvas.create_rectangle(crop_left, overlay_top, overlay_left, overlay_bottom, fill="gray",
+                                                 stipple=stipple_pattern)
+                    self.canvas.create_rectangle(crop_right, overlay_top, overlay_right, overlay_bottom, fill="gray",
+                                                 stipple=stipple_pattern)
 
-        for row_index in range(1, num_rows):
-            grid_y = row_index * cell_height + self.y_offset
-            self.canvas.create_line(self.x_offset, grid_y, image_width + self.x_offset, grid_y, fill="#CC0000",
-                                    width=scaled_gap)
+        if show_split:
+            # Draw the Grid Lines
+            for column_index in range(1, num_columns):
+                grid_x = column_index * cell_width + self.x_offset
+                self.canvas.create_line(grid_x, self.y_offset, grid_x, image_height + self.y_offset, fill="#CC0000",
+                                        width=scaled_gap)
+
+            for row_index in range(1, num_rows):
+                grid_y = row_index * cell_height + self.y_offset
+                self.canvas.create_line(self.x_offset, grid_y, image_width + self.x_offset, grid_y, fill="#CC0000",
+                                        width=scaled_gap)
 
         # Draw Blackout Lines (hides out-of-grid pixels)
         blackout_rectangles = [
@@ -2587,20 +2610,21 @@ class ButtonFunctions:
         """
         print("---Browsing for Output Dir---")
         print("Widget ID: " + widget_id)
-        widget = app.get_property_widget(widget_id)
+        widget = app.get_property_widget_by_child(widget_id)
 
         if widget:
             # Request the user to select a Directory
             output_path = filedialog.askdirectory()
-            # Put Directory Path into textbox if widget has a textbox
-            if output_path and widget.textbox:
-                widget_original_state = widget.textbox.__getitem__('state')
+            # Put Directory Path into textbox if widget is of textbox class
+            textbox_widget = next(child for child in widget.child_widgets if child.__class__ == DisplayKeys_Composite_Widget.Comp_Entry)
+            if output_path and textbox_widget:
+                widget_original_state = textbox_widget.__getitem__('state')
                 print("Original Textbox State: " + widget_original_state)
 
-                widget.textbox.configure(state='normal')
-                widget.textbox.delete(0, tk.END)
-                widget.textbox.insert(tk.END, output_path)
-                widget.textbox.configure(state=widget_original_state)
+                textbox_widget.configure(state='normal')
+                textbox_widget.delete(0, tk.END)
+                textbox_widget.insert(tk.END, output_path)
+                textbox_widget.configure(state=widget_original_state)
 
             # Just in case its ever needed
             return output_path
@@ -3286,6 +3310,13 @@ class split:
         # Generate the output file path
         filename_without_extension = os.path.splitext(os.path.basename(static_image.filename))[0]
 
+        # If the output path is the default location, save output to a sub-folder of the same name
+        # as the original image
+        if output_dir == OUTPUT_DIR:
+            with_sub_folder = os.path.join(output_dir, f'{filename_without_extension}')
+            output_dir = with_sub_folder
+            os.makedirs(output_dir, exist_ok=True)
+
         # Save the image-cells
         cell: ImageTk.PhotoImage
         for cell in split_image["image_cells"]:
@@ -3358,6 +3389,13 @@ class split:
             # Generate the output file path
             filename_without_extension = os.path.splitext(os.path.basename(gif.filename))[0]
 
+            # If the output path is the default location, save output to a sub-folder of the same name
+            # as the original image
+            if output_dir == OUTPUT_DIR:
+                with_sub_folder = os.path.join(output_dir, f'{filename_without_extension}')
+                output_dir = with_sub_folder
+                os.makedirs(output_dir, exist_ok=True)
+
             # Use the filename of the cell image for creating the output_path
 
             cell_name = combined_cells[0].filename
@@ -3375,6 +3413,21 @@ class split:
     # Returns {preview_coordinates, image_cells}
     @staticmethod
     def calculate_image_split(image: ImageTk, rows: int, cols: int, gap: int, x_offset: float, y_offset: float) -> dict[str, list[dict] | str, list[ImageTk.PhotoImage]]:
+        # TODO: Implement the usage of the bool to either use the cropping or not
+        #       This will probably require separating the cropping a bit more from the splitting coordinates
+        #       Essentially creating a 'duplicate' implementation, where if cropping is true, it overrides the coordinates
+        #       of the split to also accommodate for the cropping.
+        #       (But realistically I can just add an if/else statement for both cases, shouldn't be too heavy to calculate
+        #       for .gif support sake not being slow)
+        # Determine what split method is used
+        crop_image = False
+        split_method = SettingsData.get_setting(app.settings, "Preferences", "SplitMethodOption")
+        match split_method:
+            case "Both":
+                crop_image = True
+            case "Split Only":
+                pass
+
         preview_grid = []
         cropped_cells = []
 
