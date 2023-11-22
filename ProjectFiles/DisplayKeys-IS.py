@@ -510,12 +510,12 @@ class DisplayKeys_Previewer:
 
     def __init__(self, parent, width, height):
         # Initialize Image
-        self.width = width
-        self.height = height
         self.placeholder_path = sys_preview_img
         self.image_path = None
 
         # Initialize canvas
+        self.width = width
+        self.height = height
         self.canvas = tk.Canvas(parent, width=self.width, height=self.height, background="#151515", highlightthickness=3, highlightbackground="#343A40")
         self.canvas.grid()
         self.canvas.tag_bind("preview_image", "<ButtonPress-1>", self.start_drag)
@@ -586,6 +586,8 @@ class DisplayKeys_Previewer:
             to preview the Splitting and Cropping of an image provided.
             Also calls the 'display_preview_image' to refresh the image.
         """
+        cropping_colour = SettingsData.get_setting(app.settings, 'Appearance', 'PreviewerCroppingColourOption')
+        split_colour = SettingsData.get_setting(app.settings, 'Appearance', 'PreviewerSplitColourOption')
 
         # Clear the canvas to prepare for new content
         self.canvas.delete("all")
@@ -666,30 +668,30 @@ class DisplayKeys_Previewer:
                     overlay_bottom = self.y_offset + image_height if row_index == num_rows - 1 else (
                                                                                                             row_index + 1) * cell_height + self.y_offset
 
-                    self.canvas.create_rectangle(overlay_left, crop_top, crop_right, overlay_top, fill="gray",
+                    self.canvas.create_rectangle(overlay_left, crop_top, crop_right, overlay_top, fill=cropping_colour,
                                                  stipple=stipple_pattern)
-                    self.canvas.create_rectangle(overlay_left, crop_bottom, crop_right, overlay_bottom, fill="gray",
+                    self.canvas.create_rectangle(overlay_left, crop_bottom, crop_right, overlay_bottom, fill=cropping_colour,
                                                  stipple=stipple_pattern)
-                    self.canvas.create_rectangle(crop_left, overlay_top, overlay_left, overlay_bottom, fill="gray",
+                    self.canvas.create_rectangle(crop_left, overlay_top, overlay_left, overlay_bottom, fill=cropping_colour,
                                                  stipple=stipple_pattern)
-                    self.canvas.create_rectangle(crop_right, overlay_top, overlay_right, overlay_bottom, fill="gray",
+                    self.canvas.create_rectangle(crop_right, overlay_top, overlay_right, overlay_bottom, fill=cropping_colour,
                                                  stipple=stipple_pattern)
 
         if show_split:
             # Draw the Grid Lines
             for column_index in range(1, num_columns):
                 grid_x = column_index * cell_width + self.x_offset
-                self.canvas.create_line(grid_x, self.y_offset, grid_x, image_height + self.y_offset, fill="#CC0000",
+                self.canvas.create_line(grid_x, self.y_offset, grid_x, image_height + self.y_offset, fill=split_colour,
                                         width=scaled_gap)
 
             for row_index in range(1, num_rows):
                 grid_y = row_index * cell_height + self.y_offset
-                self.canvas.create_line(self.x_offset, grid_y, image_width + self.x_offset, grid_y, fill="#CC0000",
+                self.canvas.create_line(self.x_offset, grid_y, image_width + self.x_offset, grid_y, fill=split_colour,
                                         width=scaled_gap)
 
         # Draw Blackout Lines (hides out-of-grid pixels)
         blackout_rectangles = [
-            self.canvas.create_rectangle(0, 0, self.width + 15, self.y_offset, fill='black'), # Top
+            self.canvas.create_rectangle(0, 0, self.width + 15, self.y_offset, fill='black'),  # Top
             self.canvas.create_rectangle(0, self.y_offset + self.resized_image.height, self.width + 15, self.height + 15,
                                          fill='black'),  # Bottom
             self.canvas.create_rectangle(0, self.y_offset, self.x_offset, self.y_offset + self.resized_image.height,
@@ -1896,6 +1898,22 @@ class PopUp_Settings(DisplayKeys_PopUp):
                 "layout": "horizontal",
             },
             {
+                "composite_id": "AppColoursInfo",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "AppColoursInfoLabel",
+                        "text": "Colours are either 'hex-codes' or 'names'",
+                    },
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "AppColoursInfoBlank",
+                        "text": "",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+            {
                 "composite_id": "AppPrimaryColour",
                 "widgets": [
                     {
@@ -2024,6 +2042,56 @@ class PopUp_Settings(DisplayKeys_PopUp):
                         "type": CompWidgetTypes.TEXTBOX,
                         "widget_id": "ButtonsBackgroundColourOption",
                         #"tooltip": "The Primary application colour.",
+                        "dnd_type": "text",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+            {
+                "composite_id": "PreviewerHeader",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "PreviewerHeaderLabel",
+                        "text": "Previewer Colours",
+                    },
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "PreviewerHeaderBlank",
+                        "text": "",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+            {
+                "composite_id": "PreviewerSplitColour",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "PreviewerSplitColourLabel",
+                        "text": "Split",
+                    },
+                    {
+                        "type": CompWidgetTypes.TEXTBOX,
+                        "widget_id": "PreviewerSplitColourOption",
+                        # "tooltip": "The Primary application colour.",
+                        "dnd_type": "text",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+            {
+                "composite_id": "PreviewerCroppingColour",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "PreviewerCroppingColourLabel",
+                        "text": "Cropping",
+                    },
+                    {
+                        "type": CompWidgetTypes.TEXTBOX,
+                        "widget_id": "PreviewerCroppingColourOption",
+                        # "tooltip": "The Primary application colour.",
                         "dnd_type": "text",
                     },
                 ],
@@ -2999,7 +3067,7 @@ class PresetData:
             # Get Preset
             preset = next(preset for preset in app.presets if preset_name == preset.name)
             if preset:
-                print(f"Retrieved Preset {preset}")
+                print(f"Retrieved Preset {preset.name}")
                 return preset
             else:
                 PopUp_Dialogue(app.window, popup_type='error', message=f"No Preset of the name '{preset_name}' found!", buttons=[{'OK': lambda: None}])
@@ -3120,7 +3188,7 @@ class SettingsData:
                 data_dict = json.load(file)
                 return SettingsData.from_dict(data_dict)
         except FileNotFoundError:
-            print(f"Settings file not found at '{file_path}'")
+            print(f"Settings file not found at '{file_path}'\nLoading Default Settings instead")
             default_settings = SettingsData().get_default_settings()
             SettingsData.save_settings_to_file(default_settings)
             return default_settings
@@ -3204,6 +3272,8 @@ class SettingsData:
             "LabelsBackgroundColourOption": "#E9ECEF",
             "ButtonsTextColourOption": "#000000",
             "ButtonsBackgroundColourOption": "#F8F9FA",
+            "PreviewerSplitColourOption": "#CC0000",
+            "PreviewerCroppingColourOption": "gray",
         }
 
         default_categories.append(default_preferences)
@@ -3487,6 +3557,7 @@ class split:
                 # Store Coordinates of split image cells, for Previewer
                 grid_cell = [{
                     "cell": f"{row}_{col}",
+                    "width": cell_width,
                     "Left_Coord": left,
                     "Right_Coord": right,
                     "Upper_Coord": upper,
