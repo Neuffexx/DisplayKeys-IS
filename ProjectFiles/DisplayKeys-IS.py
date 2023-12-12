@@ -2596,7 +2596,9 @@ class ButtonFunctions:
     # Trace_variable_name (string) should be provided based on type of widget
     # (i.e. if textbox: textbox_trace, if spinbox: spinbox_trace, etc.)
     @staticmethod
-    def enable_trace(variable_to_trace: vars, widget: DisplayKeys_Composite_Widget, function, event: str = "w"):
+    def enable_trace(variable_to_trace: vars,
+                     widget: DisplayKeys_Composite_Widget.Comp_Entry | DisplayKeys_Composite_Widget.Comp_Spinbox | DisplayKeys_Composite_Widget.Comp_Combobox,
+                     function, event: str = "w"):
         """
         Will create a new Trace on a widget, that will fire a callback function whenever it is triggered.
         :param variable_to_trace: The Widget's Variable to enable the trace on.
@@ -2606,7 +2608,16 @@ class ButtonFunctions:
         """
         # Create trace
         trace = variable_to_trace.trace(event, lambda *args: function(widget.id))
-        widget.textbox_trace = trace
+
+        # Assign trace based on what type of widget it is
+        match widget.__class__:
+            case DisplayKeys_Composite_Widget.Comp_Entry:
+                widget.textbox_trace = trace
+            case DisplayKeys_Composite_Widget.Comp_Spinbox:
+                widget.spinbox_trace = trace
+            case DisplayKeys_Composite_Widget.Comp_Combobox:
+                widget.dropdown_trace = trace
+
         print("Re-attached Trace:", type(widget.textbox_trace), widget.textbox_trace)
         return trace
 
