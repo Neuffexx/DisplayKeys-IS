@@ -2632,7 +2632,8 @@ class ButtonFunctions:
         print("---Browsing for Image---")
         print("Widget ID: " + widget_id)
         # Get the Composite widget, if it contains the button that called this function
-        widget: DisplayKeys_Composite_Widget = app.get_property_widget_by_child(widget_id)
+        parent: DisplayKeys_Composite_Widget = app.get_property_widget_by_child(widget_id)
+        widget = parent.get_child(widget_id)
 
         if widget:
             # Ask the user to select an Image
@@ -2640,21 +2641,21 @@ class ButtonFunctions:
                 filetypes=[("Image files", "*.jpg;*.jpeg;*.png;*.gif;*.bmp")]
             )
             # Put File Path into textbox if widget has a textbox
-            if file_path and widget.textbox:
-                widget_original_state = widget.textbox.__getitem__('state')
+            if file_path and widget.textbox_var:
+                widget_original_state = widget.__getitem__('state')
                 print("Original Textbox State: " + widget_original_state)
 
                 # Temporarily disable the trace (avoid calling process image with 'None' path)
                 ButtonFunctions.disable_trace(widget.textbox_var, widget.textbox_trace)
 
-                widget.textbox.configure(state='normal')
-                widget.textbox.delete(0, tk.END)
+                widget.configure(state='normal')
+                widget.delete(0, tk.END)
 
                 # Re-Enable the trace
                 ButtonFunctions.enable_trace(widget.textbox_var, widget, ButtonFunctions.process_image)
 
-                widget.textbox.insert(tk.END, file_path)
-                widget.textbox.configure(state=widget_original_state)
+                widget.insert(tk.END, file_path)
+                widget.configure(state=widget_original_state)
 
             # Just in case its ever needed
             return file_path
