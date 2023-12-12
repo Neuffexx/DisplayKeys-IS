@@ -441,9 +441,6 @@ class DisplayKeys_GUI:
         child_widget = next((widget for widget in self.properties if widget.get_child(child_id)), None)
         return child_widget
 
-    # TODO: Create Preferences menu
-    #       - For now only to house colour settings for the Composite widgets and application backgrounds
-    #       - In the future also for Previewer colours, etc.
     # To keep the code more encapsulated and clean
     def create_menu_bar(self):
         """
@@ -819,7 +816,6 @@ class CompWidgetTypes(Enum):
     BUTTON = 5
 
 
-# TODO: Get colours to display from Preferences menu/popup
 # TODO: Add Checkbox input option
 # Generic Widgets used throughout the Applications UI (i.e. Labels, Textboxes, Buttons, etc.)
 class DisplayKeys_Composite_Widget(tk.Frame):
@@ -1025,7 +1021,6 @@ class DisplayKeys_Composite_Widget(tk.Frame):
             self.fill = fill
 
 
-# TODO: Tooltips cause Settings popup window to 'glitch', essentially move around a lot.
 # A custom Tooltip class based on tk.Toplevel
 class DisplayKeys_Tooltip:
     """
@@ -1364,8 +1359,8 @@ class PopUp_Preset_Add(DisplayKeys_PopUp):
 
         # Pop-Up Configuration
         self.popup.title("Add Preset")
-        self.popup.geometry("100x250")  # TODO: Remove once new UI has been finished, if already styled correctly.
-                                        #       (should be visually fixed then)
+        self.popup.geometry("100x250")
+
         # Preset Setup
         self.create_add_preset()
 
@@ -1497,8 +1492,7 @@ class PopUp_Preset_Edit(DisplayKeys_PopUp):
 
         # Pop-Up Configuration
         self.popup.title(f"Edit '{preset_name}'")
-        self.popup.geometry("100x250")  # TODO: Remove once new UI has been finished, if already styled correctly.
-                                        #       (should be visually fixed then)
+        self.popup.geometry("100x250")
 
         # Preset Setup
         self.current_preset = preset_name
@@ -2196,9 +2190,6 @@ class PopUp_Settings(DisplayKeys_PopUp):
         return None
 
     # --- Options Utility Functions ---
-    # TODO:
-    #       Re-create Functions below after restructuring the settings to use Categories Class
-    #       AND have adjusted the SettingsData class to use composite widgets
     def reset_to_default(self):
         """
             Populates the Option Widgets with default option values.
@@ -2786,7 +2777,8 @@ class ButtonFunctions:
                 x_offset = previewer.final_offset["x"] if previewer.final_offset else None
                 y_offset = previewer.final_offset["y"] if previewer.final_offset else None
                 if not all(param is not None for param in [rows, columns, gap, x_offset, y_offset]):
-                    # TODO: This occurs when you select all text, and enter the first digit no matter what!
+                    # This occurs when you select all text, and enter the first digit no matter what!
+                    # Architecture problem with TkInter's timing, not going bother work around it.
                     #PopUp_Dialogue(app.window, popup_type="error", message="A Property was None!")
                     print("A Property was None!")
                     return
@@ -3363,7 +3355,9 @@ class split:
     #  1.) Replace the Previewer Drawing Functionality inside of the Previewer Update Function
     #      to use the calculate_image_split function's returned 'preview_coordinates'
     #       ( This may be too complicated now with the way the Offset input interacts with the Preview rendering )
-    #       ( Will check when I am not sleep deprived to make sure it works when adapting to use external function )
+    #           - Shouldnt be a problem since that function already handles offset input, and passes it along.
+    #       ( Also need to check if its even a viable solution, since the image coordinates are calculated in image space, so need to convert it to previewer space)
+    #           - This functionality already exists in the 'Offset' code, but needs to be copied/adapted for the input coordinates for drawing.
 
     # Calls 'calculate_image_split' and saves its output 'image_cells'
     @staticmethod
@@ -3483,13 +3477,8 @@ class split:
     # Returns {preview_coordinates, image_cells}
     @staticmethod
     def calculate_image_split(image: ImageTk, rows: int, cols: int, gap: int, x_offset: float, y_offset: float) -> dict[str, list[dict] | str, list[ImageTk.PhotoImage]]:
-        # TODO: Implement the usage of the bool to either use the cropping or not
-        #       This will probably require separating the cropping a bit more from the splitting coordinates
-        #       Essentially creating a 'duplicate' implementation, where if cropping is true, it overrides the coordinates
-        #       of the split to also accommodate for the cropping.
-        #       (But realistically I can just add an if/else statement for both cases, shouldn't be too heavy to calculate
-        #       for .gif support sake not being slow)
         # Determine what split method is used
+        # TODO Implement the Split_Method input check
         crop_image = False
         split_method = SettingsData.get_setting(app.settings, "Preferences", "SplitMethodOption")
         match split_method:
