@@ -3525,19 +3525,25 @@ class split:
         # Split the image and save each image-cell
         for row in range(rows):
             for col in range(cols):
-                # Calculate the coordinates for cropping
+                # Calculate the coordinates for cropping TopLeft Corner of Cell
+                # Left = ( Column Index * ( Cell Width + Gap Size ) + Offset Created by Gap ) - Image Position X Offset
+                # Upper = ( Row Index * ( Cell Height + Gap Size ) + Offset Created By Gap ) - Image Position Y Offset
                 left = (col * (cell_width + gap) + gap_horizontal_offset) - x_offset
                 upper = (row * (cell_height + gap) + gap_vertical_offset) - y_offset
 
-                # Remove rows/columns only if they are part of the Outlier image-cells
-                if row == 0:
-                    upper += gap_vertical_offset
-                elif row == rows - 1:
-                    upper -= gap_vertical_offset
-                if col == 0:
-                    left += gap_horizontal_offset
-                elif col == cols - 1:
-                    left -= gap_horizontal_offset
+                # Adjust initial coordinates depending on whether the Cell is to be cropped
+                if crop_image:
+                    # Remove rows/columns only if they are part of the Outlier image-cells for cropping
+                    if row == 0:
+                        upper += gap_vertical_offset
+                    elif row == rows - 1:
+                        upper -= gap_vertical_offset
+                    if col == 0:
+                        left += gap_horizontal_offset
+                    elif col == cols - 1:
+                        left -= gap_horizontal_offset
+
+                # Adjust BottomRight Corner coordinates based on which Dimension is longer
                 if longest_dimension == "width":
                     right = left + max_cell_size
                     lower = upper + cell_height
@@ -3545,7 +3551,7 @@ class split:
                     right = left + cell_width
                     lower = upper + max_cell_size
 
-                # Crop all image-cells
+                # Split/Crop current image-cell
                 image_cell = image.crop((left, upper, right, lower))
 
                 ########## Outputs ##########
