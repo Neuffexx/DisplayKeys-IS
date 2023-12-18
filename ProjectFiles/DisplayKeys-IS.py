@@ -17,16 +17,17 @@
 #         (i.e. Package tkinterdnd2, and its within './assets/modules/hook-tkinterdnd2.py',
 #         then it will be '...hooks-dir=./assets/modules')
 
-from typing import Literal, Callable, Union, Annotated
 import os, sys
+import webbrowser
+import json
+
+from typing import Literal, Callable, Union, Annotated
+from enum import Enum
 from PIL import Image, ImageTk, ImageSequence, ImageDraw
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, Menu
 import tkinterdnd2 as tkdnd
 from tkinterdnd2 import *
-import webbrowser
-import json
-from enum import Enum
 
 ####################################################################################################################
 #                                                    App Paths
@@ -41,6 +42,12 @@ from enum import Enum
 sys_icon_img = sys._MEIPASS + "./DisplayKeys-IS.ico"
 sys_help_img = sys._MEIPASS + "./Help.png"
 sys_preview_img = sys._MEIPASS + "./Preview.png"
+
+PRESETS_DIR = os.path.join(os.path.expanduser('~/Documents'), 'Neuffexx', 'DisplayKeys-IS', 'presets')
+OUTPUT_DIR = os.path.join(os.path.expanduser('~/Documents'), 'Neuffexx', 'DisplayKeys-IS', 'output')
+SETTINGS_DIR = os.path.join(os.path.expanduser('~/Documents'), 'Neuffexx', 'DisplayKeys-IS', 'config')
+PRESETS_FILE = 'presets.json'
+SETTINGS_FILE = 'settings.json'
 
 
 ####################################################################################################################
@@ -65,22 +72,30 @@ class DisplayKeys_GUI:
         self.window.geometry("600x600")
         self.window.resizable(False, False)
 
+        #########################
+
+        self.settings = SettingsData.load_settings_from_file()
+
+        #########################
+
         self.create_menu_bar()
 
         #########################
 
         print("---Creating Left Column---")
         # Create the Properties Frame
-        self.properties_frame = tk.Frame(self.window, width=200, height=500, background="#343A40")
+        properties_frame_colour = SettingsData.get_setting(self.settings, 'Appearance', 'AppSecondaryColourOption')
+        self.properties_frame = tk.Frame(self.window, width=200, height=500, background=properties_frame_colour)
         self.properties_frame.grid(row=0, column=0, sticky="nsew")
         self.properties_frame.grid_columnconfigure(0, weight=1)
         # Populate the properties frame with widgets
         self.properties = []
-        self.properties = self.populate_column(self.properties_frame, self.get_properties_widgets())
+        self.properties = self.populate_column(self.properties_frame, self.settings, self.get_properties_widgets())
 
         print("---Creating Right Column---")
         # Create the Preview Frame
-        self.preview_frame = tk.Frame(self.window, height=500, background="#212529")
+        preview_frame_colour = SettingsData.get_setting(self.settings, 'Appearance', 'AppPrimaryColourOption')
+        self.preview_frame = tk.Frame(self.window, height=500, background=preview_frame_colour)
         self.preview_frame.grid(row=0, column=1, sticky="nsew")  # Updated this line
         self.preview_frame.grid_columnconfigure(0, weight=1)
         # Create the Preview Widget and place it in the right column
@@ -94,6 +109,7 @@ class DisplayKeys_GUI:
                                                tooltip_justification="left", tooltip_anchor="center")
         # TODO: Add Results Widget's and populate content (ie. cell resolution, % of lost pixels?, etc.)
         #       Also check if there is any actual meaningful information that can be shown.
+        #self.preview_info = []
         #self.preview_info = self.populate_column(self.preview_frame, self.get_preview_widgets())
         #self.previewer_info_help = DisplayKeys_Help(parent=self.preview_frame, row=10, alignment="se", percentage_size=40,
         #                                       help_tooltip="Further Information on the Results!")
@@ -107,7 +123,7 @@ class DisplayKeys_GUI:
 
         # Initially Create Object to hold reference to all Presets in the future.
         self.presets: list[PresetData] = []
-        self.default_preset = PresetData(name="Default", rows=2, cols=6, gap=40)
+        self.default_preset = PresetData.get_default_preset()
         self.presets.append(self.default_preset)
 
         # Initially Hide Property Column Widget's Based on Dropdown Selection
@@ -118,7 +134,7 @@ class DisplayKeys_GUI:
 
     # Used to populate a column(Frame) with DisplayKeys_Composite_Widget's
     @staticmethod
-    def populate_column(parent, widgets):
+    def populate_column(parent, settings, widgets):
         """
             Adds [DisplayKeys_Composite_Widget]'s to a parent container.
             :param parent: The Container to fill with Widgets
@@ -127,7 +143,7 @@ class DisplayKeys_GUI:
 
         created_widgets = []
         for widget in widgets:
-            created_widgets.append(DisplayKeys_Composite_Widget(parent, **widget))
+            created_widgets.append(DisplayKeys_Composite_Widget(parent, settings, **widget))
 
         for i, widget in enumerate(created_widgets):
             widget.grid(row=i, column=0, sticky="nsew")
@@ -196,7 +212,7 @@ class DisplayKeys_GUI:
                     {
                         "type": CompWidgetTypes.BUTTON,
                         "widget_id": "GetImageButton",
-                        "label": "Browse Image",
+                        "text": "Browse Image",
                         "command": ButtonFunctions.browse_image,
                         "tooltip": "Select the Image you want to be split.",
                     },
@@ -219,7 +235,7 @@ class DisplayKeys_GUI:
                     {
                         "type": CompWidgetTypes.BUTTON,
                         "widget_id": "GetOutputButton",
-                        "label": "Browse Folder",
+                        "text": "Browse Folder",
                         "command": ButtonFunctions.browse_directory,
                         "tooltip": "Select the Folder to save the split image to.",
                     },
@@ -232,6 +248,7 @@ class DisplayKeys_GUI:
                         "type": CompWidgetTypes.LABEL,
                         "widget_id": "TopDividerLabel",
                         "text": "-------------------------------------",
+                        "background_override": "#343A40",
                     },
                 ],
             },
@@ -272,10 +289,10 @@ class DisplayKeys_GUI:
                     {
                         "type": CompWidgetTypes.BUTTON,
                         "widget_id": "PressetAddButton",
-                        "label": "       Add       ",
+                        "text": "       Add       ",
                         "command": ButtonFunctions.create_preset_popup,
                         "tooltip": "Create a new Preset.",
-                        "fill": "vertical",
+                        "fill": "both",
                     },
                 ],
             },
@@ -285,10 +302,10 @@ class DisplayKeys_GUI:
                     {
                         "type": CompWidgetTypes.BUTTON,
                         "widget_id": "PresetEditButton",
-                        "label": "       Edit       ",
+                        "text": "       Edit       ",
                         "command": ButtonFunctions.edit_preset_popup,
                         "tooltip": "Edit the currently selected Preset.",
-                        "fill": "vertical",
+                        "fill": "both",
                     },
                 ],
             },
@@ -298,10 +315,10 @@ class DisplayKeys_GUI:
                     {
                         "type": CompWidgetTypes.BUTTON,
                         "widget_id": "PresetDeleteButton",
-                        "label": "     Delete     ",
+                        "text": "     Delete     ",
                         "command": ButtonFunctions.delete_preset_popup,
                         "tooltip": "Delete the currently selected Preset.",
-                        "fill": "vertical",
+                        "fill": "both",
                     },
                 ],
             },
@@ -345,7 +362,7 @@ class DisplayKeys_GUI:
                     {
                         "type": CompWidgetTypes.LABEL,
                         "widget_id": "GetGapLabel",
-                        "text": "Gap (in Pixels):",
+                        "text": "Gap:",
                     },
                     {
                         "type": CompWidgetTypes.SPINBOX,
@@ -363,6 +380,7 @@ class DisplayKeys_GUI:
                         "type": CompWidgetTypes.LABEL,
                         "widget_id": "BottomDividerLabel",
                         "text": "-------------------------------------",
+                        "background_override": "#343A40",
                     },
                 ],
             },
@@ -372,8 +390,9 @@ class DisplayKeys_GUI:
                     {
                         "type": CompWidgetTypes.BUTTON,
                         "widget_id": "SplitImage",
-                        "label": "Split Image",
+                        "text": "Split Image",
                         "command": ButtonFunctions.process_image,
+                        "fill": "horizontal",
                     },
                 ],
             },
@@ -422,9 +441,6 @@ class DisplayKeys_GUI:
         child_widget = next((widget for widget in self.properties if widget.get_child(child_id)), None)
         return child_widget
 
-    # TODO: Create Prefernces menu
-    #       - For now only to house colour settings for the Composite widgets and application backgrounds
-    #       - In the future also for Previewer colours, etc.
     # To keep the code more encapsulated and clean
     def create_menu_bar(self):
         """
@@ -432,27 +448,47 @@ class DisplayKeys_GUI:
             Will house Import/Export, Settings, Preferences, Help, etc. Menus.
         """
 
-        # Main Window Menu Bar
+        # Main-Window Menu Bar
         self.menu_bar = Menu()
         self.window.configure(menu=self.menu_bar)
         # --- File
-        self.app_menu = Menu(self.menu_bar, tearoff=False)
-        self.preset_menu = Menu(self.app_menu, tearoff=False)
-        self.app_menu.add_cascade(label="Presets", menu=self.preset_menu)
-        self.app_menu.add_separator()
-        self.app_menu.add_command(label="Exit", command=ButtonFunctions.quit)
-        # ---
+        self.file_menu = Menu(self.menu_bar, tearoff=False)
+        self.preset_menu = Menu(self.file_menu, tearoff=False)
+        self.file_menu.add_command(label="Settings", command=lambda: ButtonFunctions.edit_settings_popup())
+        self.file_menu.add_cascade(label="Presets", menu=self.preset_menu)
+        self.file_menu.add_separator()
+        self.file_menu.add_command(label="Exit", command=ButtonFunctions.quit)
+        # --- --- Presets
         self.preset_menu.add_command(label="Load Presets File", command=lambda: ButtonFunctions.load_presets_file())
         self.preset_menu.add_command(label="Save Presets", command=lambda: ButtonFunctions.save_presets_file())
         self.preset_menu.add_separator()
-        self.preset_menu.add_command(label="Delete Current Presets", command=lambda: PopUp_Dialogue(app.window, popup_type='warning', message="Delete ALL Presets?", buttons=[{'Yes': ButtonFunctions.delete_all_presets}, {'No': lambda: None}]))
+        self.preset_menu.add_command(label="Delete Current Presets",
+                                     command=lambda: PopUp_Dialogue(app.window, popup_type='warning', message="Delete ALL Presets?", buttons=[{'Yes': ButtonFunctions.delete_all_presets}, {'No': lambda: None}]))
         # --- Help
         self.help_menu = Menu(self.menu_bar, tearoff=False)
-        self.help_menu.add_separator()
-        self.help_menu.add_command(label="Help",
-                                   command=lambda: webbrowser.open("https://www.github.com/Neuffexx/DisplayKeys-IS"))
-        # Add to Menu Bar
-        self.menu_bar.add_cascade(label="File", menu=self.app_menu)
+        self.links_menu = Menu(self.help_menu, tearoff=False)
+        self.local_files_menu = Menu(self.help_menu, tearoff=False)
+        self.help_menu.add_cascade(label="Useful Links", menu=self.links_menu)
+        self.help_menu.add_cascade(label="Local Files", menu=self.local_files_menu)
+        # --- --- Useful Links
+        self.links_menu.add_command(label="Info",
+                                   command=lambda: webbrowser.open("https://github.com/Neuffexx/DisplayKeys-IS#displaykeys-is"))
+        self.links_menu.add_separator()
+        self.links_menu.add_command(label="Forum",
+                                   command=lambda: webbrowser.open("https://github.com/Neuffexx/DisplayKeys-IS/discussions"))
+        self.links_menu.add_command(label="Report Bug",
+                                   command=lambda: webbrowser.open("https://github.com/Neuffexx/DisplayKeys-IS/blob/main/CONTRIBUTING.md#report-bugs-using-githubs-issues"))
+        self.links_menu.add_command(label="Contributing",
+                                   command=lambda: webbrowser.open("https://github.com/Neuffexx/DisplayKeys-IS/blob/main/CONTRIBUTING.md#contributing-to-displaykeys-is"))
+        self.links_menu.add_command(label="Releases",
+                                   command=lambda: webbrowser.open("https://github.com/Neuffexx/DisplayKeys-IS/releases"))
+        # --- --- Local Files
+        self.local_files_menu.add_command(label="Settings File", command=lambda: ButtonFunctions.open_folder_location(SETTINGS_DIR))
+        self.local_files_menu.add_command(label="Presets File", command=lambda: ButtonFunctions.open_folder_location(PRESETS_DIR))
+        self.local_files_menu.add_command(label="Output Folder", command=lambda: ButtonFunctions.open_folder_location(OUTPUT_DIR))
+
+        # Add Menus to Menu Bar
+        self.menu_bar.add_cascade(label="File", menu=self.file_menu)
         self.menu_bar.add_cascade(label="Help", menu=self.help_menu)
 
     # Starts the Window loop
@@ -460,7 +496,6 @@ class DisplayKeys_GUI:
         self.window.mainloop()
 
 
-# The Widget that show's all changes done to the Image within the Application
 class DisplayKeys_Previewer:
     """
         The Widget that show's all changes done to the Image within the Application.
@@ -472,12 +507,12 @@ class DisplayKeys_Previewer:
 
     def __init__(self, parent, width, height):
         # Initialize Image
-        self.width = width
-        self.height = height
         self.placeholder_path = sys_preview_img
         self.image_path = None
 
         # Initialize canvas
+        self.width = width
+        self.height = height
         self.canvas = tk.Canvas(parent, width=self.width, height=self.height, background="#151515", highlightthickness=3, highlightbackground="#343A40")
         self.canvas.grid()
         self.canvas.tag_bind("preview_image", "<ButtonPress-1>", self.start_drag)
@@ -548,6 +583,8 @@ class DisplayKeys_Previewer:
             to preview the Splitting and Cropping of an image provided.
             Also calls the 'display_preview_image' to refresh the image.
         """
+        cropping_colour = SettingsData.get_setting(app.settings, 'Appearance', 'PreviewerCroppingColourOption')
+        split_colour = SettingsData.get_setting(app.settings, 'Appearance', 'PreviewerSplitColourOption')
 
         # Clear the canvas to prepare for new content
         self.canvas.delete("all")
@@ -569,68 +606,90 @@ class DisplayKeys_Previewer:
         self.allowed_drag_distance_cropping["x"] = abs((cell_width - square_size)) / (self.scale_factor)
         self.allowed_drag_distance_cropping["y"] = abs((cell_height - square_size)) / (self.scale_factor)
 
-        # Draw Cropping Stipple's
-        for column_index in range(num_columns):
-            for row_index in range(num_rows):
+        # Determine what preview method is used
+        preview_method = SettingsData.get_setting(app.settings, "Preferences", "PreviewModeOption")
+        show_cropping = False
+        show_split = False
+        match preview_method:
+            case "Full":
+                show_split = True
+                show_cropping = True
+            case "Crop Only":
+                show_cropping = True
+            case "Split Only":
+                show_split = True
+            case "Split Method":
+                split_method = SettingsData.get_setting(app.settings, "Preferences", "SplitMethodOption")
+                match split_method:
+                    case "Both":
+                        show_split = True
+                        show_cropping = True
+                    case "Split Only":
+                        show_split = True
 
-                # Initial position for cropping rectangle (centered in cell)
-                crop_left = column_index * cell_width + (cell_width - square_size) / 2 + self.x_offset
-                crop_top = row_index * cell_height + (cell_height - square_size) / 2 + self.y_offset
-                crop_right = crop_left + square_size
-                crop_bottom = crop_top + square_size
+        if show_cropping:
+            # Draw Cropping Stipple's
+            for column_index in range(num_columns):
+                for row_index in range(num_rows):
 
-                # Position adjustments for Outlier Image-Cells
-                if row_index == 0:  # First Row
-                    crop_bottom = (row_index + 1) * cell_height - scaled_gap / 2 + self.y_offset
-                    crop_top = crop_bottom - square_size
-                elif row_index == num_rows - 1:  # Last Row
-                    crop_top = row_index * cell_height + scaled_gap / 2 + self.y_offset
+                    # Initial position for cropping rectangle (centered in cell)
+                    crop_left = column_index * cell_width + (cell_width - square_size) / 2 + self.x_offset
+                    crop_top = row_index * cell_height + (cell_height - square_size) / 2 + self.y_offset
+                    crop_right = crop_left + square_size
                     crop_bottom = crop_top + square_size
 
-                if column_index == 0:  # First Column
-                    crop_right = (column_index + 1) * cell_width - scaled_gap / 2 + self.x_offset
-                    crop_left = crop_right - square_size
-                elif column_index == num_columns - 1:  # Last Column
-                    crop_left = column_index * cell_width + scaled_gap / 2 + self.x_offset
-                    crop_right = crop_left + square_size
+                    # Position adjustments for Outlier Image-Cells
+                    if row_index == 0:  # First Row
+                        crop_bottom = (row_index + 1) * cell_height - scaled_gap / 2 + self.y_offset
+                        crop_top = crop_bottom - square_size
+                    elif row_index == num_rows - 1:  # Last Row
+                        crop_top = row_index * cell_height + scaled_gap / 2 + self.y_offset
+                        crop_bottom = crop_top + square_size
 
-                # Draw the adjusted Cropping Overlay
-                self.canvas.create_rectangle(crop_left, crop_top, crop_right, crop_bottom, outline="blue")
+                    if column_index == 0:  # First Column
+                        crop_right = (column_index + 1) * cell_width - scaled_gap / 2 + self.x_offset
+                        crop_left = crop_right - square_size
+                    elif column_index == num_columns - 1:  # Last Column
+                        crop_left = column_index * cell_width + scaled_gap / 2 + self.x_offset
+                        crop_right = crop_left + square_size
 
-                # Draw Cropping Overlays with stipple effect, adjusted for Outlier Image-Cells
-                stipple_pattern = "gray25"
-                overlay_left = self.x_offset if column_index == 0 else column_index * cell_width + self.x_offset
-                overlay_right = self.x_offset + image_width if column_index == num_columns - 1 else (
-                                                                                                            column_index + 1) * cell_width + self.x_offset
-                overlay_top = self.y_offset if row_index == 0 else row_index * cell_height + self.y_offset
-                overlay_bottom = self.y_offset + image_height if row_index == num_rows - 1 else (
-                                                                                                        row_index + 1) * cell_height + self.y_offset
+                    # Draw the adjusted Cropping Overlay
+                    self.canvas.create_rectangle(crop_left, crop_top, crop_right, crop_bottom, outline="blue")
 
-                self.canvas.create_rectangle(overlay_left, crop_top, crop_right, overlay_top, fill="gray",
-                                             stipple=stipple_pattern)
-                self.canvas.create_rectangle(overlay_left, crop_bottom, crop_right, overlay_bottom, fill="gray",
-                                             stipple=stipple_pattern)
-                self.canvas.create_rectangle(crop_left, overlay_top, overlay_left, overlay_bottom, fill="gray",
-                                             stipple=stipple_pattern)
-                self.canvas.create_rectangle(crop_right, overlay_top, overlay_right, overlay_bottom, fill="gray",
-                                             stipple=stipple_pattern)
+                    # Draw Cropping Overlays with stipple effect, adjusted for Outlier Image-Cells
+                    stipple_pattern = "gray25"
+                    overlay_left = self.x_offset if column_index == 0 else column_index * cell_width + self.x_offset
+                    overlay_right = self.x_offset + image_width if column_index == num_columns - 1 else (
+                                                                                                                column_index + 1) * cell_width + self.x_offset
+                    overlay_top = self.y_offset if row_index == 0 else row_index * cell_height + self.y_offset
+                    overlay_bottom = self.y_offset + image_height if row_index == num_rows - 1 else (
+                                                                                                            row_index + 1) * cell_height + self.y_offset
 
-        # Draw the Grid Lines
-        for column_index in range(1, num_columns):
-            grid_x = column_index * cell_width + self.x_offset
-            self.canvas.create_line(grid_x, self.y_offset, grid_x, image_height + self.y_offset, fill="#CC0000",
-                                    width=scaled_gap)
+                    self.canvas.create_rectangle(overlay_left, crop_top, crop_right, overlay_top, fill=cropping_colour,
+                                                 stipple=stipple_pattern)
+                    self.canvas.create_rectangle(overlay_left, crop_bottom, crop_right, overlay_bottom, fill=cropping_colour,
+                                                 stipple=stipple_pattern)
+                    self.canvas.create_rectangle(crop_left, overlay_top, overlay_left, overlay_bottom, fill=cropping_colour,
+                                                 stipple=stipple_pattern)
+                    self.canvas.create_rectangle(crop_right, overlay_top, overlay_right, overlay_bottom, fill=cropping_colour,
+                                                 stipple=stipple_pattern)
 
-        for row_index in range(1, num_rows):
-            grid_y = row_index * cell_height + self.y_offset
-            self.canvas.create_line(self.x_offset, grid_y, image_width + self.x_offset, grid_y, fill="#CC0000",
-                                    width=scaled_gap)
+        if show_split:
+            # Draw the Grid Lines
+            for column_index in range(1, num_columns):
+                grid_x = column_index * cell_width + self.x_offset
+                self.canvas.create_line(grid_x, self.y_offset, grid_x, image_height + self.y_offset, fill=split_colour,
+                                        width=scaled_gap)
+
+            for row_index in range(1, num_rows):
+                grid_y = row_index * cell_height + self.y_offset
+                self.canvas.create_line(self.x_offset, grid_y, image_width + self.x_offset, grid_y, fill=split_colour,
+                                        width=scaled_gap)
 
         # Draw Blackout Lines (hides out-of-grid pixels)
         blackout_rectangles = [
             self.canvas.create_rectangle(0, 0, self.width + 15, self.y_offset, fill='black'),  # Top
-            self.canvas.create_rectangle(0, self.y_offset + self.resized_image.height, self.width + 15,
-                                         self.height + 15,
+            self.canvas.create_rectangle(0, self.y_offset + self.resized_image.height, self.width + 15, self.height + 15,
                                          fill='black'),  # Bottom
             self.canvas.create_rectangle(0, self.y_offset, self.x_offset, self.y_offset + self.resized_image.height,
                                          fill='black'),  # Left
@@ -743,18 +802,6 @@ class DisplayKeys_Previewer:
         ButtonFunctions.process_image("ResetPreviewer")
 
 
-# TODO: Change class to check the order of widgets to be inside of the composite widget
-#       Will split the widget construction into sub-functions, that will be called by a loop for each composite widget,
-#       whenever the loop comes across the correct type of Widget to put inside of the composite widget.
-#       Meaning there can now be multiple of the same type of widget inside a single composite widget at a time,
-#       with Order being purely defined by the input array.
-#       However, it will for now always be in a fixed linear centered top-to-bottom layout, maybe I will come up
-#       with a way to work around that in the future. But not a priority for now.
-#       - Need to figure out a way to keep each widget unique, meaning that if there are 3 textboxes used in a single
-#         composite widget, then I need to be able to tell which one is which. But still needs to be easy to access.
-# TODO: Get colours to display from Preferences menu/popup
-
-
 # Widget Types used in the Composite Widget
 class CompWidgetTypes(Enum):
     """
@@ -769,16 +816,21 @@ class CompWidgetTypes(Enum):
     BUTTON = 5
 
 
+# TODO: Add Checkbox input option
 # Generic Widgets used throughout the Applications UI (i.e. Labels, Textboxes, Buttons, etc.)
 class DisplayKeys_Composite_Widget(tk.Frame):
     """
         Generic Widgets used throughout the Applications UI (ie. Labels, Textboxes, Buttons, etc.)
-        Designed to be used in a Vertical Layout.
+        Designed to be used in a Vertical and Horizontal Layout.
     """
 
-    def __init__(self, parent: tk.Frame, composite_id: str, widgets: list[list], layout: Literal['vertical', 'horizontal'] = 'vertical'):
-        super().__init__(parent, bg="#343A40")
-        self.grid(sticky="nsew", padx=5, pady=5)
+    def __init__(self, parent: tk.Frame, settings: 'SettingsData', composite_id: str, widgets: list[list],
+                 layout: Literal['vertical', 'horizontal'] = 'vertical', padding: tuple[int, int] = (5, 5)):
+        self.settings = settings
+        frame_background_colour = SettingsData.get_setting(settings, 'Appearance', 'AppSecondaryColourOption')
+
+        super().__init__(parent, bg=frame_background_colour)
+        self.grid(sticky="nsew", padx=padding[0], pady=padding[1])
         self.columnconfigure(0, weight=1)
 
         # The reference name by which to find this widget
@@ -806,42 +858,49 @@ class DisplayKeys_Composite_Widget(tk.Frame):
 
             match widget_type:
                 case CompWidgetTypes.LABEL:
-                    child_widgets.append(self.Comp_Label(master=self, widget_id=widget_id, **widget_params))
+                    child_widgets.append(self.Comp_Label(master=self, settings=self.settings, widget_id=widget_id, **widget_params))
                 case CompWidgetTypes.DROPDOWN:
-                    child_widgets.append(self.Comp_Combobox(master=self, widget_id=widget_id, **widget_params))
+                    child_widgets.append(self.Comp_Combobox(master=self, settings=self.settings, widget_id=widget_id, **widget_params))
                 case CompWidgetTypes.TEXTBOX:
-                    child_widgets.append(self.Comp_Entry(master=self, widget_id=widget_id, **widget_params))
+                    child_widgets.append(self.Comp_Entry(master=self, settings=self.settings, widget_id=widget_id, **widget_params))
                 case CompWidgetTypes.SPINBOX:
-                    child_widgets.append(self.Comp_Spinbox(master=self, widget_id=widget_id, **widget_params))
+                    child_widgets.append(self.Comp_Spinbox(master=self, settings=self.settings, widget_id=widget_id, **widget_params))
                 case CompWidgetTypes.BUTTON:
-                    child_widgets.append(self.Comp_Button(master=self, widget_id=widget_id, **widget_params))
+                    child_widgets.append(self.Comp_Button(master=self, settings=self.settings, widget_id=widget_id, **widget_params))
 
         return child_widgets
 
     def populate_composite(self):
         for i, widget in enumerate(self.child_widgets):
             if widget.__class__ == self.Comp_Button:
+                # Ensure that there are other widgets and that at least 1 widget is above the button,
+                # otherwise, will have white-space's around the button
+                if len(self.child_widgets) > 1 and i > 0:
+                    padding = 3
+                else:
+                    padding = 0
+
                 match self.layout:
                     case 'vertical':
                         match widget.fill:
                             case 'both':
-                                widget.grid(sticky="nsew", row=i, column=0, pady=3)
+                                widget.grid(sticky="nsew", row=i, column=0, pady=padding)
                             case 'horizontal':
-                                widget.grid(sticky="ew", row=i, column=0, pady=3)
+                                widget.grid(sticky="ew", row=i, column=0, pady=padding)
                             case 'vertical':
-                                widget.grid(sticky="ns", row=i, column=0, pady=3)
+                                widget.grid(sticky="ns", row=i, column=0, pady=padding)
                             case "":
-                                widget.grid(sticky="", row=i, column=0, pady=3)
+                                widget.grid(sticky="", row=i, column=0, pady=padding)
                     case 'horizontal':
                         match widget.fill:
                             case 'both':
-                                widget.grid(sticky="nsew", row=0, column=i, pady=3)
+                                widget.grid(sticky="nsew", row=0, column=i, pady=padding)
                             case 'horizontal':
-                                widget.grid(sticky="ew", row=0, column=i, pady=3)
+                                widget.grid(sticky="ew", row=0, column=i, pady=padding)
                             case 'vertical':
-                                widget.grid(sticky="ns", row=0, column=i, pady=3)
+                                widget.grid(sticky="ns", row=0, column=i, pady=padding)
                             case "":
-                                widget.grid(sticky="", row=0, column=i, pady=3)
+                                widget.grid(sticky="", row=0, column=i, pady=padding)
             else:
                 match self.layout:
                     case 'vertical':
@@ -861,16 +920,28 @@ class DisplayKeys_Composite_Widget(tk.Frame):
     # Create child class widgets to hold all this information themselves, so as to not store it in arrays or anything
     # with some convoluted way to keeping track of what widget has what tooltip etc.
     class Comp_Label(tk.Label):
-        def __init__(self, widget_id: str, text: str, tooltip: str = None,
+        def __init__(self, widget_id: str, settings: 'SettingsData', text: str,
+                     tooltip: str = None, tooltip_justify: Literal['left', 'center', 'right'] = 'left',
+                     background_override: str = None, text_override: str = None,
                      master=None, **kwargs):
-            super().__init__(master, text=text, **kwargs)
+            # Widget colours
+            if not text_override:
+                text_colour = SettingsData.get_setting(settings, 'Appearance', 'LabelsTextColourOption')
+            else:
+                text_colour = text_override
+            if not background_override:
+                background_colour = SettingsData.get_setting(settings, 'Appearance', 'LabelsBackgroundColourOption')
+            else:
+                background_colour = background_override
+
+            super().__init__(master, text=text, fg=text_colour, bg=background_colour, **kwargs)
             self.id = widget_id
             if tooltip:
-                self.tooltip = DisplayKeys_Tooltip(parent=self, text=tooltip)
+                self.tooltip = DisplayKeys_Tooltip(parent=self, text=tooltip, justify=tooltip_justify)
 
     class Comp_Combobox(ttk.Combobox):
-        def __init__(self, widget_id: str, options: list[str], tooltip: str = None,
-                     command: Callable[[list['DisplayKeys_Composite_Widget']], None] = None,
+        def __init__(self, widget_id: str, settings: 'SettingsData', options: list[str], tooltip: str = None, tooltip_justify: Literal['left', 'center', 'right'] = 'left',
+                     command: Callable[[list['DisplayKeys_Composite_Widget']], None] = lambda id: None,
                      update_previewer: bool = False,
                      master=None, **kwargs):
             self.dropdown_var = tk.StringVar()
@@ -883,11 +954,11 @@ class DisplayKeys_Composite_Widget(tk.Frame):
             if update_previewer:
                 self.dropdown_trace = self.dropdown_var.trace('w', lambda *args: ButtonFunctions.process_image(self.id))
             if tooltip:
-                self.tooltip = DisplayKeys_Tooltip(parent=self, text=tooltip)
+                self.tooltip = DisplayKeys_Tooltip(parent=self, text=tooltip, justify=tooltip_justify)
 
     class Comp_Entry(tk.Entry):
-        def __init__(self, widget_id: str, state: Literal["normal", "disabled", "readonly"] = "normal", default_value: str = None,
-                     dnd_type: Literal['image', 'folder', 'text', 'any'] | None = None,
+        def __init__(self, widget_id: str, settings: 'SettingsData', state: Literal["normal", "disabled", "readonly"] = "normal", default_value: str = None,
+                     dnd_type: Literal['image', 'folder', 'text', 'any'] | None = None, tooltip: str = None, tooltip_justify: Literal['left', 'center', 'right'] = 'left',
                      colour: str = "white", updates_previewer: bool = False,
                      master=None, **kwargs):
             self.textbox_var = tk.StringVar()
@@ -898,14 +969,16 @@ class DisplayKeys_Composite_Widget(tk.Frame):
             self.id = widget_id
             if updates_previewer:
                 self.textbox_trace = self.textbox_var.trace('w', lambda *args: ButtonFunctions.process_image(self.id))
+            if tooltip:
+                self.tooltip = DisplayKeys_Tooltip(parent=self, text=tooltip, justify=tooltip_justify)
             if dnd_type:
                 self.dnd = DisplayKeys_DragDrop(self, drop_type=dnd_type, parent_widget=self,
                                                 traced_callback=lambda *args: ButtonFunctions.process_image(
                                                     self.id) if updates_previewer else None)
 
     class Comp_Spinbox(tk.Spinbox):
-        def __init__(self, widget_id: str, default_value: Union[int, float, 'DefaultSplitData'] = 0, dnd_type: Literal['image', 'folder', 'text', 'any'] | None = None,
-                     colour: str = "white", updates_previewer: bool = False,
+        def __init__(self, widget_id: str, settings: 'SettingsData', default_value: Union[int, float, 'DefaultSplitData'] = 0, dnd_type: Literal['image', 'folder', 'text', 'any'] | None = None,
+                     colour: str = "white", updates_previewer: bool = False, tooltip: str = None, tooltip_justify: Literal['left', 'center', 'right'] = 'left',
                      master=None, **kwargs):
             self.spinbox_var = tk.IntVar()
 
@@ -921,19 +994,30 @@ class DisplayKeys_Composite_Widget(tk.Frame):
             self.id = widget_id
             if updates_previewer:
                 self.spinbox_trace = self.spinbox_var.trace('w', lambda *args: ButtonFunctions.process_image(self.id))
+            if tooltip:
+                self.tooltip = DisplayKeys_Tooltip(parent=self, text=tooltip, justify=tooltip_justify)
             if dnd_type:
                 self.dnd = DisplayKeys_DragDrop(self, drop_type=dnd_type, parent_widget=self,
                                                 traced_callback=lambda *args: ButtonFunctions.process_image(
                                                     self.id) if updates_previewer else None)
 
+    class Comp_Checkbutton(tk.Checkbutton):
+        def __init__(self, widget_id: str, settings: 'SettingsData', text: str = None, values: list[any, any] = [True, False],
+                     master=None,**kwargs):
+            super().__init__(master, text=text, onvalue=values[0], offvalue=values[1], **kwargs)
+            pass
+
     class Comp_Button(tk.Button):
-        def __init__(self, widget_id: str, label: str = None, command: Callable[[str], None] = None,
-                     tooltip: str = None, colour: str = "white", border: int = 3, fill: str = 'both',
+        def __init__(self, widget_id: str, settings: 'SettingsData', text: str = None, command: Callable[[str], None] = None,
+                     tooltip: str = None, tooltip_justify: Literal['left', 'center', 'right'] = 'left', colour: str = "white", border: int = 3, fill: str = 'both',
                      master=None, **kwargs):
-            super().__init__(master, text=label, command=lambda: command(self.id), borderwidth=border, bg=colour, **kwargs)
+            text_colour = SettingsData.get_setting(settings, 'Appearance', 'ButtonsTextColourOption')
+            background_colour = SettingsData.get_setting(settings, 'Appearance', 'ButtonsBackgroundColourOption')
+
+            super().__init__(master, text=text, foreground=text_colour, background=background_colour, command=lambda: command(self.id), borderwidth=border, bg=colour, relief='ridge', **kwargs)
             self.id = widget_id
             if tooltip:
-                self.tooltip = DisplayKeys_Tooltip(parent=self, text=tooltip)
+                self.tooltip = DisplayKeys_Tooltip(parent=self, text=tooltip, justify=tooltip_justify)
             self.fill = fill
 
 
@@ -1033,7 +1117,7 @@ class DisplayKeys_PopUp:
         A custom Pop-Up Window Parent class built on tk.Toplevel.
     """
 
-    def __init__(self, parent):
+    def __init__(self, parent: tk.Toplevel):
         # --- Create Window Setup ---
         self.popup_min_width = 225
         self.popup_min_height = 100
@@ -1042,6 +1126,7 @@ class DisplayKeys_PopUp:
         self.popup = tk.Toplevel(parent)
         self.popup.geometry(f"{self.popup_min_width}x{self.popup_min_height}")
         self.popup.resizable(False, False)
+        self.popup.attributes('-toolwindow', True)
 
         # Makes the popup act as a modal dialog and focused
         self.popup.grab_set()
@@ -1053,8 +1138,8 @@ class DisplayKeys_PopUp:
         # Bind functionality to the deletion of the window
         self.popup.bind("<Destroy>", self.on_close)
 
-        # Primary Content Container ( will be used by all 'types' )
-        self.container = tk.Frame(self.popup)
+        # Primary Content Container ( will be used by all pop-up`s )
+        self.container = tk.Frame(self.popup, background=SettingsData.get_setting(app.settings, 'Appearance', 'AppSecondaryColourOption'))
         self.container.pack(expand=True, fill=tk.BOTH)
         self.container.grid_columnconfigure(0, weight=1)
         self.container.grid_rowconfigure(0, weight=1)
@@ -1089,7 +1174,7 @@ class DisplayKeys_PopUp:
 
         return execute_function
 
-    def center_window(self, parent):
+    def center_window(self, parent: tk.Toplevel):
         """
             Centers the Pop-Up to the Parent Window.
         """
@@ -1198,19 +1283,20 @@ class DisplayKeys_PopUp:
 
 
 class PopUp_Dialogue(DisplayKeys_PopUp):
-    def __init__(self, parent, popup_type: Literal['confirm', 'warning', 'error'], message: str,
+    def __init__(self, parent: tk.Toplevel, popup_type: Literal['confirm', 'warning', 'error'], message: str,
                  buttons: list[dict[str, Callable[[], None]]] = [{'OK': lambda: None}, {'CANCEL': lambda: None}],
                  buttons_per_row: int = 2):
         super().__init__(parent)
 
         # Set / Determine Dialogue Type
-        self.popup.resizable(True, False)
+        #self.popup.resizable(True, False)
         self.type = popup_type
         self.popup.title(self.type.upper())
+        self.popup.bind('<Configure>', self.update_wrap_length)
 
         self.buttons_per_row = buttons_per_row
 
-        self.create_dialogue(message, buttons, buttons_per_row)
+        self.create_dialogue_ui(message, buttons, buttons_per_row)
         self.resize_popup_window(self.container)
 
     # Extends the Parent class on_open function
@@ -1221,15 +1307,20 @@ class PopUp_Dialogue(DisplayKeys_PopUp):
     def on_close(self, event: tk.Event):
         DisplayKeys_PopUp.on_close(self, event)
 
+    # Ensures word wrap after creation
+    def update_wrap_length(self, event):
+        self.message.configure(wraplength=self.popup.winfo_width() - 10)
+
     # Creates the necessary pop-up content for this class
-    def create_dialogue(self, message, buttons, buttons_per_row):
+    def create_dialogue_ui(self, message: str, buttons: tk.Button, buttons_per_row: int):
         """
             Creates all the widgets/content required for displaying and interaction
         """
         # The message to display
         self.popup_message = message
 
-        self.message = tk.Label(self.container, text=self.popup_message, justify='left')  # , anchor='center')
+        wwrap_length = self.popup.winfo_width() - 10
+        self.message = tk.Label(self.container, text=self.popup_message, wraplength=wwrap_length, justify='left')#, anchor='center')
         self.message.grid(sticky="nsew", row=1, column=1, columnspan=buttons_per_row, pady=15)
 
         # TODO:
@@ -1263,12 +1354,14 @@ class PopUp_Dialogue(DisplayKeys_PopUp):
 
 
 class PopUp_Preset_Add(DisplayKeys_PopUp):
-    def __init__(self, parent):
+    def __init__(self, parent: tk.Toplevel):
         super().__init__(parent)
 
+        # Pop-Up Configuration
         self.popup.title("Add Preset")
-        self.popup.geometry("100x250")  # TODO: Remove once new UI has been finished, if already styled correctly.
-                                        #       (should be visually fixed then)
+        self.popup.geometry("100x250")
+
+        # Preset Setup
         self.create_add_preset()
 
     # Extends the Parent class on_open function
@@ -1375,7 +1468,7 @@ class PopUp_Preset_Add(DisplayKeys_PopUp):
         self.message.grid(sticky="nsew", row=1, column=0, pady=15)
 
         # Create Necessary Edit Fields
-        self.preset_param_widgets = app.populate_column(parent=self.container, widgets=self.get_add_widgets())
+        self.preset_param_widgets = app.populate_column(parent=self.container, settings=app.settings, widgets=self.get_add_widgets())
 
         # Interaction Buttons
         self.button_container = tk.Frame(self.container)
@@ -1394,13 +1487,14 @@ class PopUp_Preset_Add(DisplayKeys_PopUp):
 
 
 class PopUp_Preset_Edit(DisplayKeys_PopUp):
-    def __init__(self, parent, preset_name):
+    def __init__(self, parent: tk.Toplevel, preset_name: str):
         super().__init__(parent)
 
-        self.popup.title(f"Edit {preset_name}")
-        self.popup.geometry("100x250")  # TODO: Remove once new UI has been finished, if already styled correctly.
-                                        #       (should be visually fixed then)
+        # Pop-Up Configuration
+        self.popup.title(f"Edit '{preset_name}'")
+        self.popup.geometry("100x250")
 
+        # Preset Setup
         self.current_preset = preset_name
 
         self.create_edit_preset()
@@ -1524,7 +1618,7 @@ class PopUp_Preset_Edit(DisplayKeys_PopUp):
         self.message.grid(sticky="nsew", row=1, column=0, pady=15)
 
         # Create Necessary Edit Fields
-        self.preset_param_widgets = app.populate_column(parent=self.container, widgets=self.get_edit_widgets())
+        self.preset_param_widgets = app.populate_column(parent=self.container, settings=app.settings, widgets=self.get_edit_widgets())
 
         # Interaction Buttons
         self.button_container = tk.Frame(self.container)
@@ -1544,19 +1638,676 @@ class PopUp_Preset_Edit(DisplayKeys_PopUp):
         self.bottm_white_space.grid(sticky="nsew", row=7, column=0)
 
 
-# TODO: Implement a Preferences Pop-Up to adjust colours, etc.
-#       Main UI Structure should be:
-#       -------------------------------------------------------
-#       |                                                     |
-#       | Colours  I        Colours         | Reset | Save |  |
-#       | Option 2 I  --------------------------------------  |
-#       | Option 3 I    Category                              |
-#       | ...      I  Option                ['Hex' / String]  |
-#       |          I  ...                                     |
-#       |                                                     |
-#       -------------------------------------------------------
-class PopUp_Preferences(DisplayKeys_PopUp):
-    pass
+class PopUp_Settings(DisplayKeys_PopUp):
+    def __init__(self, parent: tk.Toplevel):
+        super().__init__(parent)
+
+        # Pop-Up Configuration
+        self.popup.title(f"Settings")
+        self.popup.geometry('400x500')
+
+        # Settings Setup
+
+        self.categories: list['DisplayKeys_Settings_Category'] = []
+        self.active_category: str = ''
+
+        # Create UI
+        self.create_settings_ui()
+        self.center_window(parent)
+
+    def create_settings_ui(self):
+        """
+            Creates the entire Structure and UI interface for the Settings
+        """
+
+        bg_colour_primary = SettingsData.get_setting(app.settings, 'Appearance', 'AppPrimaryColourOption')
+        bg_colour_secondary = SettingsData.get_setting(app.settings, 'Appearance', 'AppSecondaryColourOption')
+
+        #######################
+        # Create UI Structure #
+
+        # --- Categories ---
+        self.settings_category_container = tk.Frame(self.container, width=150, height=500, background=bg_colour_secondary, padx=0)
+        self.settings_category_container.grid(row=0, column=0, sticky='ns')
+        self.settings_category_container.grid_propagate(False)  # Enforce frame size without adapting to children
+
+        self.category_placement_frame = tk.Frame(self.settings_category_container, width=150, height=500, background=bg_colour_secondary, padx=0)
+        self.category_placement_frame.grid(row=0, column=0, sticky='new')
+        self.category_placement_frame.grid_propagate(False)
+
+        # --- Options ---
+        self.settings_container = tk.Frame(self.container, width=250, height=450, background=bg_colour_primary, padx=0)
+        self.settings_container.grid(row=0, column=1, sticky='ns')
+        self.settings_container.grid_rowconfigure(0, weight=1)
+        self.settings_container.grid_columnconfigure(0, weight=1)
+        self.settings_container.grid_propagate(False)
+
+        # --- Window Interaction ---
+        self.window_interactions_container = tk.Frame(self.container, width=250, height=50, background='darkgray', padx=0)
+        self.window_interactions_container.grid(row=1, column=1, sticky='sew')
+        self.add_interaction_buttons(self.window_interactions_container)
+
+        #######################
+        #      Create UI      #
+
+        # Create Categories
+        self.categories.append(self.create_preferences_category())
+        self.categories.append(self.create_appearance_category())
+        self.categories.append(self.create_integrations_category())
+
+        # Set Visibilities
+        self.render_category_buttons()
+        self.toggle_frame_visibility('PreferenceCategoryButton')
+
+        # Set Initial Option Values
+        self.set_initial_options()
+
+    # --- UI Creation Functions ---
+    def render_category_buttons(self):
+        """
+            Gets the Category Selection Button from the Categories and packs them into a placement frame.
+        """
+
+        for index, category in enumerate(self.categories):
+            category.button.grid(row=index + 1, column=0, sticky="new")
+
+    def toggle_frame_visibility(self, widget_id: str):
+        """
+            Hides all Options Frame's, and un-hides wanted Frame.
+
+            :param widget_id: The ID of the button requesting to change category.
+        """
+        category_placement_frames: [str, tk.Frame] = []  # Saves a reference to the name, and frame, of a category.
+        frame_to_show: tk.Frame
+
+        # Gather the placement frames from All categories
+        for category in self.categories:
+            category_placement_frames.append([category.name, category.options_frame])
+
+        # Hide all frames
+        for frame in category_placement_frames:
+            frame[1].grid_remove()
+
+        # Get category name
+        wanted_category = self.get_category_via_button(widget_id)
+        if not wanted_category:
+            print(f"Couldn't find Category with the button: '{widget_id}'")
+            return
+
+        # Get wanted frame
+        frame_to_show = next((frame[1] for frame in category_placement_frames if frame[0] == wanted_category.name), None)
+        if not frame_to_show:
+            print(f"Couldn't find Matching Category frame of: '{wanted_category.name}'")
+            return
+
+        # Show wanted frame
+        if frame_to_show:
+            self.active_category = wanted_category.name
+            frame_to_show.grid(sticky='new')
+
+    def create_preferences_category(self):
+        """
+            Creates and Returns the actual Category holding reference to both the Button and its Options
+        """
+
+        preference_button = [
+            {
+                "composite_id": "PreferenceCategory",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.BUTTON,
+                        "widget_id": "PreferenceCategoryButton",
+                        "text": "Preferences",
+                        "command": self.toggle_frame_visibility,
+                    },
+                ],
+            },
+        ]
+
+        preference_options = [
+            {
+                "composite_id": "PreferenceHeader",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "PreferenceHeaderLabel",
+                        "text": "PREFERENCES",
+                    },
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "PreferenceHeaderBlank",
+                        "text": "",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+            {
+                "composite_id": "SplitMethod",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "SplitMethodLabel",
+                        "text": "Split Method:",
+                    },
+                    {
+                        "type": CompWidgetTypes.DROPDOWN,
+                        "widget_id": "SplitMethodOption",
+                        "options": ["Both", "Split Only"],
+                        #"tooltip": "Determines how the image will be processed\nBoth: Split and Crop the image.\nSplit Only: Only splits the image into cells.",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+            {
+                "composite_id": "PreviewMode",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "PreviewModeLabel",
+                        "text": "Preview Mode:",
+                    },
+                    {
+                        "type": CompWidgetTypes.DROPDOWN,
+                        "widget_id": "PreviewModeOption",
+                        "options": ["Split Method", "Full", "Crop Only", "Split Only"],
+                        #"tooltip": "What to display in the Previewer\nSplit Method: Use method of how to split the image.\nFull: Show both crop and split.\nCrop Only: Only shows how the cells will be cropped.\nSplit Only: Only shows how the image will be split into cells.",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+            {
+                "composite_id": "InputMode",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "InputModeLabel",
+                        "text": "Input Mode:",
+                    },
+                    {
+                        "type": CompWidgetTypes.DROPDOWN,
+                        "widget_id": "InputModeOption",
+                        "options": ["Percentage (Relative)", "Percentage (X)", "Percentage (Y)", "Pixel"],
+                        #"tooltip": "In what way to process the Image\nPercentage Relative: Will take the percentage value to calculate how many pixels to split the image by on both X and Y axis.\nPercentage X/Y: Will take the percentage number to caluclate the number of pixels to split by on their respective Axis, and then also use the exact same number on the other Axis.\nPixel: Give the exact Pixel number to split the image by.",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+        ]
+
+        return DisplayKeys_Settings_Category(category_name="Preferences",
+                                             category_button=preference_button,
+                                             button_parent=self.category_placement_frame,
+                                             category_options=preference_options,
+                                             options_parent=self.settings_container)
+
+    def create_appearance_category(self):
+        """
+            Creates and Returns the actual Category holding reference to both the Button and its Options
+        """
+        # Colors, etc.
+
+        appearance_button = [
+            {
+                "composite_id": "AppearanceCategory",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.BUTTON,
+                        "widget_id": "AppearanceCategoryButton",
+                        "text": "Appearance",
+                        "command": self.toggle_frame_visibility,
+                    },
+                ],
+            },
+        ]
+
+        appearance_options = [
+            {
+                "composite_id": "AppearanceHeader",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "AppearanceHeaderLabel",
+                        "text": "APPEARANCE",
+                    },
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "AppearanceHeaderBlank",
+                        "text": "",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+            {
+                "composite_id": "AppColoursHeader",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "AppColoursHeaderLabel",
+                        "text": "App Colours",
+                    },
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "AppColoursHeaderBlank",
+                        "text": "",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+            {
+                "composite_id": "AppColoursInfo",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "AppColoursInfoLabel",
+                        "text": "Colours are either 'hex-codes' or 'names'",
+                    },
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "AppColoursInfoBlank",
+                        "text": "",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+            {
+                "composite_id": "AppPrimaryColour",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "AppPrimaryColorLabel",
+                        "text": "Background Primary",
+                    },
+                    {
+                        "type": CompWidgetTypes.TEXTBOX,
+                        "widget_id": "AppPrimaryColourOption",
+                        #"tooltip": "The Primary application colour, used for app background.",
+                        "dnd_type": "text",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+            {
+                "composite_id": "AppSecondaryColour",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "AppSecondaryColorLabel",
+                        "text": "Background Secondary",
+                    },
+                    {
+                        "type": CompWidgetTypes.TEXTBOX,
+                        "widget_id": "AppSecondaryColourOption",
+                        #"tooltip": "The Secondary application colour, used for app background.",
+                        "dnd_type": "text",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+            {
+                "composite_id": "LabelsHeader",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "LabelsHeaderLabel",
+                        "text": "Label Colours",
+                    },
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "LabelsHeaderBlank",
+                        "text": "",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+            {
+                "composite_id": "LabelsTextColour",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "LabelsTextColourLabel",
+                        "text": "Text",
+                    },
+                    {
+                        "type": CompWidgetTypes.TEXTBOX,
+                        "widget_id": "LabelsTextColourOption",
+                        #"tooltip": "The Text Colour of Labels.",
+                        "dnd_type": "text",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+            {
+                "composite_id": "LabelsBackgroundColour",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "LabelsBackgroundColourLabel",
+                        "text": "Background",
+                    },
+                    {
+                        "type": CompWidgetTypes.TEXTBOX,
+                        "widget_id": "LabelsBackgroundColourOption",
+                        #"tooltip": "The Background Colour of Labels.",
+                        "dnd_type": "text",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+            {
+                "composite_id": "ButtonsHeader",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "ButtonsHeaderLabel",
+                        "text": "Button Colours",
+                    },
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "ButtonsHeaderBlank",
+                        "text": "",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+            {
+                "composite_id": "ButtonsTextColour",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "ButtonsTextColourLabel",
+                        "text": "Text",
+                    },
+                    {
+                        "type": CompWidgetTypes.TEXTBOX,
+                        "widget_id": "ButtonsTextColourOption",
+                        #"tooltip": "The Text Colour of Buttons.",
+                        "dnd_type": "text",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+            {
+                "composite_id": "ButtonsBackgroundColour",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "ButtonsBackgroundColourLabel",
+                        "text": "Background",
+                    },
+                    {
+                        "type": CompWidgetTypes.TEXTBOX,
+                        "widget_id": "ButtonsBackgroundColourOption",
+                        #"tooltip": "The Primary application colour.",
+                        "dnd_type": "text",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+            {
+                "composite_id": "PreviewerHeader",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "PreviewerHeaderLabel",
+                        "text": "Previewer Colours",
+                    },
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "PreviewerHeaderBlank",
+                        "text": "",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+            {
+                "composite_id": "PreviewerSplitColour",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "PreviewerSplitColourLabel",
+                        "text": "Split",
+                    },
+                    {
+                        "type": CompWidgetTypes.TEXTBOX,
+                        "widget_id": "PreviewerSplitColourOption",
+                        # "tooltip": "The Primary application colour.",
+                        "dnd_type": "text",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+            {
+                "composite_id": "PreviewerCroppingColour",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "PreviewerCroppingColourLabel",
+                        "text": "Cropping",
+                    },
+                    {
+                        "type": CompWidgetTypes.TEXTBOX,
+                        "widget_id": "PreviewerCroppingColourOption",
+                        # "tooltip": "The Primary application colour.",
+                        "dnd_type": "text",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+        ]
+
+        return DisplayKeys_Settings_Category(category_name="Appearance",
+                                             category_button=appearance_button,
+                                             button_parent=self.category_placement_frame,
+                                             category_options=appearance_options,
+                                             options_parent=self.settings_container,)
+
+    def create_integrations_category(self):
+        """
+            Creates and Returns the actual Category holding reference to both the Button and its Options
+        """
+
+        integration_button = [
+            {
+                "composite_id": "IntegrationsCategory",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.BUTTON,
+                        "widget_id": "IntegrationsCategoryButton",
+                        "text": "Integrations",
+                        "command": self.toggle_frame_visibility,
+                    },
+                ],
+            },
+        ]
+
+        integration_options = [
+            {
+                "composite_id": "IntegrationsHeader",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "IntegrationsHeaderLabel",
+                        "text": "INTEGRATIONS",
+                    },
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "IntegrationsHeaderBlank",
+                        "text": "",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+            {
+                "composite_id": "BaseCampHeader",
+                "widgets": [
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "BaseCampHeaderLabel",
+                        "text": "Base Camp",
+                    },
+                    {
+                        "type": CompWidgetTypes.LABEL,
+                        "widget_id": "IntegrationsHeaderBlank",
+                        "text": "",
+                    },
+                ],
+                "layout": "horizontal",
+            },
+        ]
+
+        return DisplayKeys_Settings_Category(category_name="Integrations",
+                                             category_button=integration_button,
+                                             button_parent=self.category_placement_frame,
+                                             category_options=integration_options,
+                                             options_parent=self.settings_container)
+
+    def add_interaction_buttons(self, parent: tk.Frame):
+        self.apply_button = tk.Button(parent, text='    Apply    ', command=self.save_options)  # self.save_options())
+        self.apply_button.place(relx=0.2, rely=0.5, anchor=tk.CENTER)
+        #self.apply_button_tooltip = DisplayKeys_Tooltip(self.apply_button, "Will save the current Options to File.")
+
+        self.default_button = tk.Button(parent, text='   Default    ', command=self.reset_to_default)
+        self.default_button.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
+        #self.default_button_tooltip = DisplayKeys_Tooltip(self.default_button, "Will reset all options to the default values!")
+
+        self.cancel_button = tk.Button(parent, text='    Cancel    ', command=self.button_command_destructive(function=lambda: None))
+        self.cancel_button.place(relx=0.8, rely=0.5, anchor=tk.CENTER)
+
+    # --- Category Utility Functions ---
+    def get_category_via_name(self, category_name: str):
+        """
+            Finds and returns a Category via its given name
+        """
+        return next((category for category in self.categories if category.name == category_name), None)
+
+    def get_category_via_button(self, button_id: str):
+        """
+            Finds and returns a Category based on the id of its Selection Button
+        """
+        for category in self.categories:
+            for child in category.button.child_widgets:
+                if child.id == button_id:
+                    return category
+
+        return None
+
+    # --- Options Utility Functions ---
+    def reset_to_default(self):
+        """
+            Populates the Option Widgets with default option values.
+            * This change is not saved to file until applied.
+        """
+        for category in self.categories:
+            for option in category.options:
+                # Options are Composite widget with only 2 children, 0=Label | 1=Option
+                child = option.child_widgets[1]
+                value = SettingsData.get_setting(SettingsData.get_default_settings(), category.name, child.id)
+                if value:
+                    category.set_option_value(child, value)
+
+    def save_options(self):
+        """
+            Saves the current values to their Object, and then to JSON File.
+        """
+
+        for category in self.categories:
+            for option in category.options:
+                # Options are Composite widget with only 2 children, 0=Label | 1=Option
+                child = option.child_widgets[1]
+                value = category.get_option_value(child)
+                if value:
+                    SettingsData.set_setting(app.settings, category.name, child.id, value)
+        SettingsData.save_settings_to_file(app.settings)
+
+        if self.active_category == 'Appearance':
+            PopUp_Dialogue(parent=app.window, popup_type='warning', message='Some Appearance changes require a restart to apply!', buttons=[{'OK': lambda: None}])
+
+    def set_initial_options(self):
+        """
+            Load the currently available option values into the widget, when the popup is first created.
+        """
+
+        for category in self.categories:
+            for option in category.options:
+                # Options are Composite widget with only 2 children, 0=Label | 1=Option
+                child = option.child_widgets[1]
+                value = SettingsData.get_setting(app.settings, category.name, child.id)
+                if value:
+                    category.set_option_value(child, value)
+
+
+class DisplayKeys_Settings_Category:
+    def __init__(self, category_name,
+                 category_button: list[dict[str, list]],
+                 category_options: list[dict[str, list]],
+                 button_parent: tk.Frame, options_parent: tk.Frame):
+        """
+            Used to Store reference to a Categories selection button, as well as its options (and their parent frame).
+        """
+
+        self.name = category_name
+
+        background = SettingsData.get_setting(app.settings, 'Appearance', 'AppPrimaryColourOption')
+        self.options_frame = tk.Frame(options_parent, width='150', height='450', background=background)
+        self.options_frame.grid(row=0, column=0, sticky='new')
+        self.options_frame.grid_propagate(False)
+
+        self.button = self.create_button(button_parent, category_button)
+        self.options = self.create_options(category_options)
+
+    def get_option(self, composite_id: str):
+        """
+            Returns the option's composite_widget with the given ID
+        """
+
+        option = next(option for option in self.options if option.id == composite_id)
+        return option
+
+    @staticmethod
+    def get_option_value(child):
+        match child.__class__:
+            case DisplayKeys_Composite_Widget.Comp_Entry:
+                return child.textbox_var.get()
+            case DisplayKeys_Composite_Widget.Comp_Spinbox:
+                return child.spinbox_var.get()
+            case DisplayKeys_Composite_Widget.Comp_Combobox:
+                return child.dropdown_var.get()
+            case _:
+                #PopUp_Dialogue(app.window, 'error', f"Widget {child.id} didn't match an option type")
+                pass
+
+    @staticmethod
+    def set_option_value(child, value: str | bool):
+        match child.__class__:
+            case DisplayKeys_Composite_Widget.Comp_Entry:
+                child.textbox_var.set(value)
+            case DisplayKeys_Composite_Widget.Comp_Spinbox:
+                child.spinbox_var.set(value)
+            case DisplayKeys_Composite_Widget.Comp_Combobox:
+                child.dropdown_var.set(value)
+            case _:
+                #PopUp_Dialogue(app.window, 'error', f"Widget {child.id} didn't match an option type")
+                pass
+
+    def create_button(self, parent, buttons):
+        for button in buttons:
+            composite_button = DisplayKeys_Composite_Widget(parent, app.settings, **button)
+
+            # Set Style
+            for child in composite_button.child_widgets:
+                child.configure(padx=35, pady=0, border="1")
+
+            return composite_button
+
+    def create_options(self, options):
+        options_widgets = []
+
+        for option in options:
+            options_widgets.append(DisplayKeys_Composite_Widget(self.options_frame, app.settings, padding=(5,1), **option))
+
+        # for option in options_widgets:
+
+        return options_widgets
 
 
 # A Drag&Drop latch-on class that can be used on any tk.Entry or tk.Spinbox widget
@@ -1569,9 +2320,7 @@ class DisplayKeys_DragDrop:
     :param widget: The Widget to which to attach the Drag n Drop functionality.
     :param drop_type: Specifies the type of Data that is expected to be received and handled by this widget.
     """
-
-    def __init__(self, widget: tk.Entry | tk.Spinbox, parent_widget,
-                 drop_type: Literal["image", "folder", "text", "any"], traced_callback=None):
+    def __init__(self, widget: tk.Entry | tk.Spinbox, parent_widget, drop_type: Literal["image", "folder", "text", "any"], traced_callback=None):
         self.widget = widget
         self.parent_widget = parent_widget
         self.trace_callback = traced_callback
@@ -1654,9 +2403,8 @@ class DisplayKeys_DragDrop:
                 # Show Can Drop
                 self.set_background(event.widget, 'green')
 
-        # self.set_background(event.widget)
-
-        # print("Background was:", self.original_bg)
+        #self.set_background(event.widget)
+        #print("Background was:", self.original_bg)
 
         return event.action
 
@@ -1807,7 +2555,9 @@ class DisplayKeys_Help:
 
 # A collection of button functions to be used throughout the UI
 class ButtonFunctions:
+
     # ----- Debug: -----
+
     # For testing new UI without wanting any actual actions taken.
     @staticmethod
     def placeholder(widget_id):
@@ -1825,6 +2575,7 @@ class ButtonFunctions:
         return
 
     # ----- Workarounds: -----
+
     # For temporary in code workaround solutions
     @staticmethod
     def disable_binding(widget, event_name, function_name):
@@ -1850,7 +2601,9 @@ class ButtonFunctions:
     # Trace_variable_name (string) should be provided based on type of widget
     # (i.e. if textbox: textbox_trace, if spinbox: spinbox_trace, etc.)
     @staticmethod
-    def enable_trace(variable_to_trace: vars, widget: DisplayKeys_Composite_Widget, function, event: str = "w"):
+    def enable_trace(variable_to_trace: vars,
+                     widget: DisplayKeys_Composite_Widget.Comp_Entry | DisplayKeys_Composite_Widget.Comp_Spinbox | DisplayKeys_Composite_Widget.Comp_Combobox,
+                     function, event: str = "w"):
         """
         Will create a new Trace on a widget, that will fire a callback function whenever it is triggered.
         :param variable_to_trace: The Widget's Variable to enable the trace on.
@@ -1860,7 +2613,16 @@ class ButtonFunctions:
         """
         # Create trace
         trace = variable_to_trace.trace(event, lambda *args: function(widget.id))
-        widget.textbox_trace = trace
+
+        # Assign trace based on what type of widget it is
+        match widget.__class__:
+            case DisplayKeys_Composite_Widget.Comp_Entry:
+                widget.textbox_trace = trace
+            case DisplayKeys_Composite_Widget.Comp_Spinbox:
+                widget.spinbox_trace = trace
+            case DisplayKeys_Composite_Widget.Comp_Combobox:
+                widget.dropdown_trace = trace
+
         print("Re-attached Trace:", type(widget.textbox_trace), widget.textbox_trace)
         return trace
 
@@ -1871,6 +2633,7 @@ class ButtonFunctions:
 
         return False
 
+    # ----------------------------------
     # ----- Main Window Functions: -----
     # --- Buttons ---
 
@@ -1885,7 +2648,8 @@ class ButtonFunctions:
         print("---Browsing for Image---")
         print("Widget ID: " + widget_id)
         # Get the Composite widget, if it contains the button that called this function
-        widget: DisplayKeys_Composite_Widget = app.get_property_widget_by_child(widget_id)
+        parent: DisplayKeys_Composite_Widget = app.get_property_widget_by_child(widget_id)
+        widget = parent.get_child(widget_id)
 
         if widget:
             # Ask the user to select an Image
@@ -1893,21 +2657,21 @@ class ButtonFunctions:
                 filetypes=[("Image files", "*.jpg;*.jpeg;*.png;*.gif;*.bmp")]
             )
             # Put File Path into textbox if widget has a textbox
-            if file_path and widget.textbox:
-                widget_original_state = widget.textbox.__getitem__('state')
+            if file_path and widget.textbox_var:
+                widget_original_state = widget.__getitem__('state')
                 print("Original Textbox State: " + widget_original_state)
 
                 # Temporarily disable the trace (avoid calling process image with 'None' path)
                 ButtonFunctions.disable_trace(widget.textbox_var, widget.textbox_trace)
 
-                widget.textbox.configure(state='normal')
-                widget.textbox.delete(0, tk.END)
+                widget.configure(state='normal')
+                widget.delete(0, tk.END)
 
                 # Re-Enable the trace
                 ButtonFunctions.enable_trace(widget.textbox_var, widget, ButtonFunctions.process_image)
 
-                widget.textbox.insert(tk.END, file_path)
-                widget.textbox.configure(state=widget_original_state)
+                widget.insert(tk.END, file_path)
+                widget.configure(state=widget_original_state)
 
             # Just in case its ever needed
             return file_path
@@ -1922,20 +2686,21 @@ class ButtonFunctions:
         """
         print("---Browsing for Output Dir---")
         print("Widget ID: " + widget_id)
-        widget = app.get_property_widget(widget_id)
+        widget = app.get_property_widget_by_child(widget_id)
 
         if widget:
             # Request the user to select a Directory
             output_path = filedialog.askdirectory()
-            # Put Directory Path into textbox if widget has a textbox
-            if output_path and widget.textbox:
-                widget_original_state = widget.textbox.__getitem__('state')
+            # Put Directory Path into textbox if widget is of textbox class
+            textbox_widget = next(child for child in widget.child_widgets if child.__class__ == DisplayKeys_Composite_Widget.Comp_Entry)
+            if output_path and textbox_widget:
+                widget_original_state = textbox_widget.__getitem__('state')
                 print("Original Textbox State: " + widget_original_state)
 
-                widget.textbox.configure(state='normal')
-                widget.textbox.delete(0, tk.END)
-                widget.textbox.insert(tk.END, output_path)
-                widget.textbox.configure(state=widget_original_state)
+                textbox_widget.configure(state='normal')
+                textbox_widget.delete(0, tk.END)
+                textbox_widget.insert(tk.END, output_path)
+                textbox_widget.configure(state=widget_original_state)
 
             # Just in case its ever needed
             return output_path
@@ -1997,7 +2762,7 @@ class ButtonFunctions:
                                              lambda *args: ButtonFunctions.process_image(get_image_widget.id))
 
             if not output_dir:
-                output_dir = os.path.join(os.path.expanduser("~"), "Desktop")
+                output_dir = OUTPUT_DIR
 
                 # Temporarily set the text entry widget to normal state to update its value
                 get_output_widget.configure(state="normal")
@@ -2029,7 +2794,8 @@ class ButtonFunctions:
                 x_offset = previewer.final_offset["x"] if previewer.final_offset else None
                 y_offset = previewer.final_offset["y"] if previewer.final_offset else None
                 if not all(param is not None for param in [rows, columns, gap, x_offset, y_offset]):
-                    # TODO: This occurs when you select all text, and enter the first digit no matter what!
+                    # This occurs when you select all text, and enter the first digit no matter what!
+                    # Architecture problem with TkInter's timing, not going bother work around it.
                     #PopUp_Dialogue(app.window, popup_type="error", message="A Property was None!")
                     print("A Property was None!")
                     return
@@ -2082,10 +2848,11 @@ class ButtonFunctions:
             return
 
         PopUp_Dialogue(parent=app.window, popup_type='warning',
-                       message=f"Do you want to delete the profile: {current_preset}?",
+                       message=f"Do you want to delete the profile: '{current_preset}'?",
                        buttons=[{'Yes': ButtonFunctions.delete_preset}, {'No': lambda: None}])
 
     # --- Dropdowns: ---
+
     # Hides / Un-hides specific Widgets
     @staticmethod
     def property_options_visibility(properties: list[DisplayKeys_Composite_Widget]):
@@ -2147,7 +2914,10 @@ class ButtonFunctions:
         elif reset_selection:
             properties_dropdown_widget.dropdown_var.set(preset_names[0])
 
+    # ----------------------------------
     # ----- Popup Windows: -----
+    # --- Buttons ---
+
     # Saves the Preset provided from the Popup_Preset_Add window
     @staticmethod
     def add_preset(name: str, rows: int, cols: int, gap: int):
@@ -2179,7 +2949,10 @@ class ButtonFunctions:
                 continue
         ButtonFunctions.populate_property_presets_options(app.properties, app.presets, reset_selection=True)
 
+    # ----------------------------------
     # ----- Menu Bar: -----
+    # --- Buttons ---
+
     # Closes Application
     @staticmethod
     def quit():
@@ -2207,6 +2980,20 @@ class ButtonFunctions:
         ButtonFunctions.populate_property_presets_options(app.properties, app.presets, reset_selection=True)
         PopUp_Dialogue(app.window, popup_type='confirm', message="Deleted All Current Presets!",
                        buttons=[{'OK': lambda: None}])
+
+    #
+    @staticmethod
+    def edit_settings_popup():
+        PopUp_Settings(app.window)
+
+    #
+    @staticmethod
+    def open_folder_location(directory):
+        try:
+            os.startfile(directory)
+        except Exception as e:
+            PopUp_Dialogue(parent=app.window, popup_type='error',
+                           message=f"The following directory could not be opened: '{directory}'", buttons=[{'OK': lambda: None}])
 
 
 # Defines the Data structure of Presets as well as contains all of its functionality.
@@ -2238,16 +3025,19 @@ class PresetData:
             gap=data_dict.get("gap", 1),
         )
 
+    @staticmethod
+    def get_preset_path():
+        if not os.path.exists(PRESETS_DIR):
+            os.makedirs(PRESETS_DIR)
+        return os.path.join(PRESETS_DIR, PRESETS_FILE)
+
     # Currently only saves itself to a selected/new file
     # Need to change to save all presets that are in the list to this file
     # and make this into a static method
     @staticmethod
     def save_presets_to_file():
         print("---Saving Preset---")
-        file_path = filedialog.asksaveasfilename(defaultextension=".json",
-                                                 filetypes=[("JSON files", "*.json"), ("All files", "*.*")])
-        if not file_path:  # If user cancels the save dialog
-            return
+        file_path = PresetData.get_preset_path()
         with open(file_path, 'w') as file:
             if app.presets:
                 if len(app.presets) > 1:
@@ -2255,7 +3045,7 @@ class PresetData:
                     for current_preset in app.presets[1:]:  # Start from the second preset, skipping the first
                         json_presets.append(PresetData.to_json(current_preset))
                     print(json_presets)
-                    json.dump(json_presets, file)
+                    json.dump(json_presets, file, indent=4)
                 else:
                     PopUp_Dialogue(app.window, popup_type="error", message="No new Presets were found!", buttons=[{'OK': lambda: None}])
 
@@ -2284,14 +3074,224 @@ class PresetData:
         # Ensure there are Presets in array
         if len(app.presets) > 0:
             # Get Preset
-            preset = next((preset for preset in app.presets if preset_name == preset.name), None)
+            preset = next(preset for preset in app.presets if preset_name == preset.name)
             if preset:
-                print(f"Retrieved Preset {preset}")
+                print(f"Retrieved Preset {preset.name}")
                 return preset
             else:
                 PopUp_Dialogue(app.window, popup_type='error', message=f"No Preset of the name '{preset_name}' found!", buttons=[{'OK': lambda: None}])
         else:
             PopUp_Dialogue(app.window, popup_type='error', message=f"Presets list is empty!", buttons=[{'OK': lambda: None}])
+
+    @staticmethod
+    def get_default_preset():
+        return PresetData(name="Default", rows=2, cols=6, gap=40)
+
+
+# Defines the Data Structure of the Settings, and contains all of its relevant functionality.
+class SettingsData:
+    """
+        JSON 'categories' Legend:
+            list[
+                Category Name: [
+                        Option ID: Value,
+                        Option ID: Value,
+                        ...
+                ]
+            ]
+        'Option' would be the Widgets id, from which the 'Value' is read.
+        This is done rather than using a more human-readable name (i.e. SplitMethod vs SplitMethodOption),
+        as only the actual user input fields are going to be labeled 'options'.
+        Therefore, no further processing of string concatenation needed when searching for these widgets.
+    """
+    def __init__(self):
+        """
+            Stores lists of 'name value' pairs for each category
+        """
+
+        self.categories = []
+
+    ################################
+    # Classes for Stored Structure #
+
+    class Option:
+        def __init__(self, id, value):
+            self.id = id
+            self.value = value
+
+    class Category:
+        def __init__(self, name):
+            self.name = name
+            self.options = []
+
+        def add_option(self, option):
+            self.options.append(option)
+
+    ################################
+    #   In Class Util Functions    #
+
+
+    def add_category(self, category_name, options):
+        """
+            Takes the 'name value' pairs of a provided category array and converts it to the category/option objects.
+            Then adds it to the stored categories array
+        """
+        category = self.Category(category_name)
+        for option_name, option_value in options.items():
+            option = self.Option(option_name, option_value)
+            category.add_option(option)
+        self.categories.append(category)
+
+
+    def delete_category(self, category_name):
+        for category in self.categories:
+            if category.name == category_name:
+                self.categories.remove(category)
+                break
+
+    ################################
+    #   Save/Load Util Functions   #
+
+    @staticmethod
+    def to_dict(settings_data: 'SettingsData'):
+        """
+            Create the JSON dictionary to be stored
+        """
+        data = []
+        for category in settings_data.categories:
+            category_data = {category.name: []}
+            for option in category.options:
+                category_data[category.name].append({option.id: option.value})
+            data.append(category_data)
+        return data
+
+    @classmethod
+    def from_dict(cls, data_dict):
+        settings_data = cls()
+        for category_data in data_dict:
+            for category_name, options_list in category_data.items():
+                category_options = {}
+                for option_dict in options_list:
+                    for option_name, option_value in option_dict.items():
+                        category_options[option_name] = option_value
+                settings_data.add_category(category_name, category_options)
+        return settings_data
+
+    @staticmethod
+    def get_settings_path():
+        if not os.path.exists(SETTINGS_DIR):
+            os.makedirs(SETTINGS_DIR)
+        return os.path.join(SETTINGS_DIR, SETTINGS_FILE)
+
+    @staticmethod
+    def save_settings_to_file(settings_data: 'SettingsData'):
+        file_path = SettingsData.get_settings_path()
+        with open(file_path, 'w') as file:
+            json.dump(SettingsData.to_dict(settings_data), file, indent=4)
+
+    @staticmethod
+    def load_settings_from_file():
+        file_path = SettingsData.get_settings_path()
+        try:
+            with open(file_path, 'r') as file:
+                data_dict = json.load(file)
+                return SettingsData.from_dict(data_dict)
+        except FileNotFoundError:
+            print(f"Settings file not found at '{file_path}'\nLoading Default Settings instead")
+            default_settings = SettingsData().get_default_settings()
+            SettingsData.save_settings_to_file(default_settings)
+            return default_settings
+
+    ################################
+    #   Settings Util Functions    #
+    # Settings are ALWAYS stored in the main app class, so need to access data externally.
+    # In-App settings location: 'app.settings'
+
+    @staticmethod
+    def set_setting(settings_data: 'SettingsData', category_name: str, option_name: str, new_value: str | int):
+        """
+        Find a specific option within a category and set its value.
+        """
+        category_data = next((cat_data for cat_data in settings_data.categories if cat_data.name == category_name), None)
+        if category_data:
+            option_data = next((opt_data for opt_data in category_data.options if opt_data.id == option_name), None)
+            if option_data:
+                option_data.value = new_value
+            else:
+                #print(f"Option not found: {category_name}/{option_name}")
+                pass
+        else:
+            #print(f"Category not found: {category_name}")
+            pass
+
+        # category = next((cat for cat in categories if cat.name == category_name), None)
+        # if category:
+        #     option = next((opt for opt in category if opt.child_widgets[1].id == option_name), None)
+        #     if option:
+        #         pass
+
+    @staticmethod
+    def get_setting(settings_data: 'SettingsData', category_name: str, option_name: str):
+        """
+        Find a specific option within a category and return its value.
+        """
+        category_data = next((cat_data for cat_data in settings_data.categories if cat_data.name == category_name), None)
+        if category_data:
+            option_data = next((opt_data for opt_data in category_data.options if opt_data.id == option_name), None)
+            if option_data:
+                return option_data.value
+            else:
+                #print(f"Option not found: {category_name}/{option_name}")
+                pass
+        else:
+            #print(f"Category not found: {category_name}")
+            pass
+
+        return None
+
+    @staticmethod
+    def get_category(settings_data: 'SettingsData', category_name: str):
+        """
+        Find a specific category and return it.
+        """
+        category_data = next((cat_data for cat_data in settings_data.categories if cat_data.name == category_name), None)
+        if category_data:
+            return category_data
+        else:
+            #print(f"Category not found: {category_name}")
+            return None
+
+    @classmethod
+    def get_default_settings(cls):
+        """
+            Return a default Class object containing a set of default categories/values.
+        """
+        default_settings = cls()
+        default_categories = []
+
+        default_preferences = "Preferences", {
+            "SplitMethodOption": "Both",
+            "PreviewModeOption": "Split Method",
+            "InputModeOption": "Percentage",
+        }
+        default_appearance = "Appearance", {
+            "AppPrimaryColourOption": "#212529",
+            "AppSecondaryColourOption": "#343A40",
+            "LabelsTextColourOption": "#000000",
+            "LabelsBackgroundColourOption": "#E9ECEF",
+            "ButtonsTextColourOption": "#000000",
+            "ButtonsBackgroundColourOption": "#F8F9FA",
+            "PreviewerSplitColourOption": "#CC0000",
+            "PreviewerCroppingColourOption": "gray",
+        }
+
+        default_categories.append(default_preferences)
+        default_categories.append(default_appearance)
+
+        for category in default_categories:
+            default_settings.add_category(category[0], category[1])
+
+        return default_settings
 
 
 # The Default Values for the split functionality
@@ -2308,6 +3308,14 @@ class DefaultSplitData(Enum):
     GAPPER: float = 5.8  # Calculated per Axis, used result respectively
     GAPPERX: float = 3.7  # Calculated with X Axis, used on Both
     GAPPERY: float = 7.9  # Calculated with Y Axis, used on Both
+
+
+# The Split method types available in the options
+class SplitType(Enum):
+    PercentageRel = 1
+    PercentageX = 2
+    PercentageY = 3
+    Pixel = 4
 
 
 ####################################################################################################################
@@ -2327,7 +3335,7 @@ class split:
     # Checks the provided image and determines whether it's a static or dynamic image format.
     # Also passes along rest of variables provided by ButtonFunctions.ProcessImage
     @staticmethod
-    def determine_split_type(file_path: str, output_dir: str, rows: int, cols: int, gap: int | float, x_offset: float, y_offset: float):
+    def determine_split_type(file_path: str, output_dir: str, rows: int, cols: int, gap: int, x_offset: float, y_offset: float):
         print("---Determining File Type---")
 
         # The supported file formats:
@@ -2364,7 +3372,9 @@ class split:
     #  1.) Replace the Previewer Drawing Functionality inside of the Previewer Update Function
     #      to use the calculate_image_split function's returned 'preview_coordinates'
     #       ( This may be too complicated now with the way the Offset input interacts with the Preview rendering )
-    #       ( Will check when I am not sleep deprived to make sure it works when adapting to use external function )
+    #           - Shouldnt be a problem since that function already handles offset input, and passes it along.
+    #       ( Also need to check if its even a viable solution, since the image coordinates are calculated in image space, so need to convert it to previewer space)
+    #           - This functionality already exists in the 'Offset' code, but needs to be copied/adapted for the input coordinates for drawing.
 
     # Calls 'calculate_image_split' and saves its output 'image_cells'
     @staticmethod
@@ -2380,6 +3390,13 @@ class split:
 
         # Generate the output file path
         filename_without_extension = os.path.splitext(os.path.basename(static_image.filename))[0]
+
+        # If the output path is the default location, save output to a sub-folder of the same name
+        # as the original image
+        if output_dir == OUTPUT_DIR:
+            with_sub_folder = os.path.join(output_dir, f'{filename_without_extension}')
+            output_dir = with_sub_folder
+            os.makedirs(output_dir, exist_ok=True)
 
         # Save the image-cells
         cell: ImageTk.PhotoImage
@@ -2453,6 +3470,13 @@ class split:
             # Generate the output file path
             filename_without_extension = os.path.splitext(os.path.basename(gif.filename))[0]
 
+            # If the output path is the default location, save output to a sub-folder of the same name
+            # as the original image
+            if output_dir == OUTPUT_DIR:
+                with_sub_folder = os.path.join(output_dir, f'{filename_without_extension}')
+                output_dir = with_sub_folder
+                os.makedirs(output_dir, exist_ok=True)
+
             # Use the filename of the cell image for creating the output_path
 
             cell_name = combined_cells[0].filename
@@ -2470,6 +3494,16 @@ class split:
     # Returns {preview_coordinates, image_cells}
     @staticmethod
     def calculate_image_split(image: ImageTk, rows: int, cols: int, gap: int, x_offset: float, y_offset: float) -> dict[str, list[dict] | str, list[ImageTk.PhotoImage]]:
+        # Determine what split method is used
+        # TODO Implement the Split_Method input check
+        crop_image = False
+        split_method = SettingsData.get_setting(app.settings, "Preferences", "SplitMethodOption")
+        match split_method:
+            case "Both":
+                crop_image = True
+            case "Split Only":
+                pass
+
         preview_grid = []
         cropped_cells = []
 
@@ -2496,19 +3530,25 @@ class split:
         # Split the image and save each image-cell
         for row in range(rows):
             for col in range(cols):
-                # Calculate the coordinates for cropping
+                # Calculate the coordinates for cropping TopLeft Corner of Cell
+                # Left = ( Column Index * ( Cell Width + Gap Size ) + Offset Created by Gap ) - Image Position X Offset
+                # Upper = ( Row Index * ( Cell Height + Gap Size ) + Offset Created By Gap ) - Image Position Y Offset
                 left = (col * (cell_width + gap) + gap_horizontal_offset) - x_offset
                 upper = (row * (cell_height + gap) + gap_vertical_offset) - y_offset
 
-                # Remove rows/columns only if they are part of the Outlier image-cells
-                if row == 0:
-                    upper += gap_vertical_offset
-                elif row == rows - 1:
-                    upper -= gap_vertical_offset
-                if col == 0:
-                    left += gap_horizontal_offset
-                elif col == cols - 1:
-                    left -= gap_horizontal_offset
+                # Adjust initial coordinates depending on whether the Cell is to be cropped
+                if crop_image:
+                    # Remove rows/columns only if they are part of the Outlier image-cells for cropping
+                    if row == 0:
+                        upper += gap_vertical_offset
+                    elif row == rows - 1:
+                        upper -= gap_vertical_offset
+                    if col == 0:
+                        left += gap_horizontal_offset
+                    elif col == cols - 1:
+                        left -= gap_horizontal_offset
+
+                # Adjust BottomRight Corner coordinates based on which Dimension is longer
                 if longest_dimension == "width":
                     right = left + max_cell_size
                     lower = upper + cell_height
@@ -2516,7 +3556,7 @@ class split:
                     right = left + cell_width
                     lower = upper + max_cell_size
 
-                # Crop all image-cells
+                # Split/Crop current image-cell
                 image_cell = image.crop((left, upper, right, lower))
 
                 ########## Outputs ##########
@@ -2529,6 +3569,7 @@ class split:
                 # Store Coordinates of split image cells, for Previewer
                 grid_cell = [{
                     "cell": f"{row}_{col}",
+                    "width": cell_width,
                     "Left_Coord": left,
                     "Right_Coord": right,
                     "Upper_Coord": upper,
