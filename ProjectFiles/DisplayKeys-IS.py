@@ -3375,6 +3375,9 @@ class split:
     #           - Shouldnt be a problem since that function already handles offset input, and passes it along.
     #       ( Also need to check if its even a viable solution, since the image coordinates are calculated in image space, so need to convert it to previewer space)
     #           - This functionality already exists in the 'Offset' code, but needs to be copied/adapted for the input coordinates for drawing.
+    #  2.) Will need to pass along a Boolean flag to check if the function is called for previewing purposes, or for actually splitting the image.
+    #      This will make sure there are no unnecessary folders being created and can skip the actual splitting of images if wanted/needed, so that they dont have to be returned.
+    #      (If necessary meaning, if the previewer is a little slow, skip all the computation required for creating the new images)
 
     # Calls 'calculate_image_split' and saves its output 'image_cells'
     @staticmethod
