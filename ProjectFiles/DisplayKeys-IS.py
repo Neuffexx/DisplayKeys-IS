@@ -1649,6 +1649,7 @@ class PopUp_Settings(DisplayKeys_PopUp):
         # Settings Setup
 
         self.categories: list['DisplayKeys_Settings_Category'] = []
+        self.active_category: str = ''
 
         # Create UI
         self.create_settings_ui()
@@ -1741,6 +1742,7 @@ class PopUp_Settings(DisplayKeys_PopUp):
 
         # Show wanted frame
         if frame_to_show:
+            self.active_category = wanted_category.name
             frame_to_show.grid(sticky='new')
 
     def create_preferences_category(self):
@@ -2216,6 +2218,9 @@ class PopUp_Settings(DisplayKeys_PopUp):
                 if value:
                     SettingsData.set_setting(app.settings, category.name, child.id, value)
         SettingsData.save_settings_to_file(app.settings)
+
+        if self.active_category == 'Appearance':
+            PopUp_Dialogue(parent=app.window, popup_type='warning', message='Some Appearance changes require a restart to apply!', buttons=[{'OK': lambda: None}])
 
     def set_initial_options(self):
         """
